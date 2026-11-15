@@ -11,10 +11,10 @@
 //!
 //! | MAGMA intrinsic                    | function here                     |
 //! |------------------------------------|-----------------------------------|
-//! | `NumberOfPermutations(n, k)`       | [`number_of_permutations`]        |
-//! | `Fibonacci(n)` (negative index)    | [`fibonacci_signed`]              |
-//! | `Lucas(n)` (negative index)        | [`lucas_signed`]                  |
-//! | `GeneralizedFibonacciNumber(...)`  | [`generalized_fibonacci_number`]  |
+//! | `NumberOfPermutations(n, k)`       | [`number_of_permutations`] (falling factorial, one balanced product) |
+//! | `Fibonacci(n)` (negative index)    | [`fibonacci_signed`] (doubling, O(M(n)))  |
+//! | `Lucas(n)` (negative index)        | [`lucas_signed`] (doubling)       |
+//! | `GeneralizedFibonacciNumber(...)`  | [`generalized_fibonacci_number`] (G_n = g0 F_(n-1) + g1 F_n) |
 //! | `BernoulliNumber(n)`               | [`bernoulli_number`] (re-export)  |
 //! | `BernoulliPolynomial(n)`           | [`bernoulli_polynomial`]          |
 //! | `HarmonicNumber(n)`                | [`harmonic_number`] (re-export)   |
@@ -34,58 +34,61 @@ pub use rustmath_rationals::{bernoulli as bernoulli_number, harmonic as harmonic
 /// `NumberOfPermutations(n, k)` — the number of permutations of `n` distinct objects
 /// taken `k` at a time, i.e. the falling factorial `n!/(n-k)! = n·(n-1)···(n-k+1)`.
 ///
-/// Returns `0` when `k > n`.
+/// Returns `0` when `k > n`. The u32 form of [`crate::falling_factorial_integer`] (one
+/// balanced product).
 pub fn number_of_permutations(n: u32, k: u32) -> Integer {
-    if k > n {
-        return Integer::zero();
+    crate::falling_factorial_integer(&Integer::from(n), u64::from(k))
+}
+
+/// (F_m, F_(m+1)) by doubling. From the top bit of m down, with (a, b) = (F_j, F_(j+1)):
+/// F_2j = a (2b - a), F_(2j+1) = a^2 + b^2, and on a set bit (F_(2j+1), F_2j + F_(2j+1)).
+/// These are the cases m = n and m = n + 1 of the addition formula
+/// F_(m+n) = F_m F_(n+1) + F_(m-1) F_n (Knuth, TAOCP vol. 1, §1.2.8; D. Takahashi, *A fast
+/// algorithm for computing large Fibonacci numbers*, Inform. Process. Lett. 75 (2000)
+/// 243-246). Three multiplications per bit, O(M(m)) overall.
+pub(crate) fn fibonacci_pair(m: u64) -> (Integer, Integer) {
+    let mut a = Integer::zero();
+    let mut b = Integer::one();
+    if m == 0 {
+        return (a, b);
     }
-    let mut result = Integer::one();
-    for i in 0..k {
-        result = result * Integer::from(n - i);
+    let top = 63 - m.leading_zeros();
+    for bit in (0..=top).rev() {
+        let two_b_minus_a = &(&b + &b) - &a;
+        let c = &a * &two_b_minus_a; // F_2j
+        let d = &(&a * &a) + &(&b * &b); // F_(2j+1)
+        if (m >> bit) & 1 == 1 {
+            b = &c + &d;
+            a = d;
+        } else {
+            a = c;
+            b = d;
+        }
     }
-    result
+    (a, b)
 }
 
 /// `GeneralizedFibonacciNumber(g0, g1, n)` — the `n`-th term of the two-term linear
-/// recurrence `G_0 = g0`, `G_1 = g1`, `G_k = G_{k-1} + G_{k-2}`.
-///
-/// `n` may be negative; the recurrence is run backwards via `G_{k-2} = G_k - G_{k-1}`.
+/// recurrence `G_0 = g0`, `G_1 = g1`, `G_k = G_{k-1} + G_{k-2}`, for every integer `n`.
 /// `Fibonacci` and `Lucas` are the special cases `(g0, g1) = (0, 1)` and `(2, 1)`.
+///
+/// Computed as `G_n = g0 F_(n-1) + g1 F_n` (it gives g0 at n = 0 since F_(-1) = 1, g1 at
+/// n = 1, and satisfies the recurrence by linearity), with the Fibonacci pair by doubling
+/// (`fibonacci_pair`) and `F_(-m) = (-1)^(m+1) F_m` for negative indices. O(M(|n|)) work.
 pub fn generalized_fibonacci_number(g0: i64, g1: i64, n: i64) -> Integer {
-    if n == 0 {
-        return Integer::from(g0);
-    }
-    if n == 1 {
-        return Integer::from(g1);
-    }
-
-    let a = Integer::from(g0); // G_0
-    let b = Integer::from(g1); // G_1
-
-    if n > 1 {
-        // Forward: G_k = G_{k-1} + G_{k-2}
-        let mut prev = a;
-        let mut cur = b;
-        for _ in 2..=n {
-            let next = prev.clone() + cur.clone();
-            prev = cur;
-            cur = next;
-        }
-        cur
+    let (f_nm1, f_n) = if n >= 1 {
+        // (F_(n-1), F_n)
+        fibonacci_pair((n - 1) as u64)
     } else {
-        // Backward: from G_0 = a, G_1 = b compute G_{-1}, G_{-2}, ...
-        // G_{m-1} = G_{m+1} - G_m, keeping (hi = G_{m+1}, lo = G_m).
-        let mut hi = b; // G_1
-        let mut lo = a; // G_0
-        let mut m: i64 = 0;
-        while m > n {
-            let prev = hi.clone() - lo.clone(); // G_{m-1}
-            hi = lo;
-            lo = prev;
-            m -= 1;
-        }
-        lo
-    }
+        // n = -m with m >= 0: F_n = F_(-m) = (-1)^(m+1) F_m and
+        // F_(n-1) = F_(-(m+1)) = (-1)^m F_(m+1).
+        let m = n.unsigned_abs();
+        let (fm, fm1) = fibonacci_pair(m);
+        let f_nm1 = if m.is_multiple_of(2) { fm1 } else { -fm1 };
+        let f_n = if m % 2 == 1 { fm } else { -fm };
+        (f_nm1, f_n)
+    };
+    &(&Integer::from(g0) * &f_nm1) + &(&Integer::from(g1) * &f_n)
 }
 
 /// `Fibonacci(n)` extended to all integers: `F_{-n} = (-1)^{n+1} F_n`.

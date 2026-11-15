@@ -248,9 +248,7 @@ fn ordered_pair_signature(f: &[Integer]) -> Result<(i64, Vec<usize>)> {
         if r.len() != n * (n - 1) + 1 {
             continue; // degenerate (leading cancellation) — try next s
         }
-        let (_, factors) = zassenhaus::factor(&r).map_err(|_| {
-            MathError::NotSupported("factor recombination limit exceeded".to_string())
-        })?;
+        let (_, factors) = zassenhaus::factor(&r).map_err(MathError::from)?;
         if factors.iter().any(|(_, m)| *m > 1) {
             continue; // not squarefree: some α_j − s·α_i collide — try next s
         }

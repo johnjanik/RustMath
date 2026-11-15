@@ -7,7 +7,12 @@
 //! - Difference sets
 //! - Hadamard matrices
 //! - Design automorphisms
+//!
+//! Counts that index the array sizes (v^t rows, the replication number) are checked: a value
+//! above usize::MAX is refused (None) or a documented panic, never a wrapped value (design C1
+//! §1.6, items 21 and 35).
 
+use crate::machine_word::checked_pow_usize;
 use std::collections::HashSet;
 
 /// A block design consists of a set of points and a collection of blocks (subsets of points)
@@ -175,6 +180,13 @@ impl BlockDesign {
 
     /// Get the replication number (number of blocks containing each point)
     /// For a 2-design, this is r = λ(v-1)/(k-1)
+    ///
+    /// None means "not a 2-design, or r is not an integer" (also for v = 0 or k = 0, where
+    /// v - 1 or k - 1 is negative). The numerator λ(v-1) is formed in u128.
+    ///
+    /// # Panics
+    ///
+    /// If r exceeds usize::MAX ("replication_number: r exceeds usize::MAX").
     pub fn replication_number(&self) -> Option<usize> {
         if self.t != 2 {
             return None;
@@ -185,14 +197,17 @@ impl BlockDesign {
             return None;
         }
 
-        let numerator = self.lambda * (self.v - 1);
-        let denominator = self.k - 1;
+        let numerator = (self.lambda as u128) * (self.v as u128).checked_sub(1)?;
+        let denominator = (self.k as u128).checked_sub(1)?;
 
         if numerator % denominator != 0 {
             return None;
         }
 
-        Some(numerator / denominator)
+        Some(
+            usize::try_from(numerator / denominator)
+                .unwrap_or_else(|_| panic!("replication_number: r exceeds usize::MAX")),
+        )
     }
 }
 
@@ -298,8 +313,9 @@ pub struct OrthogonalArray {
 impl OrthogonalArray {
     /// Create a new orthogonal array
     pub fn new(t: usize, k: usize, v: usize, rows: Vec<Vec<usize>>) -> Option<Self> {
-        // Validate dimensions
-        if rows.len() != v.pow(t as u32) {
+        // Validate dimensions: v^t rows, checked. None means v^t > usize::MAX >= the number of
+        // rows, so the array cannot have that many rows.
+        if checked_pow_usize(v, t) != Some(rows.len()) {
             return None;
         }
 
@@ -341,7 +357,7 @@ impl OrthogonalArray {
             }
 
             // Should have exactly v^t distinct tuples
-            if tuples.len() != self.v.pow(self.t as u32) {
+            if checked_pow_usize(self.v, self.t) != Some(tuples.len()) {
                 return false;
             }
         }

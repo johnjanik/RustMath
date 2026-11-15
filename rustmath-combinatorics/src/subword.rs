@@ -150,15 +150,22 @@ fn find_subword_positions<T: PartialEq>(
 ///
 /// assert_eq!(subs.len(), 8); // 2^3 subwords including empty word
 /// ```
+///
+/// Cost: 2^n subwords.
+///
+/// # Panics
+///
+/// If the word has usize::BITS or more letters: its 2^n subwords cannot be listed.
 pub fn all_subwords<T: Clone>(word: &[T]) -> Vec<Vec<T>> {
     let n = word.len();
-    let mut result = Vec::with_capacity(1 << n);
+    let count: usize = crate::machine_word::subset_mask_count(n, "all_subwords");
+    let mut result = Vec::with_capacity(count);
 
     // Generate all 2^n subsets
-    for mask in 0..(1 << n) {
+    for mask in 0..count {
         let mut subword = Vec::new();
         for (i, item) in word.iter().enumerate() {
-            if (mask & (1 << i)) != 0 {
+            if (mask & (1usize << i)) != 0 {
                 subword.push(item.clone());
             }
         }
@@ -223,6 +230,12 @@ impl<T: Clone + PartialEq + Eq + Hash> SubwordComplex<T> {
     /// * `q` - The ambient word Q
     /// * `w` - The target word W
     ///
+    /// Cost: 2^|Q| subsets of positions are tested.
+    ///
+    /// # Panics
+    ///
+    /// If Q has usize::BITS or more letters: its 2^|Q| subsets cannot be listed.
+    ///
     /// # Example
     ///
     /// ```
@@ -249,13 +262,15 @@ impl<T: Clone + PartialEq + Eq + Hash> SubwordComplex<T> {
     fn compute_faces(&mut self) {
         let n = self.q.len();
 
-        // A subset I of positions is a face if Q \ I contains W as a subword
-        for mask in 0..(1 << n) {
+        // A subset I of positions is a face if Q \ I contains W as a subword.
+        // 2^n subsets; a word of usize::BITS or more letters panics (they cannot be listed).
+        let count: usize = crate::machine_word::subset_mask_count(n, "SubwordComplex::new");
+        for mask in 0..count {
             let mut removed_positions: Vec<usize> = Vec::new();
             let mut complement: Vec<T> = Vec::new();
 
             for i in 0..n {
-                if (mask & (1 << i)) != 0 {
+                if (mask & (1usize << i)) != 0 {
                     removed_positions.push(i);
                 } else {
                     complement.push(self.q[i].clone());

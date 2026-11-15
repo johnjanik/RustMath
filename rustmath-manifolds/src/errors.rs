@@ -84,6 +84,22 @@ pub enum ManifoldError {
 
     #[error("Math error: {0}")]
     MathError(#[from] MathError),
+
+    /// n^rank components do not fit in `usize`, or their storage exceeds `isize::MAX` bytes.
+    #[error("A rank-{rank} tensor on a manifold of dimension {dimension} has too many components to store (more than isize::MAX bytes)")]
+    ComponentCountOverflow { dimension: usize, rank: usize },
+
+    /// The allocator refused the component vector.
+    #[error("Could not allocate {count} tensor components")]
+    ComponentAllocationFailed { count: usize },
+
+    /// A degree or rank sum overflows `usize`.
+    #[error("The degree {left} + {right} does not fit in a machine word")]
+    DegreeOverflow { left: usize, right: usize },
+
+    /// A question the exact methods of this crate could not decide (not a "no").
+    #[error("Undecided: {0}")]
+    Undecided(String),
 }
 
 pub type Result<T> = std::result::Result<T, ManifoldError>;

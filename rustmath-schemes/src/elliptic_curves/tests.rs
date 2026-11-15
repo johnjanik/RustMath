@@ -330,15 +330,12 @@ mod tests {
     // Tests over p-adic Rationals (qp)
     // ============================================================================
     //
-    // Note: These tests are currently ignored because PadicRational's Ring::zero()
-    // and Ring::one() implementations require parameters (prime and precision),
-    // which cannot be provided through the Field trait's zero()/one() methods.
-    //
-    // The implementation is correct for fields that properly implement zero/one
-    // (like Rational). Future work could add a FieldWithParameters trait.
+    // `PadicRational`'s static `Ring::zero()`/`one()` are unbound integer constants that
+    // bind into the field of the other operand (MAGMA `L ! c`, Ch. 47 §47.7.1; R1), so the
+    // generic curve code runs over Q_p (at c79a582 these six tests were ignored: the static
+    // constructors panicked).
 
     #[test]
-    #[ignore]
     fn test_padic_curve_creation() {
         let p = Integer::from(5);
         let precision = 10;
@@ -356,7 +353,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_padic_point_on_curve() {
         let p = Integer::from(5);
         let precision = 10;
@@ -381,7 +377,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_padic_point_addition_with_infinity() {
         let p = Integer::from(7);
         let precision = 10;
@@ -408,7 +403,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_padic_point_doubling() {
         let p = Integer::from(7);
         let precision = 10;
@@ -428,7 +422,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_padic_scalar_multiplication() {
         let p = Integer::from(5);
         let precision = 10;
@@ -451,7 +444,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_padic_discriminant() {
         let p = Integer::from(7);
         let precision = 10;
@@ -465,6 +457,35 @@ mod tests {
         let disc = curve.discriminant();
         // Should be non-zero for non-singular curve
         assert!(!disc.is_zero());
+    }
+
+    // E: y^2 = x^3 + 17 over Q_5, P = (52, 375) with 375 = 3*5^3. gp: E = ellinit([0,17]);
+    // ellisoncurve(E,[52,375]) -> 1; ellmul(E,[52,375],2) -> [202904/15625,
+    // 91751917/1953125]; valuation(202904/15625, 5) -> -6; elladd(E,[-2,3],[-1,4]) ->
+    // [4, -9]. The doubled x is known to absolute precision 4 (relative precision 10 at
+    // valuation -6, gp's P2[1] + O(5^4)): it differs from x + 5^3, not from x + 5^4.
+    #[test]
+    fn test_padic_doubling_matches_pari() {
+        use rustmath_rings::padics::{PadicField, PrecisionModel};
+        let qp = PadicField::new(Integer::from(5), 10, PrecisionModel::CappedRelative).unwrap();
+        let r = |n: i64, d: i64| qp.from_rational(Rational::new(n, d).unwrap()).unwrap();
+        let curve =
+            EllipticCurve::short_weierstrass(qp.from_int(0).unwrap(), qp.from_int(17).unwrap());
+        let p = Point::new(r(52, 1), r(375, 1));
+        assert!(curve.is_on_curve(&p));
+        let p2 = curve.double_point(&p).unwrap();
+        let x2 = p2.x().unwrap();
+        assert_eq!(*x2, r(202904, 15625));
+        assert_eq!(x2.valuation(), -6);
+        assert_eq!(x2.absolute_precision(), 4);
+        assert_ne!(*x2, r(202904 + 125 * 15625, 15625));
+        assert_eq!(*x2, r(202904 + 625 * 15625, 15625));
+        assert_eq!(*p2.y().unwrap(), r(91751917, 1953125));
+        assert!(curve.is_on_curve(&p2));
+        let sum = curve
+            .add_points(&Point::new(r(-2, 1), r(3, 1)), &Point::new(r(-1, 1), r(4, 1)))
+            .unwrap();
+        assert_eq!(sum, Point::new(r(4, 1), r(-9, 1)));
     }
 
     // ============================================================================

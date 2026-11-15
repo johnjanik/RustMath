@@ -167,8 +167,36 @@ fn fp_pow_mod(base: &[Integer], exp: &Integer, modulus: &[Integer], p: &Integer)
     fp_trim(result)
 }
 
+/// `Ok(())` when `p` is a proven prime (`rustmath_integers::prime::try_is_prime`);
+/// `Err(InvalidArgument("characteristic {p} is not prime"))` when it is not (every `p < 2`
+/// included); an unresolved primality proof (`Err(NotSupported)`) is returned as is.
+pub(crate) fn check_char(p: &Integer) -> Result<()> {
+    if rustmath_integers::prime::try_is_prime(p)? {
+        Ok(())
+    } else {
+        Err(MathError::InvalidArgument(format!(
+            "characteristic {p} is not prime"
+        )))
+    }
+}
+
 /// Rabin irreducibility test for a monic `f` over `F_p` (as `Vec<Integer>`).
+///
+/// # Panics
+/// When `p` is not proven prime, with "poly_factor::is_irreducible_fp: {e}", where `e` is the
+/// error of the characteristic check, for example "poly_factor::is_irreducible_fp: Invalid
+/// argument: characteristic 15 is not prime". Over `Z/pZ` with `p` composite the question has
+/// no honest `bool` answer.
 pub fn is_irreducible_fp(f: &[Integer], p: &Integer) -> bool {
+    if let Err(e) = check_char(p) {
+        panic!("poly_factor::is_irreducible_fp: {e}");
+    }
+    is_irreducible_fp_unchecked(f, p)
+}
+
+/// [`is_irreducible_fp`] without the primality test. Precondition: `p` is prime (the caller
+/// has proven it).
+pub(crate) fn is_irreducible_fp_unchecked(f: &[Integer], p: &Integer) -> bool {
     let f = fp_trim(f.to_vec());
     let m = match fp_deg(&f) {
         None => return false,
@@ -207,7 +235,21 @@ pub fn is_irreducible_fp(f: &[Integer], p: &Integer) -> bool {
 /// Find a monic irreducible polynomial of degree `n` over `F_p`, returned as a
 /// little-endian `Vec<Integer>` of length `n + 1`. Systematic lexicographic
 /// search over monic candidates (one is guaranteed to exist).
+///
+/// `Err(InvalidArgument)` for `n == 0` or when `p` is not prime
+/// ("characteristic {p} is not prime"); an unresolved primality proof is
+/// returned as its `Err`.
 pub fn find_irreducible(p: &Integer, n: usize) -> Result<Vec<Integer>> {
+    if n == 0 {
+        return Err(MathError::InvalidArgument("degree must be >= 1".into()));
+    }
+    check_char(p)?;
+    find_irreducible_unchecked(p, n)
+}
+
+/// [`find_irreducible`] without the primality test. Precondition: `p` is prime
+/// (the caller has proven it).
+pub(crate) fn find_irreducible_unchecked(p: &Integer, n: usize) -> Result<Vec<Integer>> {
     if n == 0 {
         return Err(MathError::InvalidArgument("degree must be >= 1".into()));
     }
@@ -219,7 +261,7 @@ pub fn find_irreducible(p: &Integer, n: usize) -> Result<Vec<Integer>> {
     loop {
         let mut cand = low.clone();
         cand.push(Integer::one());
-        if is_irreducible_fp(&cand, p) {
+        if is_irreducible_fp_unchecked(&cand, p) {
             return Ok(cand);
         }
         // increment base-p counter over `low`
@@ -241,29 +283,47 @@ pub fn find_irreducible(p: &Integer, n: usize) -> Result<Vec<Integer>> {
 }
 
 /// Random monic irreducible polynomial of degree `n` over `F_p` (MAGMA
-/// `RandomIrreduciblePolynomial`): draws random monic candidates and tests
-/// them with the Rabin irreducibility test ([`is_irreducible_fp`]).
-/// Deterministic for a given `seed`. A random monic polynomial of degree `n`
-/// over `F_q` is irreducible with probability roughly `1/n`, so the expected
-/// number of trials is about `n`.
+/// `RandomIrreduciblePolynomial`, ch. 21 §21.5: random polynomial with
+/// irreducibility testing): draws random monic candidates and tests them with
+/// the Rabin irreducibility test ([`is_irreducible_fp`]). Deterministic for a
+/// given `seed`. A random monic polynomial of degree `n` over `F_q` is
+/// irreducible with probability roughly `1/n`, so the expected number of trials
+/// is about `n`.
+///
+/// Every coefficient `c_0, ..., c_{n-1}` (in that order) is drawn with the exact
+/// sampler `uniform_below(p, ..)`, so a candidate is uniform among the monic
+/// polynomials of degree `n` and the result is uniform among the monic
+/// irreducibles, for every size of `p` (the earlier `|next as i64| mod p` draw
+/// never reached `[2^63, p)`).
+///
+/// `Err(InvalidArgument)` for `n == 0` or when `p` is not prime; an unresolved
+/// primality proof is returned as its `Err`. `Err(NotSupported)` when none of
+/// `512 n` candidates is irreducible (probability about `e^-512`; it decides
+/// nothing).
 pub fn random_irreducible(p: &Integer, n: usize, seed: u64) -> Result<Vec<Integer>> {
     if n == 0 {
         return Err(MathError::InvalidArgument("degree must be >= 1".into()));
     }
+    check_char(p)?;
+    random_irreducible_unchecked(p, n, seed)
+}
+
+/// [`random_irreducible`] for `n >= 1` and a prime `p` (the caller's duty).
+fn random_irreducible_unchecked(p: &Integer, n: usize, seed: u64) -> Result<Vec<Integer>> {
     if n == 1 {
         // x + c for a random c is always irreducible.
         let mut rng = Rng(seed);
-        let c = redp(Integer::from(rng.next_u64() as i64).abs(), p);
+        let c = crate::ff_poly::uniform_below(p, &mut || rng.next_u64());
         return Ok(vec![c, Integer::one()]);
     }
     let mut rng = Rng(seed ^ 0xA5A5_5A5A_0F0F_F0F0);
     // Failure probability after 512*n trials is ~ (1 - 1/n)^(512 n) ≈ e^-512.
     for _ in 0..(512 * n) {
         let mut cand: Vec<Integer> = (0..n)
-            .map(|_| redp(Integer::from(rng.next_u64() as i64).abs(), p))
+            .map(|_| crate::ff_poly::uniform_below(p, &mut || rng.next_u64()))
             .collect();
         cand.push(Integer::one());
-        if is_irreducible_fp(&cand, p) {
+        if is_irreducible_fp_unchecked(&cand, p) {
             return Ok(cand);
         }
     }
@@ -607,10 +667,49 @@ pub fn square_free_factorization(f: &FqPoly) -> Vec<(FqPoly, usize)> {
     result
 }
 
-/// Distinct-degree factorization of a **monic square-free** `f`: returns
-/// `(g_d, d)` where `g_d` is the product of all monic irreducible factors of
-/// `f` of degree `d`.
+/// MAGMA `DistinctDegreeFactorization(f)` (ch. 23 §23.8.1) of a squarefree
+/// `f` (it need not be monic): returns `(g_d, d)`, `d` increasing, where `g_d`
+/// is the product of all monic irreducible factors of `f` of degree `d`. A
+/// nonzero constant gives `vec![]`.
+///
+/// # Panics
+/// `f = 0` ("poly_factor::distinct_degree_factorization: f = 0 is not
+/// squarefree"); `f` not squarefree ("poly_factor::distinct_degree_factorization:
+/// f is not squarefree"). (Without the check a repeated factor of degree `d` was
+/// reported twice, or landed in a block of a higher degree.) No characteristic
+/// check is needed: a [`FiniteField`] is a field by construction.
 pub fn distinct_degree_factorization(f: &FqPoly) -> Vec<(FqPoly, usize)> {
+    const WHO: &str = "poly_factor::distinct_degree_factorization";
+    if f.is_zero() {
+        panic!("{WHO}: f = 0 is not squarefree");
+    }
+    if f.degree() == Some(0) {
+        return Vec::new();
+    }
+    let fm = f.make_monic();
+    if let Err(why) = squarefree_check(&fm) {
+        panic!("{WHO}: {why}");
+    }
+    ddf_squarefree(&fm)
+}
+
+/// `Ok(())` iff the monic, nonconstant `fm` is squarefree: `f' != 0` and
+/// `gcd(f, f') = 1`. Over GF(q) a nonconstant `f` with `f' = 0` is `g(x)^p`, so
+/// this test is exact. Otherwise `Err("f is not squarefree")`.
+fn squarefree_check(fm: &FqPoly) -> std::result::Result<(), &'static str> {
+    let df = fm.derivative();
+    if df.is_zero() || fm.gcd(&df).degree() != Some(0) {
+        Err("f is not squarefree")
+    } else {
+        Ok(())
+    }
+}
+
+/// The distinct-degree loop. Precondition (the caller's duty): `f` is monic and
+/// squarefree. Then after step `d` every factor of degree `<= d` is removed, so
+/// the remaining factor of degree `< 2(d + 1)` is irreducible ([vzGG] §14.2;
+/// [Rab80]).
+fn ddf_squarefree(f: &FqPoly) -> Vec<(FqPoly, usize)> {
     let field = f.field().clone();
     let q = field.order();
     let x = FqPoly::x(field.clone());
@@ -715,10 +814,7 @@ fn fq_edf_contract(f: &FqPoly, d: usize) -> std::result::Result<(), String> {
     }
     let f = f.make_monic();
     let field = f.field().clone();
-    let df = f.derivative();
-    if df.is_zero() || f.gcd(&df).degree() != Some(0) {
-        return Err("f is not squarefree".to_string());
-    }
+    squarefree_check(&f)?;
     // Frobenius ladder X_k = x^(q^k) mod f, k = 0..=d (d <= n here).
     let q = field.order();
     let x0 = FqPoly::x(field.clone()).rem(&f);
@@ -850,7 +946,13 @@ fn edf_rec(f: &FqPoly, d: usize, next: &mut dyn FnMut() -> u64, out: &mut Vec<Fq
 pub fn factor(f: &FqPoly) -> Vec<(FqPoly, usize)> {
     let mut result = Vec::new();
     for (sqfree, mult) in square_free_factorization(f) {
-        for (g, d) in distinct_degree_factorization(&sqfree) {
+        if let Err(why) = squarefree_check(&sqfree) {
+            panic!(
+                "poly_factor::factor: a part returned by square_free_factorization fails the \
+                 squarefree check ({why}); this is a bug"
+            );
+        }
+        for (g, d) in ddf_squarefree(&sqfree) {
             for irr in equal_degree_factorization_unchecked(&g, d) {
                 result.push((irr.make_monic(), mult));
             }
@@ -909,7 +1011,8 @@ pub fn roots(f: &FqPoly) -> Vec<FiniteFieldElement> {
 /// returned as an [`FqPoly`]. For prime fields this reuses the fast `F_p` search.
 pub fn irreducible_polynomial(field: &FiniteField, n: usize) -> Result<FqPoly> {
     if field.is_prime_field() {
-        let coeffs = find_irreducible(field.characteristic(), n)?;
+        // The characteristic of a FiniteField is proven prime at construction.
+        let coeffs = find_irreducible_unchecked(field.characteristic(), n)?;
         let fq: Vec<FiniteFieldElement> = coeffs
             .into_iter()
             .map(|c| field.from_int(c))
@@ -1612,5 +1715,167 @@ mod tests {
         let f5 = gf(5, 1);
         let mut out = Vec::new();
         edf_rec(&poly(&f5, &[4, 0, 1]), 1, &mut || 0u64, &mut out);
+    }
+
+    /// The panic message of `f`, which must panic.
+    fn panic_message<T>(f: impl FnOnce() -> T + std::panic::UnwindSafe) -> String {
+        let err = match std::panic::catch_unwind(f) {
+            Ok(_) => panic!("expected a panic"),
+            Err(e) => e,
+        };
+        if let Some(s) = err.downcast_ref::<String>() {
+            s.clone()
+        } else if let Some(s) = err.downcast_ref::<&str>() {
+            s.to_string()
+        } else {
+            String::from("<non-string panic>")
+        }
+    }
+
+    /// Z/15 is not a field, so "irreducible over F_15" has no answer (HEAD: true for x^2 + 1).
+    #[test]
+    #[should_panic(
+        expected = "poly_factor::is_irreducible_fp: Invalid argument: characteristic 15 is not prime"
+    )]
+    fn is_irreducible_fp_rejects_non_prime_p() {
+        is_irreducible_fp(&ints(&[1, 0, 1]), &Integer::from(15));
+    }
+
+    #[test]
+    fn is_irreducible_fp_rejects_p_below_two() {
+        for p in [1i64, 0, -7] {
+            let msg = panic_message(|| is_irreducible_fp(&ints(&[1, 0, 1]), &Integer::from(p)));
+            assert_eq!(
+                msg,
+                format!("poly_factor::is_irreducible_fp: Invalid argument: characteristic {p} is not prime")
+            );
+        }
+    }
+
+    /// gp: polisirreducible(Mod(1,2)*(x^2+x+1)) = 1, polisirreducible(Mod(1,5)*(x^2+x+1)) = 1,
+    /// polisirreducible(Mod(1,5)*(x^2+1)) = 0, polisirreducible(Mod(1,2)*(x^4+x+1)) = 1.
+    #[test]
+    fn is_irreducible_fp_unchanged_for_primes() {
+        assert!(is_irreducible_fp(&ints(&[1, 1, 1]), &Integer::from(2)));
+        assert!(is_irreducible_fp(&ints(&[1, 1, 1]), &Integer::from(5)));
+        assert!(!is_irreducible_fp(&ints(&[1, 0, 1]), &Integer::from(5)));
+        assert!(is_irreducible_fp(&ints(&[1, 1, 0, 0, 1]), &Integer::from(2)));
+    }
+
+    /// Uniform draws over the whole of F_p (HEAD drew `|next as i64| mod p`, so never a
+    /// coefficient >= 2^63). Pinned outputs from the design prototype (`p3_randirr.rs`,
+    /// same sampler and stream); gp polisirreducible(Mod(1,p)*f) = 1 for each:
+    ///   p = 2^80+13: x^2 + 847000722540561595848212*x + 566343447911828653673491,
+    ///     x^3 + 1001365246395949401026822*x^2 + 828113852171267793509212*x
+    ///         + 211961487743374730434531;
+    ///   p = 2^64-59: x^2 + 5076488698419838370*x + 8730120229108003598.
+    #[test]
+    fn random_irreducible_draws_the_whole_field() {
+        let p80 = big("1208925819614629174706189"); // 2^80 + 13, gp isprime = 1
+        let p64 = big("18446744073709551557"); // 2^64 - 59, gp isprime = 1
+        assert_eq!(
+            random_irreducible(&p80, 1, 7).unwrap(),
+            vec![big("482205081176368571616727"), Integer::one()]
+        );
+        assert_eq!(
+            random_irreducible(&p80, 2, 1).unwrap(),
+            vec![
+                big("566343447911828653673491"),
+                big("847000722540561595848212"),
+                Integer::one()
+            ]
+        );
+        assert_eq!(
+            random_irreducible(&p80, 3, 42).unwrap(),
+            vec![
+                big("211961487743374730434531"),
+                big("828113852171267793509212"),
+                big("1001365246395949401026822"),
+                Integer::one()
+            ]
+        );
+        assert_eq!(
+            random_irreducible(&p64, 2, 1).unwrap(),
+            vec![big("8730120229108003598"), big("5076488698419838370"), Integer::one()]
+        );
+        // Range over 64 seeds (n = 2): prototype 65 of 128 coefficients >= 2^63 mod
+        // 2^64 - 59, and 128 of 128 >= 2^64 mod 2^80 + 13 (HEAD: 0 and 0).
+        let two63 = big("9223372036854775808");
+        let two64 = big("18446744073709551616");
+        let (mut high64, mut high80) = (0, 0);
+        for seed in 0..64u64 {
+            let a = random_irreducible(&p64, 2, seed).unwrap();
+            let b = random_irreducible(&p80, 2, seed).unwrap();
+            high64 += a[..2].iter().filter(|c| **c >= two63).count();
+            high80 += b[..2].iter().filter(|c| **c >= two64).count();
+        }
+        assert!((32..=96).contains(&high64), "{high64} of 128");
+        assert_eq!(high80, 128);
+    }
+
+    /// HEAD: find_irreducible(15, 2) = Ok(x^2 + 1), random_irreducible(1, 2, 7) = Ok(x^2),
+    /// and panics for p = 0 (division by zero) and p = 4 (not invertible).
+    #[test]
+    fn generators_reject_non_prime_p() {
+        let not_prime =
+            |p: i64| MathError::InvalidArgument(format!("characteristic {p} is not prime"));
+        assert_eq!(find_irreducible(&Integer::from(15), 2).unwrap_err(), not_prime(15));
+        assert_eq!(find_irreducible(&Integer::from(1), 2).unwrap_err(), not_prime(1));
+        for p in [1i64, 0, 4, 15] {
+            assert_eq!(
+                random_irreducible(&Integer::from(p), 2, 7).unwrap_err(),
+                not_prime(p)
+            );
+        }
+        assert_eq!(random_irreducible(&Integer::from(0), 1, 7).unwrap_err(), not_prime(0));
+    }
+
+    /// MAGMA defines DistinctDegreeFactorization only for a squarefree f (ch. 23 §23.8.1).
+    /// HEAD returned [(x+1,1),(x+1,1)] for (x+1)^2 mod 5, and the label 2 on
+    /// x^5+x^4+x+1 = (x+1)(x^2+2)(x^2+3) for (x+1)^2(x^2+2)(x^2+3) mod 5 (gp factormod).
+    #[test]
+    fn ddf_rejects_non_squarefree() {
+        let rows: [(&[i64], i64); 4] = [
+            (&[1, 2, 1], 5),
+            (&[1, 0, 2, 0, 1], 3),
+            (&[1, 2, 1, 0, 1, 2, 1], 5),
+            (&[0, 0, 1], 2),
+        ];
+        for (v, p) in rows {
+            let f = poly(&gf(p, 1), v);
+            assert_eq!(
+                panic_message(|| distinct_degree_factorization(&f)),
+                "poly_factor::distinct_degree_factorization: f is not squarefree",
+                "{v:?} mod {p}"
+            );
+        }
+        // (x + w)^2 over GF(4)
+        let f4 = gf(2, 2);
+        let w = f4.generator();
+        let xw = FqPoly::new(f4.clone(), vec![w, f4.one()]);
+        let sq = xw.mul(&xw);
+        assert_eq!(
+            panic_message(|| distinct_degree_factorization(&sq)),
+            "poly_factor::distinct_degree_factorization: f is not squarefree"
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "poly_factor::distinct_degree_factorization: f = 0 is not squarefree")]
+    fn ddf_rejects_zero() {
+        let f5 = gf(5, 1);
+        let _ = distinct_degree_factorization(&poly(&f5, &[0]));
+    }
+
+    /// gp: factormod(x^5+x^4+x+1, 5) = (x+1)(x^2+2)(x^2+3) and
+    /// lift(Mod(1,5)*(x^2+2)*(x^2+3)) = x^4 + 1.
+    #[test]
+    fn ddf_squarefree_matches_pari() {
+        let f5 = gf(5, 1);
+        let ddf = distinct_degree_factorization(&poly(&f5, &[1, 1, 0, 0, 1, 1]));
+        assert_eq!(ddf.len(), 2);
+        assert_eq!(ddf[0], (poly(&f5, &[1, 1]), 1));
+        assert_eq!(ddf[1], (poly(&f5, &[1, 0, 0, 0, 1]), 2));
+        assert!(distinct_degree_factorization(&poly(&f5, &[3])).is_empty());
     }
 }

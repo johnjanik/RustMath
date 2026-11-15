@@ -33,6 +33,102 @@ use rustmath_core::{Ring, EuclideanDomain, MathError, Result};
 use rustmath_integers::Integer;
 
 // ============================================================================
+// Primality helpers (crate-private: the parent predicates, the p-adic types)
+// ============================================================================
+
+/// psi_12 = 399165290221 · 798330580441 = 318665857834031151167461, the least strong
+/// pseudoprime to the twelve prime bases 2..37 (J. Sorenson and J. Webster, "Strong
+/// pseudoprimes to twelve prime bases", Math. Comp. 86 (2017)). Below it the twelve strong
+/// tests prove primality.
+pub(crate) fn psi_12() -> Integer {
+    Integer::from(399_165_290_221u64) * Integer::from(798_330_580_441u64)
+}
+
+/// Primality of a word, a proof ([`rustmath_integers::prime::is_prime_u64`]: the strong
+/// tests to the twelve prime bases 2..37, deterministic below psi_12 > 2^64).
+pub(crate) fn prime_u64(n: u64) -> bool {
+    rustmath_integers::prime::is_prime_u64(n)
+}
+
+/// Cheap primality for the element hooks. `Some(false)` for `n < 2`; for `n < psi_12` the
+/// exact answer of [`rustmath_integers::prime::try_is_prime`] (the word test below 2^64, the
+/// twelve strong tests above: proofs, one pass of the strong tests); `None` at once for
+/// `n >= psi_12`, without running any test. Callers act only on a `Some`.
+pub(crate) fn cheap_primality(n: &Integer) -> Option<bool> {
+    if *n < Integer::from(2) {
+        return Some(false);
+    }
+    if *n >= psi_12() {
+        return None;
+    }
+    rustmath_integers::prime::try_is_prime(n).ok()
+}
+
+/// MAGMA `IsPrime(n : Proof := true)` (Ch. 18 §18.9.1), for the parent predicates and
+/// `PadicExtension::new` (rare calls): [`rustmath_integers::prime::try_is_prime`]. `Ok(b)`
+/// gives `Some(b)` (a proof; above psi_12 one ECPP proof, which rustmath-integers caches);
+/// `Err` (a probable prime whose ECPP proof is unresolved) gives `None`.
+pub(crate) fn proven_primality(n: &Integer) -> Option<bool> {
+    rustmath_integers::prime::try_is_prime(n).ok()
+}
+
+/// The minimal root of `n` (`|n| >= 2`): `n = b^k` with `b` not a perfect power, or `(n, 1)`
+/// when `n` is none. [`Integer::is_perfect_power`] extracts q-th roots for each prime q in
+/// increasing order while it can, so its base is not a perfect power (64 gives (2, 6), 36
+/// gives (6, 2); gp `ispower(36,,&r)` = 2 with r = 6).
+pub(crate) fn minimal_root(n: &Integer) -> (Integer, u32) {
+    n.is_perfect_power().unwrap_or_else(|| (n.clone(), 1))
+}
+
+/// Whether the word `n` is `q^k` with `q` prime and `k >= 1`: the minimal root of `n` is
+/// prime. A proof (used by the rule "a finite domain is a field, and a finite field has
+/// prime-power order").
+pub(crate) fn is_prime_power_u64(n: u64) -> bool {
+    if n < 2 {
+        return false;
+    }
+    let (b, _) = minimal_root(&Integer::from(n));
+    u64::try_from(&b).is_ok_and(prime_u64)
+}
+
+/// Whether an integer `p >= 2` is a prime power (MAGMA `IsPrimePower`, Ch. 18 §18.9.1).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum PrimePowerStatus {
+    /// `p = q^a` with `q` proven prime (so Z_p = Z_q and Q_p = Q_q).
+    PrimePower { q: Integer, a: u32 },
+    /// The minimal root `b` of `p` is proven composite. `b` is not a perfect power, and a
+    /// composite with a single prime factor `q` is `q^c` with `c >= 2`, a perfect power; so
+    /// `b`, hence `p`, has at least two distinct prime factors.
+    NotPrimePower,
+    /// The primality proof of the minimal root is unresolved.
+    Undecided,
+}
+
+/// [`PrimePowerStatus`] of `p` (`p < 2` gives `NotPrimePower`): [`minimal_root`], then
+/// [`proven_primality`] of the root.
+pub(crate) fn padic_base_prime_power(p: &Integer) -> PrimePowerStatus {
+    if *p < Integer::from(2) {
+        return PrimePowerStatus::NotPrimePower;
+    }
+    let (q, a) = minimal_root(p);
+    match proven_primality(&q) {
+        Some(true) => PrimePowerStatus::PrimePower { q, a },
+        Some(false) => PrimePowerStatus::NotPrimePower,
+        None => PrimePowerStatus::Undecided,
+    }
+}
+
+/// Whether `p >= 2` is a prime power: `Some(true)` / `Some(false)` proven, `None` undecided
+/// (see [`PrimePowerStatus`]).
+pub(crate) fn padic_base_is_prime_power(p: &Integer) -> Option<bool> {
+    match padic_base_prime_power(p) {
+        PrimePowerStatus::PrimePower { .. } => Some(true),
+        PrimePowerStatus::NotPrimePower => Some(false),
+        PrimePowerStatus::Undecided => None,
+    }
+}
+
+// ============================================================================
 // ElementMethods - Methods for ring elements
 // ============================================================================
 
@@ -144,12 +240,12 @@ pub trait RingElementMethods: Ring {
 ///
 /// `c = 1` is the zero ring (`1 = 0`). For composite `c = ab` with `1 < a, b < c`,
 /// `(a·1)(b·1) = c·1 = 0` while `a·1` and `b·1` are nonzero (both are below the
-/// characteristic). `false` for 0 and for primes. [`Integer::is_prime`] is the deterministic
-/// word test on `u64` (strong tests to the 12 prime bases 2..37; no composite below
-/// ψ12 ≈ 3.19·10^23 > 2^64 passes them, J. Sorenson and J. Webster, "Strong pseudoprimes to
-/// twelve prime bases", Math. Comp. 86 (2017)), so both verdicts are proofs.
+/// characteristic). `false` for 0 and for primes. [`prime_u64`] is the deterministic word
+/// test (strong tests to the 12 prime bases 2..37; no composite below ψ12 ≈ 3.19·10^23 >
+/// 2^64 passes them, J. Sorenson and J. Webster, "Strong pseudoprimes to twelve prime
+/// bases", Math. Comp. 86 (2017)), so both verdicts are proofs.
 fn characteristic_rules_out_domain(c: u64) -> bool {
-    c == 1 || (c >= 4 && !Integer::from(c).is_prime())
+    c == 1 || (c >= 4 && !prime_u64(c))
 }
 
 /// `Some(c)` when the parent's own data prove `R = Z·1 ≅ Z/cZ`, else `None`.
@@ -157,7 +253,8 @@ fn characteristic_rules_out_domain(c: u64) -> bool {
 /// * A known characteristic `c` equal to a known order: the additive subgroup `Z·1` already
 ///   has `c` elements, so it is all of `R`.
 /// * Characteristic unknown and a known prime order `p`: `1 != 0`, and its additive order
-///   divides `p` (Lagrange), so it is `p` and again `Z·1 = R`.
+///   divides `p` (Lagrange), so it is `p` and again `Z·1 = R`. (The default
+///   [`RingParentMethods::characteristic`] already answers `p` there.)
 ///
 /// Such a ring is commutative, and it is an integral domain (indeed the prime field `F_c`)
 /// iff `c` is prime.
@@ -168,7 +265,7 @@ fn residue_ring_modulus<P: RingParentMethods + ?Sized>(parent: &P) -> Option<u64
     }
     match parent.characteristic() {
         Some(c) => (c == n).then_some(c),
-        None => Integer::from(n).is_prime().then_some(n),
+        None => prime_u64(n).then_some(n),
     }
 }
 
@@ -181,10 +278,11 @@ fn residue_ring_modulus<P: RingParentMethods + ?Sized>(parent: &P) -> Option<u64
 /// known not; error if unknown"): `Some(_)` is a proof, `None` makes no claim. A default
 /// derives only what the ring axioms and this parent's own [`Self::characteristic`] and
 /// [`Self::order`] prove. It never guesses or searches, and it never reads the static
-/// `Self::Element::zero()`/`one()`: they panic for some parent-carrying element types (the
-/// p-adic types), and for the sentinel types (`IntegerMod`, `FiniteFieldElement`,
-/// `GaloisRingElement`) they are unbound placeholders that are the same for every parent, so
-/// they say nothing about this parent. A parent that knows more overrides.
+/// `Self::Element::zero()`/`one()`: for the parent-carrying types (`IntegerMod`,
+/// `FiniteFieldElement`, `GaloisRingElement`, the p-adic types) they are unbound
+/// placeholders that are the same for every parent, so they say nothing about this parent
+/// (and a parent-carrying type without such a sentinel may panic there). A parent that
+/// knows more overrides.
 ///
 /// The defaults assume the parent is a unital subring of the values of `Self::Element`, with
 /// that type's `0`, `1` and operations. A parent whose elements are representatives with
@@ -227,10 +325,10 @@ pub trait RingParentMethods {
     /// A known [`Self::characteristic`] `c` gives `Some(c == 1)`; otherwise a known
     /// [`Self::order`] `n` gives `Some(n == 1)`; otherwise `None`. (An implementor whose
     /// characteristic and order contradict each other has a bug; the characteristic is read
-    /// first.) It never compares the static `Self::Element::zero()` and `one()`: they panic
-    /// for the p-adic element types, and for the sentinel types (`IntegerMod`,
-    /// `FiniteFieldElement`, `GaloisRingElement`) they are parent-independent unbound
-    /// placeholders, so `zero() == one()` says nothing about this parent.
+    /// first.) It never compares the static `Self::Element::zero()` and `one()`: for the
+    /// sentinel types (`IntegerMod`, `FiniteFieldElement`, `GaloisRingElement`, the p-adic
+    /// types) they are parent-independent unbound placeholders, so `zero() == one()` says
+    /// nothing about this parent.
     fn is_zero_ring(&self) -> Option<bool> {
         match (self.characteristic(), self.order()) {
             (Some(c), _) => Some(c == 1),
@@ -258,6 +356,8 @@ pub trait RingParentMethods {
     /// * a composite characteristic `c = ab` is not one (`(a·1)(b·1) = 0`, see the module
     ///   helper `characteristic_rules_out_domain`);
     /// * a parent proven to be `Z/cZ` (see [`Self::is_commutative`]) is one iff `c` is prime;
+    /// * a known order `n >= 2` that is not a prime power is not one (a finite domain is a
+    ///   field, and a finite field has `p^k` elements);
     /// * otherwise `None` (characteristic 0 or a prime does not decide it).
     fn is_integral_domain(&self) -> Option<bool> {
         if self.is_zero_ring() == Some(true) {
@@ -268,7 +368,13 @@ pub trait RingParentMethods {
                 return Some(false);
             }
         }
-        residue_ring_modulus(self).map(|c| Integer::from(c).is_prime())
+        if let Some(c) = residue_ring_modulus(self) {
+            return Some(prime_u64(c));
+        }
+        match self.order().and_then(|n| u64::try_from(n).ok()) {
+            Some(n) if n >= 2 && !is_prime_power_u64(n) => Some(false),
+            _ => None,
+        }
     }
 
     /// Whether this ring is integrally closed in its field of fractions.
@@ -309,7 +415,7 @@ pub trait RingParentMethods {
             Some(true) => self
                 .order()
                 .and_then(|n| u64::try_from(n).ok())
-                .map(|n| Integer::from(n).is_prime()),
+                .map(prime_u64),
             None => None,
         }
     }
@@ -322,9 +428,18 @@ pub trait RingParentMethods {
     /// in `rustmath-finitefields`).
     ///
     /// Default: [`Ring::static_characteristic`] of the element type (`Some(0)` for the Z, Q,
-    /// R and C types); else `Some(1)` when [`Self::order`] is 1; else `None`.
+    /// R and C types); else `Some(1)` when [`Self::order`] is 1; else `Some(p)` when the
+    /// order is a prime `p` (the ring has more than one element, so `1 != 0`, and the
+    /// additive order of 1 divides `p` by Lagrange); else `None`.
     fn characteristic(&self) -> Option<u64> {
-        Self::Element::static_characteristic().or_else(|| (self.order() == Some(1)).then_some(1))
+        Self::Element::static_characteristic().or_else(|| {
+            let n = u64::try_from(self.order()?).ok()?;
+            if n == 1 {
+                Some(1)
+            } else {
+                prime_u64(n).then_some(n)
+            }
+        })
     }
 
     /// Compute the Lie bracket [x, y] = xy - yx
@@ -452,20 +567,28 @@ pub trait RingMorphismMethods {
         None
     }
 
-    /// Whether this morphism is nonzero.
+    /// The multiplicative identity of the domain ring (MAGMA `One(Domain(f))`, Ch. 17
+    /// §17.5.2), when this morphism knows it.
     ///
-    /// A ring homomorphism φ is zero iff φ(1) = 0 (φ(x) = φ(x)·φ(1)), so the default
-    /// checks the image of 1; the answer is a proof if `apply` is a ring homomorphism.
+    /// Default `None`: the trait sees only the element type, and the static
+    /// `Self::Domain::one()` is the domain's 1 only for parent-free types (Z, Q, R, C); for
+    /// Z/mZ, GF(q), Galois rings and the p-adic types it is an unbound integer constant. A
+    /// morphism overrides this with its domain's 1 (`Some(Integer::one())` for Z,
+    /// `Some(r.one())` for a parent `r`).
+    fn domain_one(&self) -> Option<Self::Domain> {
+        None
+    }
+
+    /// Whether this map is not the zero map: `Some(true)` proven nonzero, `Some(false)`
+    /// proven zero, `None` undecided.
     ///
-    /// # Panics
-    ///
-    /// Reads the static `Self::Domain::one()`, which panics for the p-adic element types
-    /// (`PadicInteger`, `PadicRational`, `PadicExtensionElement`); morphisms from those must
-    /// override this method. For the sentinel domain types (`IntegerMod`,
-    /// `FiniteFieldElement`, `GaloisRingElement`), `apply` receives the parent-independent
-    /// unbound 1, and the answer is right only if `apply` maps it as the domain's 1.
-    fn is_nonzero(&self) -> bool {
-        !self.apply(&Self::Domain::one()).is_zero()
+    /// A ring homomorphism φ is zero iff φ(1) = 0 (φ(x) = φ(x)·φ(1)); for a unital φ that
+    /// happens iff the codomain is the zero ring (Sage `Rings.MorphismMethods`: a map from a
+    /// field is injective "unless the codomain is the zero ring"). Default: `apply` on
+    /// [`Self::domain_one`]; `None`, and no call to `apply`, when that is `None`. The answer
+    /// is a proof when `apply` is a ring homomorphism.
+    fn is_nonzero(&self) -> Option<bool> {
+        self.domain_one().map(|one| !self.apply(&one).is_zero())
     }
 
     /// MAGMA `IsSurjective` (Ch. 54 §54.10.7): `Some(true)` proven onto, `Some(false)` proven
@@ -563,21 +686,23 @@ mod tests {
         assert_eq!(two.inverse_of_unit(), Ok(gf5.from_int(Integer::from(3))));
     }
 
-    // Defaults on a parent-carrying element type whose static `one()` panics: nonzero,
-    // non-±1 p-adic integers must not panic. 6 in Z_5 is a unit and not nilpotent, but the
-    // p-adic types do not override the hooks (yet), so the honest answer is "undecided".
+    // The element methods on a p-adic integer. 6 in Z_5 is a unit (gcd(6, 5) = 1) and not
+    // nilpotent (Z_5 is a domain). At c79a582 the p-adic types kept the hook defaults and
+    // all three were undecided. gp: lift(Mod(6,5^10)^-1) -> 8138021.
     // (`rustmath_category::RingElementMethods::is_nilpotent` is exactly
     // `Ring::nilpotent_status`.)
     #[test]
-    fn test_defaults_on_padic_integer_do_not_panic() {
+    fn test_padic_integer_hooks_decide() {
         use crate::padics::PadicInteger;
         use rustmath_integers::Integer;
         let six = PadicInteger::from_integer(Integer::from(6), Integer::from(5), 10).unwrap();
         let nil = Ring::nilpotent_status(&six);
         assert_ne!(nil, Some(true));
-        assert_eq!(nil, None);
-        assert_eq!(six.is_unit_element(), None);
-        assert!(!matches!(six.inverse_of_unit(), Err(MathError::NotInvertible)));
+        assert_eq!(nil, Some(false));
+        assert_eq!(six.is_unit_element(), Some(true));
+        let inv = six.inverse_of_unit().unwrap();
+        assert_eq!(inv.value(), &Integer::from(8_138_021));
+        assert_eq!(inv.precision(), 10);
     }
 
     #[test]
@@ -809,19 +934,21 @@ mod tests {
         assert_eq!(q.is_integral_domain(), None);
     }
 
-    // Item (b). `PadicInteger::zero()/one()` panic ("Cannot create PadicInteger::zero()
-    // without parameters"); the defaults must not call them. `GaloisRingElement::zero()`
-    // panicked at a46a6a8 and is an unbound sentinel since 029f7ab; the default must give
-    // `None` either way (neither type has a static characteristic).
+    // Item (b). The defaults must not call the static `zero()`/`one()`. Both
+    // `PadicInteger` (since R1) and `GaloisRingElement` (since 029f7ab) return unbound
+    // sentinels there; at a46a6a8 both panicked. `PadicInteger` states characteristic 0
+    // (Z embeds in Z_p for every p > 1; Sage: Zp(5).characteristic() -> 0), which proves
+    // "nonzero" and "infinite"; whether Z_p is a field is still undecided by the default
+    // (a bare parent does not know p).
     #[test]
     fn test_parent_carrying_elements_do_not_panic() {
         use crate::padics::PadicInteger;
 
         let zp = bare::<PadicInteger>();
-        assert_eq!(zp.characteristic(), None);
-        assert_eq!(zp.is_zero_ring(), None);
+        assert_eq!(zp.characteristic(), Some(0));
+        assert_eq!(zp.is_zero_ring(), Some(false));
         assert_eq!(zp.is_field(), None);
-        assert_eq!(zp.is_finite(), None);
+        assert_eq!(zp.is_finite(), Some(false));
         assert!(matches!(
             zp.random_element(),
             Err(MathError::NotImplemented(_))
@@ -947,10 +1074,26 @@ mod tests {
                 Some(7)
             }
         }
-        assert_eq!(OrderSeven.characteristic(), None);
+        // The characteristic is 7 too: 1 != 0 has additive order dividing 7 (Lagrange).
+        // GAP: Characteristic(ZmodnZ(7)) -> 7.
+        assert_eq!(OrderSeven.characteristic(), Some(7));
         assert_eq!(OrderSeven.is_commutative(), Some(true));
         assert_eq!(OrderSeven.is_field(), Some(true));
         assert_eq!(OrderSeven.is_prime_field(), Some(true));
+
+        // An order that is not a prime power rules out a domain: a finite domain is a field,
+        // of prime-power order. GAP: IsPrimePowerInt(6) -> false, IsField(ZmodnZ(6)) -> false.
+        struct OrderSix;
+        impl RingParentMethods for OrderSix {
+            type Element = IntegerMod;
+            fn order(&self) -> Option<usize> {
+                Some(6)
+            }
+        }
+        assert_eq!(OrderSix.characteristic(), None);
+        assert_eq!(OrderSix.is_integral_domain(), Some(false));
+        assert_eq!(OrderSix.is_field(), Some(false));
+        assert_eq!(OrderSix.is_prime_field(), Some(false));
 
         // A composite order with unknown characteristic decides nothing (Z/4 and F_4 share
         // order 4; GAP IsField(ZmodnZ(4)) -> false, IsField(GF(4)) -> true).
@@ -1104,6 +1247,10 @@ mod tests {
             2 * x
         }
 
+        fn domain_one(&self) -> Option<i32> {
+            Some(1)
+        }
+
         fn is_injective(&self) -> Option<bool> {
             // 2x = 0 forces x = 0 in Z.
             Some(true)
@@ -1117,19 +1264,22 @@ mod tests {
         let f = DoubleMap;
         assert_eq!(f.apply(&3), 6);
         assert_eq!(f.apply(&0), 0);
-        assert!(f.is_nonzero()); // f(1) = 2 ≠ 0
+        assert_eq!(f.is_nonzero(), Some(true)); // f(1) = 2 ≠ 0
         assert_eq!(f.is_injective(), Some(true));
         assert_eq!(f.is_surjective(), None);
         assert_eq!(f.is_isomorphism(), None);
     }
 
-    /// The identity of Z, with no overrides.
+    /// The identity of Z, with no overrides except the domain's 1.
     struct IdZ;
     impl RingMorphismMethods for IdZ {
         type Domain = Integer;
         type Codomain = Integer;
         fn apply(&self, x: &Integer) -> Integer {
             x.clone()
+        }
+        fn domain_one(&self) -> Option<Integer> {
+            Some(Integer::one())
         }
     }
 
@@ -1161,7 +1311,7 @@ mod tests {
             ),
             (None, None, None)
         );
-        assert!(IdZ.is_nonzero());
+        assert_eq!(IdZ.is_nonzero(), Some(true));
         assert!(ReduceMod5.apply(&Integer::from(5)).is_zero());
         assert_eq!(ReduceMod5.is_isomorphism(), Some(false));
 
@@ -1180,5 +1330,191 @@ mod tests {
             }
         }
         assert_eq!(Bijective.is_isomorphism(), Some(true));
+    }
+
+    // Without the domain's 1 the default makes no claim and never calls `apply` (at
+    // c79a582 it applied the map to the static `one()`).
+    #[test]
+    fn test_is_nonzero_without_domain_one_is_undecided() {
+        struct Opaque;
+        impl RingMorphismMethods for Opaque {
+            type Domain = Integer;
+            type Codomain = Integer;
+            fn apply(&self, _: &Integer) -> Integer {
+                panic!("apply must not be called");
+            }
+        }
+        assert_eq!(Opaque.is_nonzero(), None);
+    }
+
+    // Reduction Z_5 -> Z/5 (residue mod p). Its domain's 1 is 1 + O(5^10), built from the
+    // parameters; `apply` reads `prime()` and `residue()`, which an unbound 1 does not have.
+    // At c79a582 `is_nonzero` panicked in `PadicInteger::one()`. PARI: Mod(1,5) != 0 -> 1.
+    #[test]
+    fn test_is_nonzero_on_padic_domain() {
+        use crate::padics::PadicInteger;
+        struct ReduceZ5;
+        impl RingMorphismMethods for ReduceZ5 {
+            type Domain = PadicInteger;
+            type Codomain = IntegerMod;
+            fn apply(&self, x: &PadicInteger) -> IntegerMod {
+                IntegerMod::new(x.residue(), x.prime().clone()).unwrap()
+            }
+            fn domain_one(&self) -> Option<PadicInteger> {
+                PadicInteger::one(Integer::from(5), 10).ok()
+            }
+        }
+        assert_eq!(ReduceZ5.is_nonzero(), Some(true));
+    }
+
+    // Z -> the zero ring is the zero map (Sage: QQ.hom([Zmod(1)(0)], check=False)
+    // .is_injective() -> False; PARI: Mod(1,1) == 0 -> 1).
+    #[test]
+    fn test_is_nonzero_to_zero_ring() {
+        use std::fmt;
+        use std::ops::{Add, Mul, Neg, Sub};
+        /// The zero ring {0}, with `zero() = one()`.
+        #[derive(Clone, Debug, PartialEq)]
+        struct ZeroElt;
+        impl fmt::Display for ZeroElt {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "0")
+            }
+        }
+        impl Add for ZeroElt {
+            type Output = Self;
+            fn add(self, _: Self) -> Self {
+                ZeroElt
+            }
+        }
+        impl Sub for ZeroElt {
+            type Output = Self;
+            fn sub(self, _: Self) -> Self {
+                ZeroElt
+            }
+        }
+        impl Mul for ZeroElt {
+            type Output = Self;
+            fn mul(self, _: Self) -> Self {
+                ZeroElt
+            }
+        }
+        impl Neg for ZeroElt {
+            type Output = Self;
+            fn neg(self) -> Self {
+                ZeroElt
+            }
+        }
+        impl Ring for ZeroElt {
+            fn zero() -> Self {
+                ZeroElt
+            }
+            fn one() -> Self {
+                ZeroElt
+            }
+            fn is_zero(&self) -> bool {
+                true
+            }
+            fn is_one(&self) -> bool {
+                true
+            }
+        }
+        struct ToZeroRing;
+        impl RingMorphismMethods for ToZeroRing {
+            type Domain = Integer;
+            type Codomain = ZeroElt;
+            fn apply(&self, _: &Integer) -> ZeroElt {
+                ZeroElt
+            }
+            fn domain_one(&self) -> Option<Integer> {
+                Some(Integer::one())
+            }
+        }
+        assert_eq!(ToZeroRing.is_nonzero(), Some(false));
+    }
+
+    // The test wrappers above know less than the real impls of `category_parents`; wherever
+    // a wrapper decides a predicate, the real impl must give the same answer (and it decides
+    // at least as much here).
+    #[test]
+    fn test_wrappers_agree_with_real_impls() {
+        fn tuple<P: RingParentMethods>(r: &P) -> [Option<bool>; 7] {
+            [
+                r.characteristic().map(|c| c == 1),
+                r.is_zero_ring(),
+                r.is_commutative(),
+                r.is_integral_domain(),
+                r.is_field(),
+                r.is_prime_field(),
+                r.is_noetherian(),
+            ]
+        }
+        fn agree(wrapper: [Option<bool>; 7], real: [Option<bool>; 7], name: &str) {
+            for (i, (w, r)) in wrapper.iter().zip(real.iter()).enumerate() {
+                if w.is_some() {
+                    assert_eq!(w, r, "{name}: predicate {i}");
+                }
+            }
+        }
+        let gr = GaloisRing::new(Integer::from(2), 3, 2).unwrap();
+        agree(tuple(&GrParent(gr.clone())), tuple(&gr), "GR(8,2)");
+        for n in [6u64, 7] {
+            agree(tuple(&zmod(n)), tuple(&Zmod::new(Integer::from(n)).unwrap()), "Z/n");
+        }
+        let f25 = FiniteField::new(Integer::from(5), 2).unwrap();
+        agree(tuple(&gf(5, 2)), tuple(&f25), "GF(25)");
+        // The characteristic itself, for all four parents. GAP: Characteristic(ZmodnZ(6)),
+        // Characteristic(ZmodnZ(7)), Characteristic(GF(25)) -> [ 6, 7, 5 ]; GR(p^a, d) has
+        // characteristic p^a (MAGMA Ch. 48), here 8.
+        let chars = [
+            (GrParent(gr.clone()).characteristic(), RingParentMethods::characteristic(&gr), 8),
+            (
+                zmod(6).characteristic(),
+                RingParentMethods::characteristic(&Zmod::new(Integer::from(6)).unwrap()),
+                6,
+            ),
+            (
+                zmod(7).characteristic(),
+                RingParentMethods::characteristic(&Zmod::new(Integer::from(7)).unwrap()),
+                7,
+            ),
+            (gf(5, 2).characteristic(), RingParentMethods::characteristic(&f25), 5),
+        ];
+        for (wrapper, real, expected) in chars {
+            assert_eq!(wrapper, Some(expected));
+            assert_eq!(real, Some(expected));
+        }
+        assert_eq!(gf(5, 2).is_integral_domain(), None);
+        assert_eq!(RingParentMethods::is_integral_domain(&f25), Some(true));
+    }
+
+    // The primality helpers. PARI: isprime(2^64-59) -> 1, isprime(561) -> 0,
+    // ispower(64,,&r) -> 6 with r = 2, ispower(36,,&r) -> 2 with r = 6, ispower(6) -> 0,
+    // isprimepower([4, 6, 12, 49, 64, 36, 1]) -> [2, 0, 0, 2, 6, 0, 0];
+    // 399165290221 * 798330580441 -> 318665857834031151167461, isprime(%) -> 0.
+    #[test]
+    fn test_primality_helpers() {
+        assert!(prime_u64(18_446_744_073_709_551_557));
+        assert!(!prime_u64(561));
+        assert_eq!(
+            psi_12(),
+            Integer::from_decimal_str("318665857834031151167461").unwrap()
+        );
+        assert_eq!(minimal_root(&Integer::from(64)), (Integer::from(2), 6));
+        assert_eq!(minimal_root(&Integer::from(36)), (Integer::from(6), 2));
+        assert_eq!(minimal_root(&Integer::from(6)), (Integer::from(6), 1));
+        for (n, pp) in [(4u64, true), (6, false), (12, false), (49, true), (64, true), (36, false), (1, false)] {
+            assert_eq!(is_prime_power_u64(n), pp, "n = {n}");
+        }
+        assert_eq!(cheap_primality(&Integer::from(1)), Some(false));
+        assert_eq!(cheap_primality(&Integer::from(7)), Some(true));
+        assert_eq!(cheap_primality(&psi_12()), None);
+        assert_eq!(proven_primality(&psi_12()), Some(false));
+        assert_eq!(
+            padic_base_prime_power(&Integer::from(4)),
+            PrimePowerStatus::PrimePower { q: Integer::from(2), a: 2 }
+        );
+        assert_eq!(padic_base_is_prime_power(&Integer::from(6)), Some(false));
+        assert_eq!(padic_base_is_prime_power(&Integer::from(5)), Some(true));
     }
 }

@@ -27,7 +27,9 @@
 use crate::prime_field::PrimeField;
 use rustmath_core::{EuclideanDomain, Field, MathError, Result, Ring};
 use rustmath_integers::Integer;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::sync::{LazyLock, RwLock};
 
 /// A finite field whose elements support exact arithmetic and equality.
 ///
@@ -58,25 +60,25 @@ pub trait FiniteFieldElement: Clone + PartialEq + fmt::Debug {
 
     /// Construct the field element corresponding to the integer `n`
     /// (i.e. `n` copies of the multiplicative identity), in the same field.
+    ///
+    /// The default reduces `n` into `r` in `[0, p)` and forms `r · 1` by
+    /// double-and-add over the bits of `r`: O(log p) additions. (It added `1`
+    /// to itself `r` times before, which took seconds for `r` near 10^6.)
     fn from_int(&self, n: &Integer) -> Self {
-        let mut result = self.zero();
+        let q = self.characteristic();
+        // reduce n modulo characteristic for the prime-subfield image
+        let (_, r) = n.div_rem(&q).unwrap();
+        let r = if r.signum() < 0 { r + q } else { r };
         let one = self.one();
-        let mut k = Integer::zero();
-        let target = {
-            let q = self.characteristic();
-            // reduce n modulo characteristic for the prime-subfield image
-            let (_, r) = n.div_rem(&q).unwrap();
-            if r.signum() < 0 {
-                r + q
-            } else {
-                r
+        let mut acc = self.zero();
+        let bits = r.bit_length();
+        for i in (0..bits).rev() {
+            acc = acc.add(&acc);
+            if r.as_bigint().bit(i) {
+                acc = acc.add(&one);
             }
-        };
-        while k < target {
-            result = result.add(&one);
-            k = k + Integer::one();
         }
-        result
+        acc
     }
 
     /// Degree `k` of the field GF(p^k) over its prime subfield GF(p).
@@ -182,6 +184,25 @@ pub(crate) fn uniform_below(m: &Integer, next: &mut dyn FnMut() -> u64) -> Integ
         if x < *m {
             return x;
         }
+    }
+}
+
+/// `Ok(())` when the characteristic of `sample`'s field is a proven prime
+/// (`rustmath_integers::prime::try_is_prime`, a proof for every size);
+/// otherwise the reason: "characteristic {c} is not a prime" (the modulus-0
+/// sentinel and every composite modulus), or "the primality of the
+/// characteristic {c} is not decided ({e})" when an ECPP proof is unresolved.
+/// Shared by [`crate::cantor_zassenhaus`] and [`crate::irreducible`].
+pub(crate) fn check_prime_characteristic<F: FiniteFieldElement>(
+    sample: &F,
+) -> std::result::Result<(), String> {
+    let c = sample.characteristic();
+    match rustmath_integers::prime::try_is_prime(&c) {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(format!("characteristic {c} is not a prime")),
+        Err(e) => Err(format!(
+            "the primality of the characteristic {c} is not decided ({e})"
+        )),
     }
 }
 
@@ -558,6 +579,11 @@ impl<F: FiniteFieldElement + fmt::Display> fmt::Display for FFPoly<F> {
 /// modular reduction on multiplication and supports inversion via the extended
 /// Euclidean algorithm, so it forms a genuine field and can serve as the
 /// coefficient field for [`FFPoly`].
+///
+/// Every `Gfpn` is a field by construction (MAGMA ch. 21 §21.2: `ext<F | f>`
+/// needs an irreducible `f`): [`Gfpn::try_new`] and [`Gfpn::new`] prove `p`
+/// prime and check that the modulus is monic and irreducible mod `p`, and every
+/// other value is derived from an existing one.
 #[derive(Clone, Debug)]
 pub struct Gfpn {
     /// Coefficients in GF(p), low degree first, length exactly `n` (the
@@ -568,6 +594,30 @@ pub struct Gfpn {
     /// Defining irreducible polynomial over GF(p), monic, degree n, length
     /// `n + 1`. Stored as integers in `[0, p)`.
     modulus: Vec<Integer>,
+}
+
+/// The `(p, reduced modulus)` pairs that passed [`Gfpn::try_new`]'s checks.
+/// Cleared when it would hold more than `GFPN_MEMO_CAP` pairs (revalidating is
+/// always correct). No code panics while holding the lock; a poisoned lock is
+/// recovered.
+static GFPN_VALID: LazyLock<RwLock<HashMap<Integer, HashSet<Vec<Integer>>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Bound on the number of pairs in `GFPN_VALID`.
+const GFPN_MEMO_CAP: usize = 4096;
+
+fn gfpn_memo_contains(p: &Integer, modulus: &[Integer]) -> bool {
+    let memo = GFPN_VALID.read().unwrap_or_else(|e| e.into_inner());
+    memo.get(p).is_some_and(|set| set.contains(modulus))
+}
+
+fn gfpn_memo_insert(p: &Integer, modulus: &[Integer]) {
+    let mut memo = GFPN_VALID.write().unwrap_or_else(|e| e.into_inner());
+    let total: usize = memo.values().map(HashSet::len).sum();
+    if total >= GFPN_MEMO_CAP {
+        memo.clear();
+    }
+    memo.entry(p.clone()).or_default().insert(modulus.to_vec());
 }
 
 impl Gfpn {
@@ -585,9 +635,75 @@ impl Gfpn {
         self.modulus.len() - 1
     }
 
-    /// Build an element from coefficients (low degree first) modulo the field
-    /// defined by `p` and the monic irreducible `modulus` (low degree first).
+    /// GF(p^n) = F_p\[t\]/(f) with f = `modulus` (low degree first), and the
+    /// element given by `coeffs` (low degree first, reduced mod p and mod f).
+    ///
+    /// Validates, in this order:
+    /// - `modulus.len() >= 2`, else `InvalidArgument("Gfpn: the defining
+    ///   polynomial must have degree >= 1")`;
+    /// - `p` is prime (`p < 2` first, then `rustmath_integers::prime::try_is_prime`):
+    ///   otherwise `InvalidArgument("Gfpn: the characteristic {p} is not prime")`;
+    ///   an unresolved primality proof is returned as is;
+    /// - the modulus reduced into `[0, p)` is monic, else `InvalidArgument("Gfpn:
+    ///   the defining polynomial is not monic modulo {p}")`;
+    /// - for degree >= 2, Rabin's irreducibility test, else
+    ///   `InvalidArgument("Gfpn: the defining polynomial is reducible over GF({p})")`.
+    ///
+    /// The stored modulus is the reduced one, so moduli that agree mod p define
+    /// the same field. A validated `(p, modulus)` pair is remembered for the
+    /// process (at most 4096 pairs; the memo is cleared beyond that), so later
+    /// constructions over the same field cost a hash lookup.
+    pub fn try_new(coeffs: Vec<Integer>, p: Integer, modulus: Vec<Integer>) -> Result<Self> {
+        if modulus.len() < 2 {
+            return Err(MathError::InvalidArgument(
+                "Gfpn: the defining polynomial must have degree >= 1".to_string(),
+            ));
+        }
+        if p < Integer::from(2) {
+            return Err(MathError::InvalidArgument(format!(
+                "Gfpn: the characteristic {p} is not prime"
+            )));
+        }
+        let modulus = if modulus.iter().all(|c| c.signum() >= 0 && *c < p) {
+            modulus
+        } else {
+            modulus.into_iter().map(|c| Gfpn::redp(c, &p)).collect()
+        };
+        if !gfpn_memo_contains(&p, &modulus) {
+            if !rustmath_integers::prime::try_is_prime(&p)? {
+                return Err(MathError::InvalidArgument(format!(
+                    "Gfpn: the characteristic {p} is not prime"
+                )));
+            }
+            if !modulus.last().is_some_and(|c| c.is_one()) {
+                return Err(MathError::InvalidArgument(format!(
+                    "Gfpn: the defining polynomial is not monic modulo {p}"
+                )));
+            }
+            // p is proven prime by now.
+            if modulus.len() > 2
+                && !crate::poly_factor::is_irreducible_fp_unchecked(&modulus, &p)
+            {
+                return Err(MathError::InvalidArgument(format!(
+                    "Gfpn: the defining polynomial is reducible over GF({p})"
+                )));
+            }
+            gfpn_memo_insert(&p, &modulus);
+        }
+        Ok(Gfpn::from_valid(coeffs, p, modulus))
+    }
+
+    /// [`Gfpn::try_new`], panicking with the error's `Display`.
+    ///
+    /// # Panics
+    /// When `try_new` returns `Err`, for example "Invalid argument: Gfpn: the
+    /// defining polynomial is reducible over GF(3)".
     pub fn new(coeffs: Vec<Integer>, p: Integer, modulus: Vec<Integer>) -> Self {
+        Self::try_new(coeffs, p, modulus).unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    /// The element of the (validated) field `(p, modulus)` given by `coeffs`.
+    fn from_valid(coeffs: Vec<Integer>, p: Integer, modulus: Vec<Integer>) -> Self {
         let n = modulus.len() - 1;
         let mut c = vec![Integer::zero(); n];
         for (i, v) in coeffs.into_iter().enumerate() {
@@ -665,7 +781,19 @@ impl fmt::Display for Gfpn {
     }
 }
 
+/// A `Gfpn` is a field by construction (see the type docs).
 impl FiniteFieldElement for Gfpn {
+    /// The image of `n` in the prime subfield: the coefficient vector
+    /// `[n mod p, 0, ..., 0]` in the field of `self`. O(1) big-integer operations.
+    fn from_int(&self, n: &Integer) -> Self {
+        let mut coeffs = vec![Integer::zero(); self.extension_degree()];
+        coeffs[0] = Gfpn::redp(n.clone(), &self.p);
+        Gfpn {
+            coeffs,
+            p: self.p.clone(),
+            modulus: self.modulus.clone(),
+        }
+    }
     fn zero(&self) -> Self {
         Gfpn {
             coeffs: vec![Integer::zero(); self.extension_degree()],
@@ -784,10 +912,12 @@ impl FiniteFieldElement for Gfpn {
             s = new_s;
         }
         // old_r is gcd (should be a nonzero constant), old_s is the cofactor of a
+        // The modulus is irreducible (checked at construction), so the gcd of a
+        // nonzero element with it is 1; this branch is unreachable.
         let g = old_r.make_monic();
         if g.degree() != Some(0) {
             return Err(MathError::InvalidArgument(
-                "element not invertible (modulus not irreducible?)".to_string(),
+                "internal: gcd with the defining polynomial is not 1".to_string(),
             ));
         }
         // scale old_s by 1/leading(old_r) so that s*a ≡ 1
@@ -1023,5 +1153,174 @@ mod tests {
         let s7 = PrimeField::new(Integer::zero(), Integer::from(7)).unwrap();
         assert_eq!(s7.from_int(&Integer::from(-3)).value(), &Integer::from(4));
         assert_eq!(s7.from_int(&Integer::from(23)).value(), &Integer::from(2));
+    }
+
+    fn ints(v: &[i64]) -> Vec<Integer> {
+        v.iter().map(|&c| Integer::from(c)).collect()
+    }
+
+    fn invalid(msg: &str) -> MathError {
+        MathError::InvalidArgument(msg.to_string())
+    }
+
+    /// F_3[t]/(t^2 + 2) is not a field: t^2 + 2 = (t + 1)(t + 2).
+    /// gp: polisirreducible(Mod(1,3)*(x^2+2)) = 0. (HEAD: accepted, order() = 9.)
+    #[test]
+    fn gfpn_rejects_reducible_modulus() {
+        let r = Gfpn::try_new(ints(&[1, 1]), Integer::from(3), ints(&[2, 0, 1]));
+        assert_eq!(
+            r.unwrap_err(),
+            invalid("Gfpn: the defining polynomial is reducible over GF(3)")
+        );
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Invalid argument: Gfpn: the defining polynomial is reducible over GF(3)"
+    )]
+    fn gfpn_new_panics_on_reducible_modulus() {
+        Gfpn::new(ints(&[1, 1]), Integer::from(3), ints(&[2, 0, 1]));
+    }
+
+    /// HEAD accepted p = 15 (order() = 225) and panicked on p = 0 inside the reduction.
+    #[test]
+    fn gfpn_rejects_composite_characteristic() {
+        for p in [15i64, 0, 1, -7] {
+            let r = Gfpn::try_new(ints(&[1, 1]), Integer::from(p), ints(&[1, 0, 1]));
+            assert_eq!(
+                r.unwrap_err(),
+                MathError::InvalidArgument(format!("Gfpn: the characteristic {p} is not prime")),
+                "p = {p}"
+            );
+        }
+    }
+
+    /// HEAD accepted 2t^2 + 1 over F_5 and gave t * t = 4 (`mul` assumes a monic modulus);
+    /// gp: lift(lift(Mod(Mod(1,5)*x, Mod(1,5)*(2*x^2+1))^2)) = 2.
+    #[test]
+    fn gfpn_rejects_non_monic_modulus() {
+        let r = Gfpn::try_new(ints(&[0, 1]), Integer::from(5), ints(&[1, 0, 2]));
+        assert_eq!(
+            r.unwrap_err(),
+            invalid("Gfpn: the defining polynomial is not monic modulo 5")
+        );
+        // A leading coefficient that is 0 mod p is not monic either.
+        let r = Gfpn::try_new(ints(&[0, 1]), Integer::from(5), ints(&[1, 0, 1, 5]));
+        assert_eq!(
+            r.unwrap_err(),
+            invalid("Gfpn: the defining polynomial is not monic modulo 5")
+        );
+    }
+
+    /// HEAD panicked with an arithmetic overflow ([]) or an index error ([1]).
+    #[test]
+    fn gfpn_rejects_degenerate_modulus() {
+        for m in [vec![], ints(&[1])] {
+            let r = Gfpn::try_new(ints(&[1]), Integer::from(5), m);
+            assert_eq!(
+                r.unwrap_err(),
+                invalid("Gfpn: the defining polynomial must have degree >= 1")
+            );
+        }
+    }
+
+    /// [6, 1, 1] mod 5 = [1, 1, 1], and t^2 + t + 1 is irreducible over F_5
+    /// (gp: polisirreducible(Mod(1,5)*(t^2+t+1)) = 1). HEAD: the two ones were unequal.
+    #[test]
+    fn gfpn_normalizes_the_modulus() {
+        let a = Gfpn::try_new(ints(&[1]), Integer::from(5), ints(&[6, 1, 1])).unwrap();
+        let b = Gfpn::try_new(ints(&[1]), Integer::from(5), ints(&[1, 1, 1])).unwrap();
+        assert_eq!(a.modulus(), &ints(&[1, 1, 1])[..]);
+        assert_eq!(b.modulus(), &ints(&[1, 1, 1])[..]);
+        assert_eq!(a, b);
+        assert_eq!(
+            Gfpn::new(ints(&[1]), Integer::from(5), ints(&[6, 1, 1])),
+            Gfpn::new(ints(&[1]), Integer::from(5), ints(&[1, 1, 1]))
+        );
+        // A negative entry is reduced too: -4 = 1 mod 5.
+        let c = Gfpn::try_new(ints(&[1]), Integer::from(5), ints(&[-4, 1, 1])).unwrap();
+        assert_eq!(c, b);
+        // Degree 1 needs no Rabin test: F_5[t]/(t + 2) = GF(5).
+        let d = Gfpn::try_new(ints(&[3]), Integer::from(5), ints(&[2, 1])).unwrap();
+        assert_eq!(d.order(), Integer::from(5));
+    }
+
+    /// GF((2^61-1)^2) = F_p[t]/(t^2 - 3): gp kronecker(3, 2^61-1) = -1 and
+    /// polisirreducible(Mod(1,2^61-1)*(t^2-3)) = 1.
+    /// gp: [10^18 % p, (-5) % p, 2^100 % p] = [1000000000000000000, 2305843009213693946,
+    /// 549755813888]. HEAD added 1 to itself n mod p times (10^18 additions).
+    #[test]
+    fn gfpn_from_int_is_constant_time() {
+        let p = Integer::from(2).pow(61) - Integer::one();
+        let w = Gfpn::new(ints(&[0, 1]), p.clone(), vec![p.clone() - Integer::from(3), Integer::zero(), Integer::one()]);
+        let cases = [
+            (Integer::from(10).pow(18), big("1000000000000000000")),
+            (Integer::from(-5), big("2305843009213693946")),
+            (Integer::from(2).pow(100), big("549755813888")),
+        ];
+        for (n, r) in cases {
+            assert_eq!(w.from_int(&n).coeffs(), &[r, Integer::zero()][..]);
+        }
+    }
+
+    /// A field type that keeps the trait's default `from_int` (and `random_element`), by
+    /// delegation to `PrimeField`.
+    #[derive(Clone, Debug, PartialEq)]
+    struct DefaultFromInt(PrimeField);
+
+    impl FiniteFieldElement for DefaultFromInt {
+        fn zero(&self) -> Self {
+            DefaultFromInt(FiniteFieldElement::zero(&self.0))
+        }
+        fn one(&self) -> Self {
+            DefaultFromInt(FiniteFieldElement::one(&self.0))
+        }
+        fn is_zero(&self) -> bool {
+            FiniteFieldElement::is_zero(&self.0)
+        }
+        fn is_one(&self) -> bool {
+            FiniteFieldElement::is_one(&self.0)
+        }
+        fn add(&self, o: &Self) -> Self {
+            DefaultFromInt(FiniteFieldElement::add(&self.0, &o.0))
+        }
+        fn sub(&self, o: &Self) -> Self {
+            DefaultFromInt(FiniteFieldElement::sub(&self.0, &o.0))
+        }
+        fn mul(&self, o: &Self) -> Self {
+            DefaultFromInt(FiniteFieldElement::mul(&self.0, &o.0))
+        }
+        fn neg(&self) -> Self {
+            DefaultFromInt(FiniteFieldElement::neg(&self.0))
+        }
+        fn invert(&self) -> Result<Self> {
+            self.0.invert().map(DefaultFromInt)
+        }
+        fn characteristic(&self) -> Integer {
+            FiniteFieldElement::characteristic(&self.0)
+        }
+        fn order(&self) -> Integer {
+            FiniteFieldElement::order(&self.0)
+        }
+    }
+
+    /// The default `from_int` is double-and-add: O(log p) additions, the same value as
+    /// `PrimeField::new(n, p)` (n mod p). gp: (-5) % (2^61-1) = 2305843009213693946.
+    #[test]
+    fn default_from_int_is_logarithmic() {
+        let p = Integer::from(2).pow(61) - Integer::one();
+        let s = DefaultFromInt(PrimeField::new(Integer::zero(), p.clone()).unwrap());
+        for n in [
+            Integer::from(10).pow(18),
+            Integer::from(-5),
+            Integer::from(0),
+            Integer::from(1),
+            p.clone(),
+            p.clone() + Integer::from(6),
+        ] {
+            let got = s.from_int(&n);
+            assert_eq!(got.0, PrimeField::new(n.clone(), p.clone()).unwrap(), "n = {n}");
+        }
+        assert_eq!(s.from_int(&Integer::from(-5)).0.value(), &big("2305843009213693946"));
     }
 }

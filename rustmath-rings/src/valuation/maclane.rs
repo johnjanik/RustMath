@@ -1562,15 +1562,14 @@ impl InductiveValuation<Rational, PAdicBaseValuation> {
 // ---------------------------------------------------------------------------
 // Certified GF(p) factorization.
 //
-// `rustmath_polynomials::fp_factor::factor` is WRONG on inseparable inputs
-// (zero derivative mod p): `factor(x^2 mod 2)` returns `[x, x]` (duplicates)
-// and `factor(x^4 + x^2 mod 2)` returns `[x+1, x, x^2+x]` with the reducible
-// `x^2+x` listed as a factor, because `squarefree_factor` does not handle
-// `f' = 0` (a pre-existing bug in the read-only rustmath-polynomials crate).
-// The helpers below implement the p-th-root reduction `g(x^p) = g(x)^p`
-// correctly, certify irreducibility with Rabin's test, and certify the whole
-// factorization by reconstruction, so a wrong answer is an `Err`, never a
-// silent lie.
+// `rustmath_polynomials::fp_factor::factor` handles inseparable inputs since
+// commit 5ff8749 (its tests `test_factor_inseparable_gf2`, `_gf3`, `_gf5`).
+// This module keeps its own pipeline for the multiplicities and for its
+// reconstruction certificate: the p-th-root reduction `g(x^p) = g(x)^p`, the
+// distinct-degree and certified equal-degree stages of `fp_factor`, and a
+// check of the whole factorization by reconstruction, so a wrong answer is an
+// `Err`, never a silent lie. `is_irreducible_fp` (Rabin's test) serves the
+// key-polynomial check of `mac_lane_step`.
 // ---------------------------------------------------------------------------
 
 /// Rabin irreducibility test for a monic polynomial over GF(p):
@@ -1641,9 +1640,11 @@ fn fp_pth_root(f: &[i64], p: i64) -> Result<Vec<i64>> {
 }
 
 /// Certified factorization over GF(p): the distinct monic irreducible
-/// factors of `f` with multiplicities. Every factor is verified irreducible
-/// (Rabin) and the product `lc * prod q_i^{m_i}` is verified equal to `f`;
-/// any mismatch is an `Err`.
+/// factors of `f` with multiplicities. Irreducibility of each piece is
+/// certified by `fp_factor::equal_degree_factor` (Rabin's criterion for
+/// products, checked on the block: a degree-`d` divisor of a certified block
+/// is irreducible), and the product `lc * prod q_i^{m_i}` is verified equal
+/// to `f`; any mismatch is an `Err`.
 fn factor_fp_certified(f: &[i64], p: i64) -> Result<Vec<(Vec<i64>, usize)>> {
     let f = fp_factor::trim(f);
     if fp_factor::degree(&f) < 1 {
@@ -1686,7 +1687,7 @@ fn factor_fp_certified(f: &[i64], p: i64) -> Result<Vec<(Vec<i64>, usize)>> {
         for (d, gd) in fp_factor::distinct_degree_factor(&sf, p) {
             for piece in fp_factor::equal_degree_factor(&gd, d, p) {
                 let q = fp_factor::make_monic(&piece, p);
-                if fp_factor::degree(&q) != d || !is_irreducible_fp(&q, p)? {
+                if fp_factor::degree(&q) != d {
                     return Err(MathError::NumericalError(
                         "factor_fp_certified: internal error: EDF piece not irreducible"
                             .to_string(),

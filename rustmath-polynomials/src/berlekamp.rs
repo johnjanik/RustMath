@@ -56,29 +56,40 @@ const SMALL_P: i64 = 25;
 /// honest `Err` (never observed above 16 in total on the reference inputs).
 const ROUNDS_PER_FACTOR: usize = 64;
 
-fn not_prime(p: &Integer) -> MathError {
-    MathError::InvalidArgument(format!(
-        "berlekamp: {p} is not prime (a leading coefficient has no inverse modulo {p})"
+/// A nonzero coefficient without an inverse modulo `p`. Every entry checks first that `p` is
+/// a proven prime ([`check_prime`]), so this is a bug, not a composite modulus.
+fn no_inverse(p: &Integer) -> MathError {
+    internal(&format!(
+        "a nonzero coefficient has no inverse modulo the proven prime {p}"
     ))
 }
 
 fn internal(what: &str) -> MathError {
     MathError::InvalidOperation(format!(
-        "berlekamp: internal check failed ({what}); expected only for a composite modulus \
-         that passed the primality test"
+        "berlekamp: internal check failed ({what}); the modulus is a proven prime, so this \
+         is a bug"
     ))
 }
 
-/// `Err(InvalidArgument)` unless `p >= 2` is proven prime by
-/// [`rustmath_integers::prime::try_is_prime`]; `Err(NotSupported)` when p is a probable prime
-/// whose ECPP proof is unresolved.
+/// `Ok(())` iff `p` is a proven prime ([`rustmath_integers::prime::try_is_prime`]: a proof
+/// for every size). `p < 2` or `p` composite: `Err(InvalidArgument("berlekamp: the modulus
+/// {p} is not a prime"))`. A probable prime whose ECPP proof is unresolved:
+/// `Err(NotSupported("berlekamp: the primality of the modulus {p} is unresolved (..)"))`.
 fn check_prime(p: &Integer) -> Result<()> {
-    if *p < Integer::from(2i64) || !rustmath_integers::prime::try_is_prime(p)? {
+    if *p < Integer::from(2i64) {
         return Err(MathError::InvalidArgument(format!(
             "berlekamp: the modulus {p} is not a prime"
         )));
     }
-    Ok(())
+    match rustmath_integers::prime::try_is_prime(p) {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(MathError::InvalidArgument(format!(
+            "berlekamp: the modulus {p} is not a prime"
+        ))),
+        Err(e) => Err(MathError::NotSupported(format!(
+            "berlekamp: the primality of the modulus {p} is unresolved ({e})"
+        ))),
+    }
 }
 
 fn trim(mut v: Vec<Integer>) -> Vec<Integer> {
@@ -126,7 +137,7 @@ fn divrem(a: &[Integer], b: &[Integer], p: &Integer) -> Result<(Vec<Integer>, Ve
     if a.len() < b.len() {
         return Ok((Vec::new(), a.to_vec()));
     }
-    let inv = lb.mod_inverse(p).ok_or_else(|| not_prime(p))?;
+    let inv = lb.mod_inverse(p).ok_or_else(|| no_inverse(p))?;
     let mut q = vec![Integer::zero(); a.len() - b.len() + 1];
     let mut r = a.to_vec();
     while r.len() >= b.len() {
@@ -156,7 +167,7 @@ fn monic(a: &[Integer], p: &Integer) -> Result<Vec<Integer>> {
     if l.is_one() {
         return Ok(a.to_vec());
     }
-    let inv = l.mod_inverse(p).ok_or_else(|| not_prime(p))?;
+    let inv = l.mod_inverse(p).ok_or_else(|| no_inverse(p))?;
     Ok(trim(a.iter().map(|c| (c * &inv).modulo(p)).collect()))
 }
 
@@ -309,8 +320,14 @@ pub fn squarefree_decomposition(f: &[Integer], p: &Integer) -> Result<FactorList
 /// entries in `[0, p)`. `Err` as for [`factor`], and `Err(InvalidArgument)` for deg f < 1.
 ///
 /// MAGMA's `QMatrix(f)` is documented as "an element of the degree d - 1 matrix algebra over
-/// F" (V2.3 handbook); whether that is this d × d matrix (or a different shape or convention)
-/// is unverified.
+/// F" (V2.3 handbook; the V2.19 handbook, §23.8.1, has the same text). This module returns
+/// the d × d matrix, for three reasons. On the same handbook page `CompanionMatrix(f)` is
+/// also "an element of the full matrix algebra of degree d - 1", while the matrix shown there
+/// has d rows and the d entries `-a_0 … -a_(d-1)` in its last row, so "degree d - 1" there is
+/// not the matrix size (elsewhere MAGMA's "degree n" is n × n: "Full Matrix Algebra of degree
+/// 3 over GF(23)", ch. 26). MAGMA cites Knuth §4.6.2 for Berlekamp's algorithm (§23.8.1,
+/// `Factorization`), and Knuth's Q is d × d with row k the coefficients of x^(kq) mod f. Which
+/// convention MAGMA's `QMatrix` prints is still unverified (no MAGMA was available).
 pub fn q_matrix(f: &[Integer], p: &Integer) -> Result<Vec<Vec<Integer>>> {
     let f = prepare(f, p, "q_matrix")?;
     if f.len() < 2 {
@@ -403,7 +420,7 @@ fn kernel_basis(q: &[Vec<Integer>], p: &Integer) -> Result<Vec<Vec<Integer>>> {
         a.swap(r, pr);
         // Row r is zero left of column c (eliminated pivot columns, or columns with no
         // pivot in rows >= r).
-        let inv = a[r][c].mod_inverse(p).ok_or_else(|| not_prime(p))?;
+        let inv = a[r][c].mod_inverse(p).ok_or_else(|| no_inverse(p))?;
         for x in a[r][c..].iter_mut() {
             *x = (&*x * &inv).modulo(p);
         }

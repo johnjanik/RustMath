@@ -622,7 +622,8 @@ impl Grassmannian {
 
     /// Special case: Gr(2, 4) is isomorphic to the Klein quadric
     pub fn is_klein_quadric(&self) -> bool {
-        (self.k == 2 && self.n == 4) || (self.k == 2 && self.n == 4)
+        // Gr(2, 4) is its own complement Gr(4 - 2, 4), so one test covers both
+        self.k == 2 && self.n == 4
     }
 }
 

@@ -192,6 +192,38 @@ impl Parent for DiffScalarFieldAlgebra {
     }
 }
 
+/// The ring predicates of C^∞(M) (MAGMA Ch. 17 §17.4.2-3), for the nonempty manifold the
+/// crate models (see the finiteness notes at the top of this module).
+impl rustmath_category::RingParentMethods for DiffScalarFieldAlgebra {
+    /// `Some(0)`: the constant functions give a copy of R in C^∞(M).
+    fn characteristic(&self) -> Option<u64> {
+        Some(0)
+    }
+
+    /// The product of real-valued functions is pointwise, so commutative.
+    fn is_commutative(&self) -> Option<bool> {
+        Some(true)
+    }
+
+    /// For dim M >= 1 not a domain: two smooth bump functions with disjoint nonempty
+    /// supports are nonzero and multiply to 0. For dim M = 0, C^∞(M) = R^(#points), a field
+    /// iff M is one point; the point count is not known here, so `None`.
+    fn is_integral_domain(&self) -> Option<bool> {
+        if self.manifold.dimension() >= 1 {
+            Some(false)
+        } else {
+            None
+        }
+    }
+
+    /// A non-domain is not a field; for dim M = 0 see `is_integral_domain`.
+    fn is_field(&self) -> Option<bool> {
+        rustmath_category::RingParentMethods::is_integral_domain(self)
+    }
+}
+
+impl rustmath_category::CommutativeRingParentMethods for DiffScalarFieldAlgebra {}
+
 impl ScalarFieldAlgebraTrait for DiffScalarFieldAlgebra {
     fn manifold(&self) -> Arc<dyn DifferentiableManifoldTrait> {
         // We need to convert Arc<DifferentiableManifold> to Arc<dyn DifferentiableManifoldTrait>
@@ -772,6 +804,25 @@ impl Parent for DiffFormModule {
 mod tests {
     use super::*;
     use crate::examples::EuclideanSpace;
+
+    // C^∞(R^2): characteristic 0 (constants), commutative (pointwise product), not a domain
+    // (two bump functions with disjoint supports multiply to 0), so not a field, PID, UFD.
+    // At c79a582 no ring-predicate impl existed (R1 hand-off F.2, review 2 N4).
+    #[test]
+    fn scalar_field_algebra_ring_predicates() {
+        use rustmath_category::{CommutativeRingParentMethods, RingParentMethods};
+        let m = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let algebra = DiffScalarFieldAlgebra::new(m);
+        assert_eq!(algebra.characteristic(), Some(0));
+        assert_eq!(algebra.is_commutative(), Some(true));
+        assert_eq!(algebra.is_integral_domain(), Some(false));
+        assert_eq!(algebra.is_field(), Some(false));
+        assert_eq!(algebra.is_pid(), Some(false));
+        let point = Arc::new(DifferentiableManifold::new("P", 0));
+        let a0 = DiffScalarFieldAlgebra::new(point);
+        assert_eq!(a0.is_integral_domain(), None);
+        assert_eq!(a0.is_field(), None);
+    }
 
     #[test]
     fn test_scalar_field_algebra_creation() {

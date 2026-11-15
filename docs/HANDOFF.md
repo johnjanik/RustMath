@@ -1,10 +1,12 @@
-# Session handoff (2026-11-08, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups and the final follow-up fixes)
+# Session handoff (2026-11-15, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and 12 of 13 units of the open follow-ups)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
-the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). The
-next step is "After these tasks" at the end: the open follow-ups, then the dead code, the mixin wiring
-and the `docs/PLAN.md` build targets.
+the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). In the
+open follow-ups round **12 of 13 units are done** (2026-11-15; the last one committed is MF1, `f29c492`),
+and S1 is in a further design round: see "Open follow-ups round" below and
+`docs/workstreams/handoff-followups/README.md`, which has the designs and the steps to resume. After that
+come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -16,7 +18,7 @@ and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  14,173 passed, 0 failed, 330 ignored, 190 targets at `9c24389` (`docs/TEST_BASELINE.md`). First build
+  14,386 passed, 0 failed, 333 ignored, 194 targets at `922024b` (`docs/TEST_BASELINE.md`). First build
   compiles GMP/MPFR for `rug` (minutes).
 - **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
   grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
@@ -248,89 +250,396 @@ with a new status: ch023.EqualDegreeFactorization from done to verified; 19 rows
 `path refreshed 9c24389`) and `docs/magma/REVIEW_2026-11-06.md` record the result. Designs, reports and reviews
 are in the session scratchpad only (`fu/final/`).
 
-**Open follow-ups** (each has a tracker row or note unless marked; lines at `9c24389`):
-- MAGMA conventions still unverified (the handbook pages answer HTTP 401, no MAGMA binary): `Quotrem`
-  over Z, `Content` over Q, the content in `IsIrreducible` over Z (Sage's `(2*x).is_irreducible()` over
-  ZZ and QQ would be a cross-check), `Binomial(n, r)` for r < 0, the shape of `QMatrix`.
-- Factorization preconditions (from the X1 reviews). The three distinct-degree factorizations do not check that
-  their input is squarefree (`rustmath-polynomials/src/fp_factor.rs:343`,
-  `rustmath-finitefields/src/poly_factor.rs:613`, `rustmath-finitefields/src/cantor_zassenhaus.rs:448`; the lava
-  `squarefree_factorization`, `:363`, checks no precondition either); an eager one-gcd assert would close them.
-  `unramified_local_galois_group` (`rustmath-groups/src/pgalois.rs:122`) passes an unchecked p to
-  `fp_factor::factor` (`:135`), so a composite p can give a wrong Frobenius cycle type (x^2 + 1 mod 15 comes back
-  as one factor); `fp_factor::factor` (`fp_factor.rs:735`) documents the precondition but does not check it (a
-  deterministic Miller-Rabin to the bases 2, 3, 5, 7 is exact for p <= `MAX_P`). A `Gfpn` whose defining
-  polynomial is reducible is not detected by the lava entry points (`ff_poly.rs:590`, `Gfpn::new`; a Rabin test
-  there would make it a clean panic). Not tracked as rows.
-- Equal-degree cost (not tracked as rows): `block_contract` keeps all d + 1 Frobenius rungs
-  (`fp_factor.rs:528`; only rungs d and d/l are read), and the public `equal_degree_factor` now runs a
-  certificate per call, which `rustmath-rings/src/valuation/maclane.rs:1687` follows with its own Rabin test.
-  `rustmath-rings/src/function_field/typed/factor.rs:156` can use `fp_factor::MAX_P` instead of the literal.
-  The lava and canonical `random_irreducible` (`irreducible.rs:168`, `poly_factor.rs:256`, `:263`) still draw
-  non-uniformly for p > 2^63 (each candidate is Rabin-tested, so they stay honest); `Gfpn` keeps the
-  O(min(n, p)) default `from_int` (`ff_poly.rs:61`). Later cleanup from the X1 design: drop phase 1 (the legacy
-  tries) and sort `factor`'s output once the downstream crates' tests run with it.
-- Integer factorization. No proving `is_prime` above psi_12 = 318665857834031151167461
-  (`rustmath-integers/src/prime.rs:91`; MAGMA `Proof := true`, BPSW or ECPP), so a factor the drivers return
-  above it may be composite (psi_12 itself comes back unsplit). The QS sieve stage is still broken
-  (`quadratic_sieve.rs:282`, `:340`; tracker 🔴, card T-223), so the QS driver is a rho driver in practice, and
-  two tests pin the sieve's outputs (`quadratic_sieve.rs:778`, `:792`) and must change when it is fixed.
-  `factorint::trial_division_with_primes` (`factorint.rs:401`, push at `:434-436`) reports a leftover cofactor
-  as a prime (new tracker 🛑 row). Not tracked as rows: `factor_pollard_rho` (`prime.rs:808`) has no capped
-  variant that returns the unfactored composites (MAGMA's third return value with `ECMLimit` / `MPQSLimit`); the
-  QS `legendre_symbol` maps an error to "residue" (`quadratic_sieve.rs:45-68`, unreachable for p >= 3); the
-  `ecm.rs:14-15` module doc describes the p - 1 / p + 1 methods, not ECM.
-- REPL split-outs of the X2 design (`fu/final/design/X2-repl-int-args.md` §5 and the implementation report;
-  not tracked as rows except where the jupyter rows say so):
-  - F1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
+**Open follow-ups round: 12 of 13 units done** on the same branch (paused 2026-11-13, resumed 2026-11-14). The list below was split
+into 13 units by crate; every unit has a design with independent adversarial reviews, and each unit is
+implemented with adversarial code review before its commit. Designs, reviews, reports, the workflow script and
+the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pushed:
+- `80130e7` integers (I3): MAGMA/PARI signs for the i32/i64 gcd, lcm and xgcd; `fast_arith` unsigned gcd/lcm and
+  `Result` modular ops; `Integer::sqrt` exact via `BigUint::sqrt`; Lehmer gcd/xgcd (half-gcd not done);
+  `Integer::exact_root` and near-linear `is_power` / `is_perfect_power`; `SageInteger::binomial` by prime
+  splitting, r < 0 cross-checked with gp and GAP; `sigma` overflow checks; `Integer::to_i64` now returns
+  `Option<i64>` (137 call sites in 24 crates migrated); `class_number_quadratic` placeholder removed.
+- `7c4d057` integers (I1): BPSW default test and an Atkin-Morain ECPP prover with checkable certificates
+  (`try_is_prime`, `prove_primality`; Err when a proof is unresolved), so psi_12 is no longer accepted; a
+  segmented sieve behind `prime_range`, `nth_prime` and `prime_pi`; the duplicate `is_prime_u64` removed;
+  callers switched.
+- `0ceaeaa` integers (I2): the quadratic sieve rewritten as SIQS (card T-223); `trial_division_with_primes`
+  classifies its cofactor (the 🛑 row); `factorization_with_limits` returns the unfactored composites (MAGMA's
+  third return value); the old QS `legendre_symbol` is gone with the rewrite, and the ECM module doc is fixed.
+- `166ac34` polynomials (P1): `fp_factor` checks p and square-free input on every entry, sorts its output in PARI
+  order and drops the legacy phase; typed Zassenhaus errors; `pgalois` and `padic_factor` check p; maclane's
+  duplicate Rabin test removed; polynomial Ring hooks; Yun and Cohen citations fixed.
+- `4b7f034` finitefields, core, polynomials (F1): every GF(p) and GF(q) factorization entry proves its
+  characteristic prime (`try_is_prime`), both distinct-degree factorizations refuse 0 and non-squarefree input,
+  `Gfpn::try_new` validates the modulus (Rabin, memoised), `random_irreducible` draws uniformly, `from_int` is
+  O(1) on `Gfpn`; orders, `FactoredOrder` and `IsPrimitive` from a proven factorization (`group_order.rs`, Cohen
+  Alg. 1.4.3; capped Ring hooks); `IsSquare` and `SquareRoot` in every GF(q); the `Ring` hooks
+  `HAS_UNBOUND_CONSTANTS`, `is_unbound_constant`, `bind_to_parent_of`, used by the univariate, multivariate and
+  Laurent polynomial containers.
+- `fd081fa` rings, p-adics, category (R1): exact unbound p-adic `zero()`/`one()` (they panicked); value equality
+  and `is_one` for `PadicRational` and extension elements; field certificates, field status and the inverse in
+  certified p-adic extensions; decided p-adic and series Ring hooks; real `RingParentMethods` implementors
+  (`category_parents.rs`, `ring_parents.rs`, `NumberField`, `DownUpAlgebra`, `DiffScalarFieldAlgebra`);
+  `is_nonzero` through `domain_one`; composite characteristic is not a domain in both traits; six p-adic
+  elliptic-curve tests un-ignored.
+- `d3a133b` matrix (M1a): invariant factors, minimal polynomial and rational form by vector peeling
+  (`frobenius.rs`, O((r+1) n^3) field operations), the Smith paths as certified fallbacks.
+- `dc367a2` matrix, polynomials, finitefields (M1b): `FactorizationField` (Q, GF(p)), `primary_invariant_factors`,
+  `primary_rational_form`, `jordan_form`, `is_similar` (`primary_forms.rs`) and the multi-RHS `IsConsistent` /
+  `Solution` (`linear_solve.rs`).
+- `2e000c9` combinatorics (C1): exact Integer counting (product-tree factorials, band-row Stirling and Eulerian,
+  Bell, Motzkin, Schröder, derangements by binary splitting, multinomial without the u32 sum), the certified
+  Hardy-Ramanujan-Rademacher `number_of_partitions`, `number_of_standard_tableaux`, falling and rising factorials
+  over Integer and any ring, `Permutation::order_integer`, and a checked machine-word sweep of the crate.
+- `bd03278` jupyter, rationals, finitefields (J1a): one depth-aware scanner and precedence chains in the REPL
+  parser (S9), exact Q arithmetic, a nesting bound, correctly rounded `Rational::to_f64` and exact-first numerics
+  (S11), chart dimension check (S14), checked plot options (N5), `pochhammer` is rising (S10), limits for graphs,
+  `prime_pi` and `primes` (S15), `sqrt_mod` by one factorization, `num_square_roots_mod_prime_power`.
+- `36c2170` jupyter (J1b): Arc-backed REPL values (F2, REPL part), growth guards on result size (S12), a display
+  budget with GMP decimal conversion, interrupts, a time limit and a kernel that answers while it computes
+  (S13), the C1 arms (any integer for falling/rising factorials, `partitions` up to 2·10^10), re-measured limits.
+- `f29c492` manifolds (MF1; two comment lines in `rustmath-jupyter/src/repl.rs`): the exact exterior derivative and
+  wedge product (Lee 2013 ch. 14, Spivak ch. 4) instead of the facades, written to every permutation with its sign and
+  zero-tested slot by slot, so d∘d of a polynomial form is a literal 0; a budgeted exact zero test (`expr_zero.rs`:
+  Zero, NonZero or Unresolved) with a derivative guard that refuses components whose derivative rustmath-symbolic
+  fabricates; checked component counts (`component_count`, fallible allocation; `to_flat`, `total_rank` and
+  `num_components` return `Result`); contraction and tensor product rewritten; the interior product, Cartan's Lie
+  derivative, `Add`, `Neg`, `scale`, `vanishes` and a three-valued `is_closed`; constructors that check finiteness and
+  antisymmetry; d checks the chart; the Lie derivative, symplectic, contact and topology routines delegate to the exact
+  ones; three pullback and pushforward facades return `Err(NotImplemented)`. 49 new unit tests and 2 doc tests with
+  PARI/GP 2.15 and Sage values.
+
+Still to do in this round: S1 (symbolic: `Expr::taylor`, the literal parser). Its design was not approved after
+seven design reviews (reviews 1 to 7 in `docs/workstreams/handoff-followups/design/`); a further design round with a red team is
+running, and its items below stay open. The trackers follow all twelve commits: `PROJECT_TRACKER.md` (Change Log
+"Open follow-ups round, part 1", "part 2" and "part 3"), `docs/magma/status_overrides.csv` (part 2: 102 rows of the
+reviewed chapters re-rated, 57 of them with a new status, seven pilot rows, 18 rows added for chapters 83, 144 and
+145, and 384 path-only refreshes tagged `path refreshed 36c2170`; part 3: no row cites the code that `f29c492`
+changed, so none was re-rated) and `docs/magma/REVIEW_2026-11-06.md`. The list below no longer has the items they
+fixed; its last three bullets name each fixed item with its commit.
+
+**Open follow-ups** (each has a tracker row or note unless marked; lines at `f29c492`):
+- MAGMA conventions still unverified against MAGMA itself (the handbook pages answer HTTP 401, no MAGMA
+  binary): `Quotrem` over Z, `Content` over Q, the content in `IsIrreducible` over Z, `Binomial(n, r)` for
+  r < 0, the shape of `QMatrix`, the generalised Jordan layout for deg p >= 2 and the block order of the primary
+  forms over Q. Cross-checks in the code since `80130e7` and `166ac34`: Sage follows the
+  conventions used here for `Content` over Q and for the content in `IsIrreducible`
+  (`rustmath-polynomials/tests/ch23_is_irreducible.rs::sage_content_examples`); Sage's FLINT `quo_rem` over Z
+  returns another remainder of the same minimal degree (`tests/ch23_quotrem_gcd.rs`
+  `quotrem_over_z_minimal_remainder_is_not_unique`); PARI/GP, GAP and Sage agree with `SageInteger::binomial`
+  for r < 0; the `q_matrix` doc gives the CompanionMatrix evidence for the shape (`berlekamp.rs:318-330`).
+- Unbound constants in generic containers outside rustmath-polynomials (F1 design §7.6 and report; a
+  correctness defect for mixed matrices and sparse matrices): `Matrix<R>` and `Vector<R>`
+  (`rustmath-matrix/src/matrix.rs`, `vector.rs`: an entry that met only unbound constants stays an integer in Z,
+  so `is_zero`, rank and determinant of a mixed matrix can see it), `SparseMatrix<F>` (`sparse.rs`: an unbound
+  value that is 0 in the field is stored as nonzero), `PowerSeries` and `LaurentSeries`
+  (`rustmath-powerseries/src/series.rs`, `laurent.rs`) and the rustmath-rings series types `PowerSeriesPari`,
+  `PowerSeriesPoly` and `LaurentSeriesElement` (`power_series_pari.rs`, `power_series_poly.rs`,
+  `laurent_series_ring.rs`). Bind them with
+  `Ring::bind_to_parent_of` as `UnivariatePolynomial::new` does; M1a and M1b bind only their own inputs. The
+  multi-RHS solvers return the unbound `F::zero()` for free variables over `PrimeField` (equal under `==`).
+- Finite fields (F1 design §8, report and review; not tracked as rows unless marked):
+  - `FiniteField::new(p, n)` without a Conway polynomial can take O(p) Rabin tests
+    (`finite_field.rs:145`; `FiniteField::new(2^80+13, 3)` does not return, and `FiniteField::new(2, 256)` did
+    not return within minutes in debug); a fix changes default moduli.
+  - The canonical `poly_factor::roots(0)` and `factor(0)` return `[]` (`poly_factor.rs:998`, `:946`).
+  - Trial-division sites that can call `group_order::factor_proven(.., Effort::Complete)`: `IntegerMod::sqrt`,
+    `all_sqrts`, `num_sqrts`, `is_nilpotent` (`integer_mod.rs:348`, `:401`, `:443`, `:279`),
+    `Zmod::factored_modulus` (`zmod.rs:123`), `ring_hooks::is_nilpotent_mod` (`ring_hooks.rs:91`).
+  - `GaloisRing::with_modulus` (`galois_ring.rs:105`) runs the primality and Rabin tests twice.
+  - Review notes (docs): the univariate `==` doc overstates for `LaurentPolynomial` coefficients
+    (`rustmath-polynomials/src/univariate.rs:69-77`); `PrimeField::is_generator` cites MAGMA `IsPrimitive`
+    without "for a prime modulus" (`prime_field.rs:159`; 2 mod 9 is primitive in MAGMA, false here); the capped
+    order hooks' `# Cost` omits the ω(q - 1) + 1 exponentiations that follow the factorization (36.6 s for the
+    generator of GF(2^200) in debug); `multiplicative_order` and `factored_multiplicative_order` should say
+    "unbound nonzero element" in `# Panics` (`finite_field.rs:649`, `:663`). A failed capped factorization is
+    recomputed on every hook call (only successes are cached).
+- Rings, p-adics, category (R1 report and reviews):
+  - `PadicExtensionElement::certified_valuation` (`extension.rs:902`) builds exact representatives, so the order
+    hook and an undecided `inverse` are quadratic in the valuation (3.1 s at v = 10^5 in debug); V can be read
+    from the stored valuations. `PadicRational` `Mul` and `pow` add the `i32` valuations unchecked
+    (`padic_rational.rs:725`; `five.pow(3_000_000_000)` panics in debug and wraps in release).
+  - `PadicRational::add` (`padic_rational.rs:660`) drops known digits and costs time linear in the valuation
+    difference (1, 10, 104 ms at 10^3, 10^4, 10^5); `PadicInteger::lift` (`padic_integer.rs:243`) raises the
+    precision without new digits; `PadicExtension::generator()` returns 0 in degree 1 (`extension.rs:610`);
+    `PadicExtension::new` (`extension.rs:315`) accepts any f under any label, so `ramification_index` and
+    `residue_degree` echo the label (OM's `ramification_data` could check it).
+  - The extension inverse when only OM certifies the field (needs an integral basis), and the certificate and
+    inverse for a proper prime-power p: `PadicRational::from_rational` rejects 1/2 in Q_4.
+  - `impl Field for PadicRational` holds for every p > 1, but Q_p is a field only for a prime-power p
+    (Q_6 ≅ Q_2 × Q_3); `MatrixAlgebra::<PadicRational>::full(1)` trusts it.
+  - The parent objects for Z, Q and R[x] (`IntegerRingParent`, `RationalFieldParent`, `PolynomialRingParent`,
+    `rustmath-rings/src/category_parents.rs:35`, `:39`, `:44`) carry only the ring predicates. They have no
+    coercion or element constructors, R[x] has no generator, comparison, Category, Rank or ChangeRing, and
+    `Integer`, `Rational` and `UnivariatePolynomial` values do not link back to them (Parent(x) has no API).
+    `PolynomialRingParent::base()` (`:55`, BaseRing) is untested. Rows: ch018.IntegerRing, ch020.Rationals,
+    ch023.PolynomialAlgebra and BaseRing (partial), and the ch023 structure rows (missing).
+  - `SeriesRing` carries no base ring, so no series parent has ring predicates; IsIdempotent on series is the
+    generic x*x == x and no series test calls it (ch049.IsNilpotent); `SimpleAlgebra` has no product;
+    `nf_elem::NumberField` has no ring predicates (no `PartialEq` on `NfElem`; copy
+    `rustmath-numberfields/src/category.rs`); `QuotientRingGeneric::is_integral_domain` and `is_field` are always
+    false (`rustmath-rings/src/quotient_ring.rs:203`; ch017.IsDomain and ch017.IsField are partial for it).
+  - Gaps in the ring predicates (status_overrides rows of chapters 17-25, 34, 37 and 48): the `RingParentMethods`
+    of rustmath-rings (`category_methods.rs`) has no `is_pid`, `is_ufd` or `is_euclidean`, so Z, Q, Z_p, Q_p and
+    R[x] do not answer IsPID, IsUFD or IsEuclideanDomain (the rustmath-category defaults decide only fields and
+    non-domains); no parent answers IsUnitary, IsOrdered, IsDivisionRing, IsEuclideanRing or
+    IsPrincipalIdealRing; the function-field order `is_pid` is still `class_number() == 1` with the class number
+    hard-coded 1 (`function_field/order.rs:317`, `order_polymod.rs:207`; ch017.IsPID); no test asserts
+    `is_euclidean` or `is_ufd` on a Galois ring, or the `GaloisRing` parent `is_commutative`; the chapter 37 digest
+    says `IsEuclideanDomain(F)` errors for algebraic fields, while `NumberField` answers true (the chapter 34
+    reading).
+  - The `algebra_with_parent` and `down_up_algebra` tests of rustmath-algebras run only with feature `full`; a plain
+    `cargo test -p rustmath-algebras` skips them. `rustmath-ellipticcurves/src/generic.rs:79-82` has a stale doc on
+    the `PrimeField` zero/one.
+  - The capped-relative, unramified and Eisenstein p-adic element types have no unit hook; real and complex types
+    keep `static_is_commutative` = None.
+- Matrices (M1a and M1b reports and reviews):
+  - No bit-complexity bound over Q for the invariant factors and the forms (the peeling bounds field operations
+    only); Storjohann's O(n^3) Frobenius form and [Ste97] are not implemented. Scalar-like input (r ≈ s ≈ n) is
+    slower than the Smith path (2·I over GF(7), n = 100: 0.71 s against 0.05 s; documented). Some sentinel-only
+    inputs over Z now answer where the Smith paths erred (documented). The old Smith path is much faster on this
+    tree than at `c79a582` (cause not isolated).
+  - `FactorizationField` exists for Q and GF(p) only: add `FiniteFieldElement` (GF(p^n), through
+    `poly_factor::factor`) and the rings `GFp<P>`; `FactorableConstantField`
+    (`rustmath-rings/src/function_field/typed/factor.rs`) could become an alias. A MAGMA-convention `RationalForm`
+    (T·A·T^-1 = C^T) is `rational_canonical_form(&A^T)` transposed. Multi-RHS `IsConsistent` over Euclidean
+    rings (Z) is missing. `is_similar` is unspecified for an odd composite `PrimeField` modulus.
+  - Review notes: `peeled_forms_conjdiag20_s7_was_81_s` no longer detects a regression to the Smith path (the
+    old calls take 12.7 s here, under its 20 s bound; add the caveat or lower the bound to about 5 s);
+    `companion.rs:443` still says "(fast path)" for what is now the first fallback; the `release_timing_dense_q`
+    label "Krylov path" means the public path; the `invariant_factors` docs use r for two things;
+    `matrix_forms_gfp.rs:345` names two stages; the primary-forms docs do not say that the entries must lie in
+    one field (two `PrimeField` moduli panic in the arithmetic); the `h26e9_magma_handbook_example` comment wording.
+  - `cargo clippy -p rustmath-matrix --tests` fails on two old `erasing_op` errors in `integer_forms.rs` tests
+    (`:645`, `:670`).
+- Combinatorics (C1 design §1.7-1.8, report and review):
+  - The machine-word sweep checked ten stated patterns across the crate; unfixed hits are bounded by memory,
+    enumeration or 2^32 steps of work, guarded, or in flagged modules; arithmetic outside the patterns is not
+    checked. Known to remain: the size invariant of partition-like types (`Partition::new(vec![1 << 63, 1 << 63]).sum()`
+    is 0; about ten types need a checked constructor) and signed machine-word values (`Poset::mobius`, posets.rs:168,
+    is 0 for a 194-element layered poset whose value is -2^64, tracker row ⏳;
+    `PartitionTuple::degree_with_multicharge`, `SignedComposition::from_composition`, `AffinePermutation::apply`,
+    `SixVertexConfiguration::energy`, `regular_sequences::sequence_sum` / `sequence_product` with `unwrap_or(0)`).
+  - Wrong values found by the sweep, not fixed (each has a tracker row or a note in one, except the two outside
+    the crate): `count_plane_partitions_in_box` (`plane_partition.rs:358`;
+    (2,2,2) gives 15, gp 20); `polya_enumeration` uses w^L instead of L·w (`group_action.rs:256`); the one-part
+    `hall_polynomial` case and `centralizer_group_cardinality` (`hall_polynomial.rs:117-133`,
+    `similarity_class_type.rs:499`); `integer_lists` caps of 100 and `IntegerListIterator::next` always None
+    (`integer_lists.rs:283-300`, `:615`, tracker 🛑 row); `integer_vectors_with_l1_norm_bounded` returns
+    duplicates (`integer_vectors.rs:453`; (2, 1) gives 12 entries, 5 distinct); `signed_compositions`
+    (`composition.rs:249`) differs from its doc and from Sage; `BlockDesign::new` checks only t <= 2 and v <= 10
+    (`designs.rs:38`); `ColoredPermutation::order` returns 1000001 after 10^6 steps (`wreath_product.rs:159`);
+    `partition_to_dyck_path` never returns for (2) and gives 2 N / 1 E steps for (1, 1) (`path_tableaux.rs:425`);
+    `parking_functions.rs` is not compiled. Outside the crate (not tracked as rows): `rustmath-interfaces/src/gap_parser.rs:108`
+    `Permutation::order` lcm overflow, and `rustmath-algebras/src/temperley_lieb_algebra.rs:317` `catalan_number`
+    wraps from n = 33.
+  - Review notes: `count_superpartitions` allocates n + 1 words before its first check
+    (`superpartitions.rs:453`; n = 2^40 aborts instead of the documented panic); `falling_factorial_in` /
+    `rising_factorial_in` hold all k factors at once (`factorials.rs:166`); the "n! is about n / 4 leaves" comment
+    holds only below 2^16 (`factorials.rs:13`).
+  - `cargo clippy -p rustmath-combinatorics` stops on five old deny lints (`binary_words.rs:336`,
+    `debruijn.rs:101`, `path_tableaux.rs:454`, `super_tableaux.rs:297`, `word.rs:252`) and, with
+    `--all-targets`, on `erasing_op` in a `composition.rs:775` test. C1's product tree (`factorials.rs:28`)
+    duplicates I3's private BigUint tree in rustmath-integers.
+- REPL (J1a and J1b reports and reviews; `rustmath-jupyter/src/repl.rs`; not tracked as rows unless marked):
+  - Review notes of J1b, marked required and not applied: `print(...)` joins strings past STRING_BYTES (`:958`;
+    four nested prints reach 1.9 GB); `eval_depth` is not reset after a panic that `eval_guarded` catches
+    (`:665`, `:808-817`; reset it in `eval` and name it in the `eval_guarded` doc, `kernel.rs:122`; latent); the
+    timing sentences of `BINOMIAL_WORK` (`:11037-11043`) and `checked_binomial` (`:12009-12020`) state pre-`80130e7`
+    times (C(524288, 262144) now takes 0.03 s); `gcd`, `lcm` and `xgcd` (`:1021`, `:1054`, `:1035`) run the quadratic
+    gcd without the `check_rational_gcd` estimate (6.9 s at 2^21 bits). Nits: the TimeoutError text shows the
+    current limit, `charpoly` prints through the library Display, the `EVAL_DEPTH` doc, and the time models
+    refuse trivial calls such as `multinomial(4294967295, [4294967295])` (which is 1) and `stirling1(n, n - 1)`
+    (which is C(n, 2)).
+  - Review notes of J1a: the phase-3 cost cap of `sqrt_mod_factor` (`:12448`, 20 s modelled) is above the worst
+    case it bounds and restarts per piece; repeated factors are stripped one division at a time
+    (`sqrt_mod(1, (2^10000)^30)` takes 59 s in debug; the finitefields `prime_power_sqrts` lift is bit by bit);
+    probable primes above 4096 bits are refused where the earlier version gave a caveat (`sqrt_mod(4, 2^4423 - 1)`;
+    an `is_probable_prime` after phase 3 would fix it); `Rational::to_f64` allocates on every call
+    (`rustmath-rationals/src/rational.rs:163`); `N` of NaN says "outside the range of a double"; a plot range or `find_root` bound with a real operand is
+    computed in doubles, so `10^20 + pi - 10^20` is 0 there (as in MAGMA at 53 bits; documented, J1a design §9).
+  - Nested calls `abs(abs(...))` overflow a debug build's 8 MB stack at about 40 levels, below `EVAL_DEPTH` = 200
+    (`:11127`; the kernel's 64 MiB thread holds 200); a symbolic chain `w + w + ... + w` of 3000 terms aborts the
+    debug driver in `Expr` Display and Drop (S1's area); `-(-x)` displays `--x` (S1's area).
+  - No Float arithmetic in `apply_binary_op` (`2 * 1e-3` is a TypeError), and no Rational arm on symbolic values
+    (`x / 2`, `x^(1/2)`); string literals are not unescaped; `integrate_num(x, x, 0, 1)` with a bare symbol is a
+    TypeError; `Plot3DOptions` is unused and the 3D plots have fixed grids; graph commands other than the
+    constructors (`edges`, adjacency output, `show_graph`) have no limit of their own (the constructor limit bounds
+    their output); `median`, `min`, `max` in
+    rustmath-stats panic on NaN (`statistics.rs:60`, `:129`, `:136`) and `mean([1e308, 1e308])` is inf; the
+    num/den float division of S11 recurs in `rustmath-schemes/src/elliptic_curves/heegner.rs`,
+    `rustmath-rings/src/qqbar.rs`, `rustmath-numberfields/src/kummer.rs`, `rustmath-combinatorics/src/derangements.rs`.
+  - J1b design §7: `Matrix::pow` squares once more than needed (`rustmath-matrix/src/matrix.rs:410-436`); negative
+    matrix exponents are refused (MAGMA allows them for invertible A); library calls cannot be interrupted (a
+    cancellation hook in rustmath-core would extend S13); `Display for Integer` in rustmath-integers is quadratic
+    (9.3 s at 2^25 bits; the REPL converts through rug); Clifford and Jordan displays are outside the budget, and
+    `print` and `vars` apply it per value; a plot samples a DAG as a tree (`e = e + e`); list literals copy their
+    Integers; `det`, `rank`, `matrix_inverse`, `charpoly`, `rref`, `factor` (`:1089`, trial division), `sigma`'s
+    factoring (`:2774`) and `nth_prime` are unbounded library calls.
+  - J1b's new items: every rational operation reduces with a quadratic Lehmer gcd and rustmath-rationals has no
+    constructor from coprime parts, so the REPL refuses r^e of large fractions by its gcd estimate (27.7 s at
+    2^22-bit parts); `POW_BITS` could be 2^26 (5.3 s measured); the binomial family and `PRIMES_COUNT` are
+    conservative (`catalan(316227)` takes 0.03 s); `stirling_band`'s a-priori bounds are loose at the band edges
+    for stirling2 with small k; `kernel_stops_on_shutdown_during_library_call` relies on `factor` being unbounded
+    trial division. `TAYLOR_ORDER` (`:11087`) was not re-measured (S1 not landed); for `FORM_COMPONENTS` and
+    `DIFF_FORM_DEGREE` see the manifolds items below. `is_prime`, `next_prime` and `sqrt_mod` prove primes up to
+    `PROOF_BITS` = 1024 bits (`:12353`).
+- Integer factorization and primality (not tracked as rows unless marked):
+  - `factorint::factor_trial_division(n, None)` (`rustmath-integers/src/factorint.rs:199`) stops at 10^6 above
+    2^128 and appends a composite cofactor, against its doc (tracker 🛑 row since 2026-11-14); `factorization::trial_division_stage`
+    can serve it.
+  - `prime::factor` and `prime::prime_divisors` (`prime.rs:634`, `:688`) are unbounded trial division (3.4 s in
+    release on 100000007 * 1000000007; hours for a 12-digit second factor), used on 41 lines in 24 files of 8
+    crates (the REPL `factor` and `sigma` at `rustmath-jupyter/src/repl.rs:1089` and `:2774` among them); rebuild
+    them on `factorization_with_limits(n, &FactorizationLimits::default())` or document the cost (tracker row).
+  - `ECMLimit`: a new ECM (projective Montgomery or Edwards curves, Suyama's parametrisation, a seeded sigma, a
+    full stage 2) is needed before an `ecm_limit` in `FactorizationLimits` pays; without it a large composite
+    with a medium factor costs the sieve's time for the whole number (hours to days from about 90 digits).
+  - ECPP coverage: no unresolved prime up to 2048 bits in the design's experiments, 2 of 32 at 3072 and 4096
+    bits; a 1024-bit prime takes 3.4 s in release. A faster prover above 2048 bits is open (I1 design §7).
+  - `random_prime(a, b)` enumerates the whole range (`prime.rs:570`) and MAGMA `RandomPrime(n)` is missing;
+    `prime_pi` above 2^64 (Lagarias-Miller-Odlyzko) is missing (tracker rows).
+  - The Pratt certificate verifier in rustmath-constants (tracker: unsound) is separate from ECPP.
+  - The private `is_prime_u64` copies in rustmath-modular, rustmath-ellipticcurves and rustmath-galois can call
+    `rustmath_integers::prime::is_prime_u64`; rustmath-rings (`category_methods.rs:36-131`) and rustmath-category
+    (`ring_category.rs:202-224`) keep private primality and prime-power helpers too.
+  - Half-gcd is not implemented (Lehmer since `80130e7`; estimated crossover 10^5 to 10^6 bits), and
+    `Integer::nth_root(n)` (MAGMA `Iroot`) is slow for a large n on a large input (num-bigint's Newton start; a
+    start from the leading bits would fix it).
+- Unit S1 (design in a further review round with a red team; the X2 split-outs it takes):
+  - S1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
     exponentially with the order (x^2 at order 9 needs more than 3 GB) and a debug build overflows the stack at
-    order 20000 (`TAYLOR_ORDER`, `rustmath-jupyter/src/repl.rs:10534`); no REPL bound prevents it.
-  - F2: repeated `d` and `wedge` build ever larger expression trees (`rustmath-manifolds/src/diff_form.rs:126`,
-    `:173`; d(d(dx_0)) peaks at 574 MB at 10^6 components; the inner loop of `exterior_derivative` is also
-    O(n^(p+2)) for O(n^(p+1)) components), and the REPL clones a value on every assignment and lookup
-    (`repl.rs:649`, `:706`).
-  - N4 / S8: the library computes `n.pow(p + 1)` and `n.pow(p + q)` unchecked (`diff_form.rs:139`,
-    `tensor_field.rs:105`, `:237`, `:280`); only the REPL arms check them.
-  - N5: the plot options `plot_points=` and `contours=` clamp silently and ignore values they cannot parse
-    (`repl.rs:255`, `:5478-6792`).
-  - S1 a faster `SageInteger::binomial` (`rustmath-integers/src/sage_wrapper.rs:423`). S2 u32 overflow inside
-    rustmath-combinatorics (`lib.rs:430` catalan, `:498` rising, `:410` multinomial, `:749` schroder,
-    `partitions.rs:1261`). S3 an Integer-valued p(n) for n > 416 (`partitions.rs:1261`). S4 faster callees
-    (Fibonacci doubling, the Bell triangle, rolling Stirling rows, the derangement and Motzkin recurrences) so
-    that the limits can rise. S5 `Integer::sigma` forms `(multiplicity + 1) * k` unchecked (`integer.rs:398`).
-    S6 `is_prime_miller_rabin` repeats its 12 bases 20 times (`prime.rs:32`) and `nth_prime` / `prime_pi` test
-    every candidate (`prime.rs:240`, `:356`). S7 the panicking inherent `Integer::to_i64` (`integer.rs:88`), the
-    expansion point in `series.rs:34`, the i64-only literal parser (`rustmath-symbolic/src/parser.rs:148-154`).
-    S9 parser defects: `-` is split before `*` (`repl.rs:9580`), and commas inside string literals split
-    arguments (`parse_args` `:4712-4744`, `split_at_depth_zero` `:5057-5075`, the tuple split `:696-707`). S10
-    `falling_factorial` / `rising_factorial` take u32 n only, and `pochhammer` aliases the falling factorial
-    (`repl.rs:2348`). S11 `to_f64` of large rationals gives NaN (`repl.rs:3018`, `:3024`, `:5180-5181`). S12 a
-    growth-based size guard for `matrix_power` and `**` (`repl.rs:1530`, `:9675`). S13 no evaluation timeout
-    or interrupt. S14 `chart(M, names)` never compares the number of names with dim(M) (`repl.rs:4579-4595`).
-    S15 no size limit on the graph constructors (`repl.rs:3167-3200`), `prime_pi` (`:2703`) and `primes`
-    (`:2718`).
-- Rational form and invariant factors: no complexity bound (the fixed start basis has a worst case with
-  r = n, and one 2x2 relation matrix over Q took 81 s in debug); [Ste97] or Storjohann would bound it.
-  Doc nits from the last review: the rational-form "Fallback" paragraph names only the sentinel trigger,
-  the `polynomial_matrix` header names only `PrimeField` sentinels.
-- REPL `sqrt_mod` for a composite n factors by trial division (up to three times), so a large prime
-  cofactor never finishes (stated in the help line); a proven factorization would fix it.
-- p-adic `zero()`/`one()` still panic (`PadicInteger`, `PadicRational`, `PadicExtensionElement`), and
-  `RingMorphismMethods::is_nonzero` reads the static `Self::Domain::one()`; no real ring type implements
-  the three-valued `RingParentMethods`; the category trait lacks the composite-characteristic rule.
-- Galois-ring containers built from `R::one()` or `UnivariatePolynomial::var()` keep unbound coefficients
-  (degree 7 instead of 6 in the documented GR(8,2) example); pinned by a test that must change if
-  containers ever coerce.
-- Not tracked as rows: `IsPower(n, k)` returns no root; `is_perfect_power` still costs about bits^2 on huge
-  non-powers (2^1000000+1: 12 s in debug); i32/i64 keep the sign-arbitrary default gcd/lcm/xgcd;
-  `ArithInt`/`ArithLLong` gcd and lcm overflow on MIN, `add_mod`/`mul_mod` assume m > 0; `Integer::sqrt`
-  starts Newton at x = self; a faster balanced gcd (Lehmer, half-gcd); MAGMA `IsSquare`/`Sqrt` returning
-  the root on `PrimeField` and GF(p^n); `square_root_mod_prime` runs `is_prime` twice and
-  `is_prime_miller_rabin` repeats its 12 bases 20 times; `fast_arith::is_prime_u64` duplicates
-  `FastArith64`; Cohen GTM 138 algorithm numbers in `zx.rs` and `univariate.rs` are unchecked; the
-  Zassenhaus error text blames every failure on the subset bound; Ring hooks for polynomials, series and
-  p-adics (honest `None`); O(m) order loops for `IntegerMod`/`PrimeField` and trial-division factoring of
-  q-1 for GF(q) orders; the multi-RHS `IsConsistent`, `PrimaryRationalForm`, `JordanForm`, `IsSimilar`.
+    order 20000 (`TAYLOR_ORDER`); no REPL bound prevents it. The i64-only literal parser
+    (`rustmath-symbolic/src/parser.rs:148-154`), and its `rational` (`:157`) reads integer / integer as one literal
+    before any operator, so `x^2/4` parses as x^(1/2), `2/3^2` as 4/9 and `1/x` not at all (the REPL gives
+    `diff(z^2/2, z)` = 1; J1a review 1 minor 6; S1 design §1.6; tracker 🔴 row since part 2). `expand` under a minus is wrong (`expand.rs:250-263`:
+    `expand(-(x - 1))` gives x - 1; tracker 🔴 row since part 2).
+  - For S1 from the MF1 report: every match on `Expr` in rustmath-manifolds is on a reference, so S1's `impl Drop
+    for Expr` compiles there; MF1's `root_sum`, `abs`, `x^y` and `d_budget` slot assertions are structural and depend
+    on HEAD's `simplify` results.
+- Manifolds after MF1 (MF1 design §4.4 and §5, report and code review; `rustmath-manifolds/src/` unless marked; not
+  tracked as rows unless marked):
+  - REPL (`rustmath-jupyter/src/repl.rs`, design §4.4): `DIFF_FORM_DEGREE` (`:11101`, used at `:4819`) can go, since the
+    library returns `DegreeOverflow`; drop its test lines (`:14671-14672`, and the degree block of
+    `test_form_component_limits` from `:14820`). The arms' own overflow checks (`:4862-4863`, `:4901-4902`) are
+    redundant. `check_form_components` (`:12314`) and `missing_components_error` (`:12334`) should count with
+    `rustmath_manifolds::tensor_field::component_count` ("too many components to store"). Re-measure `FORM_COMPONENTS`
+    in release with J1b's harness (64 bytes a slot, held once) and rewrite its doc (`:11102-11107`, which still says
+    each d enlarges the expressions) and the `repl_limits` overview (`:11002-11003`). Every REPL chart is named
+    `user_chart` (`:4801`) and is not registered, so REPL charts need unique names or registration before forms get
+    symbolic components. Optional: expose `is_closed`, `closedness`, `interior_product`, `lie_derivative` and the
+    components (a form displays only its degree, `:550-553`).
+  - The `differentiate` facades of rustmath-symbolic (tracker 🛑 row "Derivative of a named function":
+    `rustmath-symbolic/src/differentiate.rs:230-234` named functions, `:90` Mod, `:184-188` gamma, `:191` factorial,
+    `:204` zeta, `:194-198` erf with 500/443 for 2/sqrt(π), `:218-221` a `root_sum` whose polynomial contains the
+    variable). d and the 1-form Lie derivative refuse them (`expr_zero::unsupported_derivative`, `expr_zero.rs:726`);
+    the other callers in the crate are unguarded: `vector_field.rs:169`, `:198`, `:202`, `scalar_field.rs:149`,
+    `maps.rs:126`, `transition.rs:143`, `utilities.rs:134`, `symplectic.rs:398`, `:405` (`from_hamiltonian`),
+    `symmetries.rs:121-139`, `finsler.rs:160-161`, `:309-311`. Wiring the hooks of `function.rs` (`:23`,
+    `FunctionRegistry` `:207`) into `differentiate` lifts the refusal; `unsupported_derivative` must then admit exactly
+    the kinds that gained a derivative.
+  - Integration (tracker 🔴 row since part 3): `integrate_form_on_chart` and `VolumeForm::evaluate_at` read
+    `components[0]` (`integration.rs:310`, `:254`), which is 0 in every n-form with n >= 2; the quadrature for n >= 2
+    covers one coordinate (`:644`); `VolumeForm::from_metric` allocates factorial(n) slots (`:201`). Stokes' `verify`
+    (`:361`) compares with 0.
+  - Pullback and pushforward (tracker 🛑 row): the Jacobian-minor pullback of p-forms, the Jacobian products for
+    tensors (Lee 2013 ch. 12 and 14) and the inverse map for the pushforward (`maps.rs:327`, `:362`, `:428` return
+    `Err(NotImplemented)`); `apply_to_one_form` (`:278`) does not compose ω with f; `apply_to_tangent_vector` pushes
+    zeros and keeps the source base point (`:188-195`).
+  - Symplectic (tracker 🛑 row): `matrix_at` (`symplectic.rs:261`) ignores the point, the chart and the form, so
+    `is_non_degenerate` (`:244`) and `evaluate` (`:281`) use the standard form; `SymplecticForm::new` (`:169`) checks
+    only the degree. The pattern of `is_contact` (`contact.rs:175`, one independent component of ω^n) gives an honest
+    test.
+  - `LieDerivative::apply_to_tensor` (`lie_derivative.rs:209`) returns `Err(NotImplemented)`: the correction terms of
+    the Lie derivative of a general tensor are missing (formula in its doc and error, Lee 2013 ch. 12).
+  - Charts are identified by name only (`tensor_field.rs`, `vector_field.rs:81`, `scalar_field.rs:31`,
+    `riemannian.rs:79` key components by `chart.name()`); d checks a registered chart and trusts an unregistered one.
+    Storing the coordinate names with the components would let every reader check the chart.
+  - Unchecked counts outside MF1's files: `spin.rs:76`, `:78`, `:341`, `:343`, `almost_complex.rs:160`,
+    `finsler.rs:153`, `:300`, `symmetries.rs:110`, `symplectic.rs:266` (`matrix_at`); the module rank sums
+    `modules.rs:605`, `traits.rs:124`.
+  - Dense storage: a p-form holds n^p slots of 64 bytes, not C(n, p); ω^4 on R^8 needs 8^8 slots, and from R^10 on
+    `SymplecticForm::volume_form` ends in `ComponentAllocationFailed`. `DiffForm::new` means both "zero" and "no
+    components in this chart". `tracker_08_09_tests.rs` is still not compiled (it reads the private field
+    `PullBack::map`).
+  - One public zero test: move `expr_zero` to rustmath-symbolic (and, if S1 lands, merge it with S1's constants).
+    rustmath-symbolic's `simplify` folds `0 * a` to 0 for any a (`oo`, NaN and `1/(y - y)` included) and keeps
+    `Rational(1)` as a `Rational`; `Expr::from(f64)` maps NaN and the infinities to `Integer(0)`
+    (`rustmath-symbolic/src/expression.rs:399-404`), so such a float becomes a literal 0 before the finiteness checks of
+    forms see it.
+  - `cargo clippy -p rustmath-manifolds` stops in rustmath-combinatorics on its five old deny lints (see Combinatorics;
+    `--no-deps` passes), and with `--tests` also on `approx_constant` in `examples.rs:520`, `:522`.
+  - Code review notes of MF1 (minor, not applied): two negation items of `test_zero_test_budget`
+    (`expr_zero.rs:956-972`) are Unresolved by the nesting limit before the negation charge is reached, because the
+    factors of P are balanced sums (build them left-deep with 100 terms each, or use 150 levels); `Symbol("π")`, which
+    `rustmath-symbolic/src/solve.rs:911`, `:919`, `:938`, `:952`, `:977`, `:985` build for π, is a free indeterminate
+    in the zero test (`reserved::NAMED_CONSTANTS`, `expr_zero.rs:94`, has only `pi` and `e`), so π - e is NonZero where
+    pi - e is Unresolved (add "π", a doc sentence and a test row); the module doc (`diff_form.rs:49-50`) says every
+    result component is simplified and zero-tested, but `Add` copies a summand when the other is a literal 0
+    (`:945-948`) and `Neg` only simplifies.
+- From the P1 design, section I (not tracked as rows): facade-like `Err` handling of Zassenhaus results at
+  `rustmath-groups/src/galois_resolvent.rs:159-169`, `rustmath-curves/src/belyi/audit.rs:390-398`,
+  `rustmath-igp24/src/main.rs:117` (`unwrap_or(false)`), `rustmath-functionfields/src/factor.rs:70` and
+  `genus.rs:240-244`; `local_galois_candidates` (`rustmath-groups/src/pgalois.rs:217`) assumes a transitive
+  local group at ramified primes; `LaurentPolynomial::is_one` is false for the zero polynomial of the zero
+  ring (`rustmath-polynomials/src/laurent.rs:370`); `rustmath-numberfields/src/panayi.rs:326` duplicates
+  `is_padic_square` without the prime check; `LaurentPolynomial`'s `Mul` adds the i32 exponents unchecked
+  (`laurent.rs:287`; an overflow panics in debug; the hooks use a checked product).
+- From the I3 report (not tracked as rows): call sites that `80130e7` turned into explicit panics guard
+  pre-existing facades: `rustmath-powerseries/src/algebraic.rs` (`i128_of` callers turn `None` into an empty
+  root list), `rustmath-algebraic/src/radicals.rs:42-43` (returns alpha itself as its n-th root; tracker row),
+  `rustmath-numbertheory/src/quadratic_forms.rs` (counts 0 solutions for m <= 0) and
+  `rustmath-quadraticforms/src/local_densities.rs:231` (counts only the first 1000 residues).
+  `rustmath-symbolic/src/integrate.rs` `polynomial_degree` returns `Some(-1)` for x^(-1).
+  `SageInteger::binomial` near its 2^32-bit cap needs about 10 GB (a segmented sieve would remove the K-byte
+  sieve). `rustmath-py` is outside the workspace and was edited without a compile check in `80130e7` and
+  `7c4d057`.
+- Fixed by part 1 of the round and removed from this list: `80130e7`: `IsPower(n, k)` without a root
+  (`Integer::exact_root`), the bits^2 `is_perfect_power`, the sign-arbitrary i32/i64 gcd/lcm/xgcd and the
+  `div_rem(MIN, -1)` panic, the `ArithInt`/`ArithLLong` gcd and lcm overflow on MIN and `add_mod`/`mul_mod`
+  for m <= 0, `Integer::sqrt` starting Newton at x = self, a faster balanced gcd (Lehmer; half-gcd above stays
+  open), the slow `SageInteger::binomial` (S1), the unchecked `sigma` exponent (S5), the panicking inherent
+  `Integer::to_i64` and the `series.rs` expansion point (S7, first two parts), and `Binomial(n, r)` for r < 0
+  cross-checked with PARI/GP, GAP and Sage; `7c4d057`: no proving `is_prime` above psi_12 (BPSW and ECPP now;
+  psi_12 is split by every driver), `square_root_mod_prime` testing primality twice, the repeated
+  Miller-Rabin bases and the per-candidate `nth_prime` / `prime_pi` (S6), the duplicate
+  `fast_arith::is_prime_u64`; `0ceaeaa`: the broken QS sieve stage and its two pinned tests (SIQS, card T-223),
+  `trial_division_with_primes` reporting its cofactor as a prime, `factor_pollard_rho` without a capped variant
+  (`factor_pollard_rho_limited`, `factorization_with_limits`), the QS `legendre_symbol`, the ECM module doc;
+  `166ac34`: the unchecked squarefree input of `fp_factor::distinct_degree_factor`, the unchecked p in
+  `fp_factor::factor` and `pgalois::unramified_local_galois_group`, the d + 1 rungs of `block_contract`, the
+  redundant Rabin test in maclane, the literal in the typed factor, phase 1 and the unsorted `factor` output,
+  the Zassenhaus error text, the Cohen citations in `zx.rs` and `univariate.rs`, and the Ring hooks for
+  polynomials.
+- Fixed by part 2 of the round and removed from this list: `4b7f034`: the unchecked squarefree input of both
+  rustmath-finitefields distinct-degree factorizations and the unchecked lava `squarefree_factorization`,
+  `check_prime_characteristic` calling `Integer::is_prime` (now `try_is_prime`), an undetected reducible `Gfpn`
+  modulus (`Gfpn::try_new`), the non-uniform `random_irreducible` for p > 2^63, the O(min(n, p)) `Gfpn::from_int`,
+  the O(m) order loops of `IntegerMod` / `PrimeField` and the trial-division factoring of q - 1 for GF(q) orders,
+  `IsSquare` / `Sqrt` with the root on `PrimeField` and GF(p^n), `static_is_commutative` for the finite-field
+  types, and the Galois-ring containers built from `R::one()` (degree 7 instead of 6); `fd081fa`: the panicking
+  p-adic `zero()`/`one()`, `RingMorphismMethods::is_nonzero` reading the static `one()`, no real implementor of
+  the three-valued `RingParentMethods`, the missing composite-characteristic rule in the category trait, and the
+  Ring hooks of series and p-adics; `d3a133b`: no complexity bound for the rational form and invariant factors
+  over a field (now O((r+1) n^3) field operations), the rational-form "Fallback" paragraph and the
+  `polynomial_matrix` header naming only the `PrimeField` sentinel; `dc367a2`: the multi-RHS `IsConsistent`,
+  `PrimaryRationalForm`, `JordanForm`, `IsSimilar`; `2e000c9`: the S2 u32 overflows in rustmath-combinatorics
+  (catalan, rising factorial, multinomial, Schröder, `partition_count`), S3 an Integer p(n) for n > 416
+  (`number_of_partitions`), S4 the faster callees (Fibonacci doubling, the Bell triangle, rolling Stirling rows,
+  the derangement and Motzkin recurrences), the u32 `binomial` through `SageInteger::binomial`; `bd03278`: N5
+  (plot options), S9 (the `-` before `*` split and commas inside string literals), S10 (`pochhammer` was the
+  falling factorial), S11 (`to_f64` of large rationals), S14 (`chart` names against dim(M)), S15 (graph
+  constructors, `prime_pi`, `primes`), the REPL `sqrt_mod` trial division (and the dropped 4 and 73 mod psi_12
+  rows); `36c2170`: F2 in the REPL (values cloned on every assignment and lookup), S12 (growth guards for
+  `matrix_power`, `**` and products), S13 (no timeout or interrupt), the REPL `falling_factorial` /
+  `rising_factorial` and `partitions` arms limited to u32 and 416, and the 7-minute `test_table_limits`.
+- Fixed by part 3 of the round and removed from this list: `f29c492`: F2 in the library (repeated d and wedge built
+  ever larger expression trees, 574 MB for d(d(dx_0)) at 10^6 components, and the O(n^(p+2)) inner loop of d), the d
+  and wedge facades (a flat-index sum and the raw tensor product, tracker 🔴 rows), N4 / S8 (the unchecked
+  `n.pow(p + 1)` and `n.pow(p + q)` in `diff_form.rs` and `tensor_field.rs`), the library d without a chart check, the
+  contraction that summed index values, the tensor product layout, `Add` and `Neg` returning an operand, the
+  structural `is_closed`, `is_contact` and symplectic volume form built on the facades, `ContactForm::standard` with
+  symbols that are not coordinates, and the three pullback and pushforward relabellings (now `Err(NotImplemented)`).
 
 **Next steps** (unchanged): wire up or delete the dead code listed in
 `docs/magma/REVIEW_2026-11-06.md` (the `rustmath-rings/src/number_field/` orphan files, the gated

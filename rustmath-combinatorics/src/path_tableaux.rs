@@ -288,9 +288,17 @@ fn generate_dyck_paths(
 
 /// Count the number of lattice paths from (0,0) to (m,n) using the binomial coefficient
 ///
-/// The number of such paths is C(m+n, m) = C(m+n, n)
+/// The number of such paths is C(m+n, m) = C(m+n, n). m + n is formed in u64, so it never
+/// wraps.
+///
+/// # Panics
+///
+/// Panics (in `SageInteger::binomial`) if the result has more than about 2^32 bits.
 pub fn count_lattice_paths_ne(m: u32, n: u32) -> Integer {
-    crate::binomial(m + n, m)
+    <Integer as rustmath_integers::SageInteger>::binomial(
+        &Integer::from(u64::from(m) + u64::from(n)),
+        &Integer::from(m),
+    )
 }
 
 /// Count the number of Dyck paths of length 2n (Catalan number)

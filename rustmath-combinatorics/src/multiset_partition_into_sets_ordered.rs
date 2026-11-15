@@ -372,6 +372,12 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
     /// // Returns partitions like [{1}, {2, 3}], [{1, 2}, {3}], [{2}, {1, 3}], etc.
     /// assert!(finer.len() > 0);
     /// ```
+    ///
+    /// Cost: 2^b splits of each block of b elements.
+    ///
+    /// # Panics
+    ///
+    /// If a block has usize::BITS or more elements: its 2^b subsets cannot be listed.
     pub fn finer(&self) -> Vec<Self> {
         let mut result = Vec::new();
 
@@ -383,7 +389,9 @@ impl<T: Clone + Eq + Hash + Ord> OrderedMultisetPartitionIntoSets<T> {
 
             // Generate all non-empty subsets of the block
             let n = block.len();
-            for mask in 1..(1 << n) - 1 {
+            let count: usize =
+                crate::machine_word::subset_mask_count(n, "OrderedMultisetPartitionIntoSets::finer");
+            for mask in 1..count - 1 {
                 // Exclude empty and full set
                 let mut subset1 = Vec::new();
                 let mut subset2 = Vec::new();

@@ -3,6 +3,9 @@
 //! A binary word is a sequence of 0s and 1s. This module provides utilities
 //! for working with binary words, including generation, manipulation, and
 //! various combinatorial properties.
+//!
+//! Conversions to and from a usize respect usize::BITS, and the 2^n loop of
+//! [`all_binary_words`] refuses n >= usize::BITS (design C1 §1.6, items 27 and 30).
 
 use std::fmt;
 
@@ -30,18 +33,34 @@ impl BinaryWord {
     }
 
     /// Create a binary word from an integer (little-endian)
+    ///
+    /// Bits from usize::BITS on are 0 (a usize has no such bits).
     pub fn from_usize(value: usize, length: usize) -> Self {
-        let bits = (0..length).map(|i| (value >> i) & 1 == 1).collect();
+        let bits = (0..length)
+            .map(|i| i < usize::BITS as usize && (value >> i) & 1 == 1)
+            .collect();
         BinaryWord { bits }
     }
 
     /// Convert to integer (little-endian)
+    ///
+    /// Any number of leading zeros is allowed.
+    ///
+    /// # Panics
+    ///
+    /// If a set bit has index i >= usize::BITS ("BinaryWord::to_usize: bit {i} is set; the
+    /// value exceeds usize::MAX").
     pub fn to_usize(&self) -> usize {
-        self.bits
-            .iter()
-            .enumerate()
-            .map(|(i, &b)| if b { 1 << i } else { 0 })
-            .sum()
+        let mut value = 0usize;
+        for (i, &b) in self.bits.iter().enumerate() {
+            if b {
+                if i >= usize::BITS as usize {
+                    panic!("BinaryWord::to_usize: bit {i} is set; the value exceeds usize::MAX");
+                }
+                value |= 1usize << i;
+            }
+        }
+        value
     }
 
     /// Create a zero word of given length
@@ -340,8 +359,14 @@ impl fmt::Display for BinaryWord {
 }
 
 /// Generate all binary words of length n
+///
+/// Cost: 2^n words.
+///
+/// # Panics
+///
+/// If n >= usize::BITS: the 2^n words cannot be listed.
 pub fn all_binary_words(n: usize) -> Vec<BinaryWord> {
-    let count = 1 << n;
+    let count: usize = crate::machine_word::subset_mask_count(n, "all_binary_words");
     (0..count)
         .map(|i| BinaryWord::from_usize(i, n))
         .collect()

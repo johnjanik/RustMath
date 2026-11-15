@@ -21,12 +21,14 @@ pub mod ff_poly;
 pub mod integer_mod;
 pub mod irreducible;
 pub mod prime_field;
+mod prime_field_factor; // ch 23 §23.8.1: FactorizationField for GF(p) (Berlekamp)
 mod ring_hooks; // shared `Ring` element-predicate hooks (ch 17 §17.5.5, ch 19, ch 21)
 pub mod zmod;
 
 // --- MAGMA port Wave 1 (chapters 21, 19, 48) ---
 pub mod finite_field; // ch 21: GF(p^n) as a shared Parent (Conway embeddings)
 pub mod galois_ring; // ch 48: Galois rings GR(p^a, d) (finite chain rings)
+mod group_order; // ch 19, 21: orders from the factored group exponent (Cohen Alg. 1.4.3)
 pub mod poly_factor; // ch 21: Cantor–Zassenhaus / DDF / EDF / irreducibility
                      // ch 19 (Integers(m) = Z/mZ) lives in `zmod` / `integer_mod`.
 
@@ -42,8 +44,9 @@ pub use conway::{available_conway_polynomials, conway_polynomial, has_conway_pol
 pub use extension_field::ExtensionField;
 pub use ff_poly::{FFPoly, Gfpn};
 pub use integer_mod::{
-    all_square_roots_mod_prime_power, is_integer_mod, lucas, lucas_q1, square_root_mod_prime,
-    square_root_mod_prime_power, IntegerMod,
+    all_square_roots_mod_prime_power, is_integer_mod, lucas, lucas_q1,
+    num_square_roots_mod_prime_power, square_root_mod_prime, square_root_mod_prime_power,
+    IntegerMod,
 };
 pub use irreducible::generate_gfpn_modulus;
 pub use prime_field::PrimeField;

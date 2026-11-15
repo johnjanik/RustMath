@@ -56,6 +56,13 @@ use std::ops::{Add, Mul, Neg, Sub};
 /// `IntegerMod::zero() == IntegerMod::new(0, n)?`; two bound elements are
 /// equal iff value *and* modulus match (unchanged). Use [`Zmod`](crate::Zmod)
 /// for a parent whose `zero()`/`one()` carry the modulus from the start.
+///
+/// Containers: `UnivariatePolynomial` (on construction), `MultivariatePolynomial` and
+/// `LaurentPolynomial` (in `add_term`) bind every unbound coefficient to the modulus of a
+/// bound coefficient ([`Ring::bind_to_parent_of`]) and drop the terms that become zero. A
+/// container with only unbound coefficients stays over Z until it meets a bound element.
+/// The generic containers of rustmath-matrix, rustmath-powerseries and rustmath-rings
+/// still bind entry by entry.
 #[derive(Clone, Debug)]
 pub struct IntegerMod {
     value: Integer,
@@ -213,10 +220,27 @@ impl IntegerMod {
         gcd.is_one() || (-gcd).is_one()
     }
 
-    /// Compute the multiplicative order of this element
+    /// MAGMA `Order(a)` (ch. 19 §19.7): the smallest k > 0 such that
+    /// self^k ≡ 1 (mod n), or `None` if the element is not a unit (MAGMA
+    /// returns 0 there).
     ///
-    /// Returns the smallest k > 0 such that self^k ≡ 1 (mod n),
-    /// or None if the element is not a unit.
+    /// Exact: H. Cohen, GTM 138, Alg. 1.4.3 on a factored multiple of the
+    /// order: `n - 1` when `a^(n-1) = 1 (mod n)`, else the Carmichael function
+    /// λ(n). Every prime of that factorization is proven. 1 and -1 need no
+    /// factoring.
+    ///
+    /// For the modulus-0 sentinel (an element of Z): `Some(1)` for 1, `Some(2)`
+    /// for -1, `None` otherwise.
+    ///
+    /// # Cost
+    /// One exponentiation mod n, then the factorization of `n - 1` (Fermat
+    /// path) or of `n` and each `p - 1` (λ path) with MAGMA's default limits
+    /// (the sieve without a digit limit); no time bound. The factorizations are
+    /// cached for the process.
+    ///
+    /// # Panics
+    /// Only when a prime factor of that exponent has no primality proof (an
+    /// unresolved ECPP proof); the message names the number.
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if !self.is_unit() {
             return None;
@@ -233,22 +257,13 @@ impl IntegerMod {
             };
         }
 
-        let mut power = self.clone();
-        let mut k = Integer::one();
-        let one = IntegerMod::new(Integer::one(), self.modulus.clone()).unwrap();
-
-        // Limit iterations to prevent infinite loops
-        let max_order = self.modulus.clone();
-
-        while power != one && k < max_order {
-            power = power * self.clone();
-            k = k + Integer::one();
-        }
-
-        if power == one {
-            Some(k)
-        } else {
-            None
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Complete,
+        ) {
+            Ok(f) => Some(crate::group_order::product(&f)),
+            Err(why) => panic!("IntegerMod::multiplicative_order: {why}"),
         }
     }
 
@@ -560,6 +575,24 @@ impl Ring for IntegerMod {
         self.value.is_one()
     }
 
+    /// Z/nZ is commutative for every n, and the modulus-0 sentinel is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants (see `Ring::is_unbound_constant`): the modulus-0 sentinel is one,
+    // and it binds by the canonical map Z -> Z/nZ into the modulus of a bound model.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        self.modulus.is_zero()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        (self.modulus.is_zero() && !model.modulus.is_zero())
+            .then(|| IntegerMod::make(self.value.clone(), model.modulus.clone()))
+    }
+
     // Element predicates on the generic `Ring` path (MAGMA Ch. 19 `IsUnit`, `IsNilpotent`,
     // `Order`). A bound element delegates to the inherent methods (which concrete call
     // sites resolve to first). The modulus-0 sentinel is an integer constant awaiting the
@@ -589,8 +622,14 @@ impl Ring for IntegerMod {
         IntegerMod::inverse(self)
     }
 
-    /// The order of a unit of Z/nZ by the inherent `multiplicative_order`, a complete
-    /// search (the order of a unit is at most phi(n) < n).
+    /// The order of a unit of Z/nZ, as the inherent `multiplicative_order`
+    /// (Cohen Alg. 1.4.3), but with a cost cap: the group exponent is factored
+    /// with trial division to 10^4, 8191 rho steps per composite, the sieve only
+    /// on composites of at most 30 digits, and ECPP only on probable primes of
+    /// at most 256 bits. Beyond the cap the answer is `Undecided` (1 and -1 need
+    /// no factoring). An `Undecided` can become decided later in the same
+    /// process, once an exact call has factored the same exponent (the
+    /// factorizations are cached); both answers are honest.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         if self.modulus.is_zero() {
             return crate::ring_hooks::sentinel_order(&self.value);
@@ -598,9 +637,13 @@ impl Ring for IntegerMod {
         if !IntegerMod::is_unit(self) {
             return rustmath_core::MultiplicativeOrder::NotAUnit;
         }
-        match IntegerMod::multiplicative_order(self) {
-            Some(k) => crate::ring_hooks::order_from_integer(&k),
-            None => rustmath_core::MultiplicativeOrder::Undecided,
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Capped,
+        ) {
+            Ok(f) => crate::ring_hooks::order_from_integer(&crate::group_order::product(&f)),
+            Err(_) => rustmath_core::MultiplicativeOrder::Undecided,
         }
     }
 }
@@ -967,6 +1010,44 @@ pub fn all_square_roots_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> V
         return vec![Integer::zero()];
     }
     prime_power_sqrts(a, p, k).all()
+}
+
+/// The number of square roots of `a` modulo p^k, in closed form (no roots are listed; MAGMA
+/// ch. 19 §19.5.6 counts the output of `AllSqrts`).
+///
+/// For a ≡ 0 (mod p^k) there are p^⌊k/2⌋ roots; for a ≡ p^(2e)·u, p ∤ u, j = k − 2e,
+/// there are 2·p^e roots for odd p, and 2^e, 2·2^e or 4·2^e roots for p = 2 and j = 1, 2 or
+/// ≥ 3, when u is a square mod p^j; otherwise 0. For k = 0 the count is 1 (Z/1Z = {0}). This is
+/// the per-prime-power factor of [`IntegerMod::num_sqrts`], for a caller that already knows the
+/// factorization of the modulus. It equals the length of
+/// [`all_square_roots_mod_prime_power`]`(a, p, k)` without building that list.
+///
+/// # Contract and panics
+///
+/// As for [`square_root_mod_prime_power`]: `p` is checked once with
+/// [`rustmath_integers::prime::is_prime`] (a proof for every size; a success of
+/// `rustmath_integers::prime::try_is_prime` is cached, so a proven prime costs nothing here).
+/// Panics if `p` is rejected or if `k > u32::MAX`.
+///
+/// # Example
+///
+/// ```
+/// use rustmath_finitefields::num_square_roots_mod_prime_power;
+/// use rustmath_integers::Integer;
+///
+/// // 9 mod 2^4 has the roots 3, 5, 11, 13; 0 mod 2^64 has 2^32 roots.
+/// assert_eq!(num_square_roots_mod_prime_power(&Integer::from(9), &Integer::from(2), 4), Integer::from(4));
+/// assert_eq!(
+///     num_square_roots_mod_prime_power(&Integer::zero(), &Integer::from(2), 64),
+///     Integer::from(2).pow(32)
+/// );
+/// ```
+pub fn num_square_roots_mod_prime_power(a: &Integer, p: &Integer, k: usize) -> Integer {
+    let k = checked_prime_power_args("num_square_roots_mod_prime_power", p, k);
+    if k == 0 {
+        return Integer::one(); // Z/1Z: the residue 0 is the only root
+    }
+    prime_power_sqrts(a, p, k).count()
 }
 
 /// Lucas sequence U_n(P, Q) computation
@@ -1424,6 +1505,36 @@ mod tests {
             let s = prime_power_sqrts(&a, &p, 3);
             assert_eq!(s.count(), count, "count of roots of {a} mod P^3");
             assert_eq!(s.least(), least, "least root of {a} mod P^3");
+        }
+    }
+
+    /// The closed-form count per prime power. References (gp): `sum(x=0,15,Mod(x,16)^2==9)` = 4,
+    /// `sum(x=0,7,Mod(x,8)^2==2)` = 0, `isprime(1000003)` = 1, `issquare(Mod(13,1000003))` = 1
+    /// (so 13·p^2 mod p^3 has v = 2, e = 1, j = 1 and 2·p roots), `issquare(Mod(2,1000003))` = 0.
+    #[test]
+    fn test_num_square_roots_mod_prime_power() {
+        let i = Integer::from;
+        let two = i(2);
+        assert_eq!(num_square_roots_mod_prime_power(&i(0), &two, 64), two.pow(32));
+        assert_eq!(num_square_roots_mod_prime_power(&i(9), &two, 4), i(4));
+        assert_eq!(num_square_roots_mod_prime_power(&i(2), &two, 3), i(0));
+        let p = i(1000003);
+        let p2 = p.clone() * p.clone();
+        assert_eq!(num_square_roots_mod_prime_power(&(p2.clone() * i(13)), &p, 3), i(2000006));
+        assert_eq!(num_square_roots_mod_prime_power(&(p2 * i(2)), &p, 3), i(0));
+        assert_eq!(num_square_roots_mod_prime_power(&i(5), &i(7), 0), i(1));
+        // The count is the length of the list, for every residue of small prime powers.
+        for q in [2, 3, 5, 7] {
+            for k in 1..=3usize {
+                for a in 0..64 {
+                    let n = all_square_roots_mod_prime_power(&i(a), &i(q), k).len() as u64;
+                    assert_eq!(
+                        num_square_roots_mod_prime_power(&i(a), &i(q), k),
+                        Integer::from(n),
+                        "a = {a}, p = {q}, k = {k}"
+                    );
+                }
+            }
         }
     }
 }

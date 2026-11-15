@@ -12,39 +12,55 @@
 //!
 //! Algorithm: spinning a fixed basis of start vectors under `A` (Krylov iteration; W.
 //! Keller-Gehrig, Theoret. Comput. Sci. 36 (1985) 309–317 \[KG85\]; crate module `krylov`) gives a
-//! presentation `F^n ≅ F[x]^r / im(R)` of the module `F^n` (x acting as `A`) by an r×r
-//! upper-triangular relation matrix `R` over `F[x]`, usually with r = 1. The invariant factors
-//! of `A` are the non-constant diagonal entries of the Smith form of `R` ([`smith_normal_form`]);
-//! the Smith form of the n×n `xI - A` has the same non-constant diagonal, since both present
-//! the same module. The change of basis comes from the columns of `P⁻¹` (N. Jacobson, *Basic
-//! Algebra I*, 2nd ed., §3.8–3.10; D. S. Dummit and R. M. Foote, *Abstract Algebra*, 3rd ed.,
-//! §12.1–12.2). MAGMA uses Steel's algorithm \[Ste97\] (A. Steel, J. Symbolic Comp. 24 (1997)
-//! 409–432) instead; its spinning step is the same idea, its combination step is not.
-//! Storjohann's O(n³) Frobenius form (ISSAC 1998) is not implemented.
+//! presentation `F^n ≅ F[x]^r / im(R)` of the module `F^n` (x acting as `A`) by r generators and
+//! an r×r upper-triangular relation matrix `R` over `F[x]`. Usually r = 1, and then the
+//! presentation is the answer (`A` is cyclic). Otherwise the cyclic decomposition by maximal
+//! vectors (crate module `frobenius`; K. Hoffman and R. Kunze, *Linear Algebra*, 2nd ed.,
+//! §7.2) peels off one cyclic summand per invariant factor, the minimal polynomial first, with
+//! the r generators as candidates; it needs no Smith form and no factorization. The change of
+//! basis of the rational form comes from the clean generators of the summands. MAGMA uses
+//! Steel's algorithm \[Ste97\] (A. Steel, J. Symbolic Comp. 24 (1997) 409–432) instead, which
+//! factors the characteristic polynomial. Storjohann's O(n³) Frobenius form (ISSAC 1998; PhD
+//! thesis, ETH Zürich 2000, ch. 9) is not implemented.
 //!
-//! Complexity: spinning is `O(n³)` field operations, and over Q the entries stay polynomial in
-//! size (quotients of minors of the Krylov matrix). No bound is claimed for the Smith step on
-//! `R`: the start basis `W` is fixed, so every `A = W·B·W⁻¹` with `B` upper triangular gives
-//! r = n and `R = xI - B`, and for such inputs this path is as slow as the classical Smith
-//! reduction of `xI - A`. A small r does not make the Smith step fast either, since the
-//! coefficient growth of the reduction over Q is not controlled (`polynomial_matrix` module
-//! docs): on one `A = U·diag(1, …, 20)·U⁻¹` (U unimodular) with a 2×2 `R` of diagonal degrees
-//! 13 and 7, [`invariant_factors`] took 81 s in debug. Nor is a bound claimed for the change
-//! of basis of [`rational_canonical_form`] (`P⁻¹` of the Smith form of `R`, the generators and
-//! the certificate): for small r > 1 it dominates (measured in debug, n = 20, r = 2 or 3:
-//! 1–6 s, against 0.2–0.6 s for [`invariant_factors`]; see that function).
+//! Complexity: the main path costs `O((r + 1)·n³)` field operations (r ≤ n), so `O(n⁴)` in the
+//! worst case and `O(n³)` for bounded r (module docs of `frobenius`). This bound holds for the
+//! main path only; the fallbacks below have none. Over Q no bit-complexity bound is proved: the
+//! echelon entries and coordinates are quotients of minors of the matrix of stored vectors, but
+//! within one level the merges apply polynomials in `A` of growing degree (`frobenius`, "Over
+//! Q"). Measured in debug (this crate's tests, idle machine):
+//! * `CONJDIAG20_S7 = U·diag(1, …, 20)·U⁻¹` (U unimodular, `R` 2×2 with diagonal degrees 13 and
+//!   7): [`invariant_factors`] 0.05 s and [`rational_canonical_form`] 0.14 s. The Smith form of
+//!   `R` (the main path before) took 81 to 102 s in debug when the case was found, and takes
+//!   3.2 s (rational form 5.7 s) on this tree.
+//! * `W·B·W⁻¹` with r = n (module docs of `krylov`), n = 20: 0.05 s and 0.10 s; n = 30: 0.4 s
+//!   and 0.8 s. With the Smith form of `R`, n = 20 took 31.5 s and 101 s on this tree (no answer
+//!   in 300 s when the case was found), n = 14 took 3.5 s and 19 s (95 s for the factors then).
+//! * Structured r = n inputs with merges (`W·Q·J·Q⁻¹·W⁻¹`, J a Jordan matrix with eigenvalues
+//!   1, 2 and 5, Q sparse unit upper triangular), n = 30: up to 1.8 s and 2.6 s over 60 inputs.
+//!   These are examples, not a ceiling: the time grows with the number of merges per level.
+//! * Inputs with many small Krylov blocks and many invariant factors (scalar, or diagonal with
+//!   few distinct values: r ≈ s ≈ n) cost `Θ(n⁴)` here, while the Smith form of their diagonal
+//!   `R` costs about n³: for `2·I` with n = 100 over a word-size GF(7), 0.71 s against 0.05 s
+//!   for [`invariant_factors`] and 0.75 s against 0.10 s for [`rational_canonical_form`]; over
+//!   `PrimeField` GF(7), 2.5 s and 4.3 s (about 0.2 s and 2.4 s with the Smith form of `R`,
+//!   measured before this change); for `3·I` with n = 40 over Q, 0.10 s against 0.01 s.
 //!
-//! Fallback: when the Krylov path returns `Err`, [`invariant_factors`], [`minimal_polynomial`]
-//! and [`rational_canonical_form`] use the classical presentation by `xI - A` on the unit
-//! vectors instead (same certificates). Over an exact field this does not happen; it does for
-//! matrices built only from unbound `Ring::zero()`/`one()` sentinels, computed in Z, where the
-//! ±1 start vectors can create non-unit pivots (module docs of `krylov`, "Exactness"), and for
-//! a rounding `Field` impl whose Krylov self-check fails.
-//!
-//! [`smith_normal_form`]: crate::polynomial_matrix::PolynomialMatrix::smith_normal_form
+//! Fallback: if the peeling returns `Err`, [`invariant_factors`], [`minimal_polynomial`] and
+//! [`rational_canonical_form`] use the Smith form of the Krylov relation matrix `R` (the main
+//! path before), and if that returns `Err` too, the classical presentation by `xI - A` on the
+//! unit vectors (same certificates); the result or error of the last stage is returned. Over an
+//! exact field (Q, bound GF(p) or GF(p^n)) the first stage does not fail. Two kinds of input
+//! reach the fallbacks. First, matrices built only from the unbound `Ring::zero()`/`one()`
+//! sentinels of `PrimeField` or of the GF(p^n) type `FiniteFieldElement`, computed in Z, where
+//! only ±1 are invertible and the ±1 start vectors can create non-unit pivots (module docs of
+//! `krylov`, "Exactness"). Second, a rounding `Field` impl (`Real`) whose checks fail.
 
 use crate::charpoly_berkowitz;
-use crate::krylov::{field_constants, krylov_presentation, linearly_independent, mat_vec};
+use crate::frobenius::{peel, PeelDepth};
+use crate::krylov::{
+    field_constants, krylov_presentation, linearly_independent, mat_vec, poly_mat_vec,
+};
 use crate::polynomial_matrix::div_rem_field;
 use crate::polynomial_matrix::PolynomialMatrix;
 use crate::Matrix;
@@ -436,74 +452,106 @@ fn invariant_factors_classical<F: Field>(
     factors_from_relations(&characteristic_matrix(matrix)?, matrix.rows())
 }
 
+/// The invariant factors of a square `A` by the peeling of `frobenius.rs` (main path).
+fn invariant_factors_peeled<F: Field>(matrix: &Matrix<F>) -> Result<Vec<UnivariatePolynomial<F>>> {
+    Ok(peel(matrix, PeelDepth::Full)?.invariant_factors())
+}
+
+/// The minimal polynomial of a square, non-empty `A` by the first level of the peeling of
+/// `frobenius.rs` (main path).
+fn minimal_polynomial_peeled<F: Field>(matrix: &Matrix<F>) -> Result<UnivariatePolynomial<F>> {
+    peel(matrix, PeelDepth::MinimalPolynomial)?
+        .minimal_polynomial()
+        .ok_or_else(|| {
+            MathError::InvalidOperation(
+                "internal: the peeling found no level for a non-empty matrix".to_string(),
+            )
+        })
+}
+
+/// The fallback chain behind the public functions: the Smith form of the Krylov relation
+/// matrix `R`, then the Smith form of `xI - A`.
+fn invariant_factors_fallback<F: Field>(
+    matrix: &Matrix<F>,
+) -> Result<Vec<UnivariatePolynomial<F>>> {
+    invariant_factors_krylov(matrix).or_else(|_| invariant_factors_classical(matrix))
+}
+
 /// MAGMA `InvariantFactors(A)` (Handbook ch. 26 §26.12.2): the non-constant invariant factors
 /// of `A`, monic, `f_1 | f_2 | … | f_r` (increasing), with product the characteristic
 /// polynomial.
 ///
-/// `Err(InvalidArgument)` if `A` is not square; `[]` for the 0×0 matrix. Computed from a
-/// Krylov presentation `F^n ≅ F[x]^r / im(R)` (see the module docs) as the non-constant
-/// diagonal entries of the Smith form of the r×r relation matrix `R`, without transforms; the
-/// Smith form of `xI - A` has the same non-constant diagonal, since both present the same
-/// module. Every relation in `R` is verified when it is found (exactly, over an exact field),
-/// and the output check of the Smith form certifies its diagonal (see
-/// [`PolynomialMatrix::smith_normal_form`]); a failed check is `Err(InvalidOperation)`, never
-/// a value. No complexity bound is claimed for the Smith step on `R` (usually r = 1 for a
-/// random dense matrix over Q; r = n for the inputs described in the module docs, and even a
-/// 2×2 `R` can be slow over Q, see the module docs).
+/// `Err(InvalidArgument)` if `A` is not square; `[]` for the 0×0 matrix. Computed by the
+/// cyclic decomposition by maximal vectors (module docs; crate module `frobenius`): a Krylov
+/// presentation gives r generators of `F^n` as an `F[x]`-module (for r = 1 its one relation is
+/// the answer), and each level peels off a cyclic summand whose generator is maximal modulo the
+/// summands found so far; its relative minimal polynomial is the next invariant factor, from
+/// the largest (the minimal polynomial) down. Every claim is checked by exact computation in
+/// the run: each spin relation, the annihilator of each merged vector, an exponent certificate
+/// per level (every candidate is annihilated by the level's factor modulo the earlier
+/// summands), the divisibility chain and the total degree n. A failed check is
+/// `Err(InvalidOperation)`, never a value.
 ///
-/// Fallback: if the Krylov path returns `Err`, the factors are computed from the Smith form of
-/// `xI - A` instead (the classical path, equally certified), and its result or error is
-/// returned. Over an exact field (Q, bound GF(p) or GF(p^n)) the Krylov path does not fail. It
-/// fails on matrices built only from `PrimeField`'s (or a GF(p^n) type's) unbound
-/// `Ring::zero()`/`one()` sentinels, which are computed in Z: there its ±1 start vectors can
-/// create a non-unit pivot (a 3-cycle, `J_3(1)` or the all-ones 3×3 matrix, for example),
-/// while the constant pivots of `xI - A` are entries of `A`. In Z semantics a result is only
-/// returned when every inverted pivot is ±1, so it is the result over Z and, reduced, over
-/// GF(p) for every p (the module docs of `krylov`); a non-unit pivot in the classical path
-/// too (for example `[0, 0; 2, 0]`, or the upper all-ones 5×5 matrix) is `Err`. For a
-/// rounding `Field` impl (`Real`) a failed Krylov self-check also falls back, and the result
-/// is whatever the classical path gives, as before (no accuracy claim).
+/// Complexity: `O((r + 1)·n³)` field operations, r ≤ n the number of Krylov blocks (usually 1
+/// for a random matrix; n for the inputs described in the module docs of `krylov`). The bound
+/// holds for this main path only; the fallback has none, and over Q no bit-complexity bound is
+/// proved. Measured times are in the module docs, including the inputs with r ≈ s ≈ n (scalar,
+/// diagonal with few distinct values) where the Smith form of `R` was faster.
+///
+/// Fallback: if the peeling returns `Err`, the factors come from the Smith form of the r×r
+/// relation matrix `R` (without transforms; its output check certifies the diagonal, see
+/// [`PolynomialMatrix::smith_normal_form`]), and if that returns `Err` too, from the Smith form
+/// of `xI - A` (the classical path, equally certified); the result or error of the last stage is
+/// returned. Over an exact field (Q, bound GF(p) or GF(p^n)) the peeling does not fail. Two
+/// kinds of input reach the fallbacks. First, matrices built only from the unbound
+/// `Ring::zero()`/`one()` sentinels of `PrimeField` or of the GF(p^n) type
+/// `FiniteFieldElement`, which are computed in Z: there the ±1 start vectors can create a
+/// non-unit pivot (a 3-cycle, `J_3(1)` or the all-ones 3×3 matrix, for example), while the
+/// constant pivots of `xI - A` are entries of `A`. In Z semantics a result is only returned when
+/// every inverted pivot is ±1, so it is the result over Z and, reduced, over GF(p) for every p
+/// (module docs of `krylov` and `frobenius`, "Exactness"); a non-unit pivot in every stage (for
+/// example `[0, 0; 2, 0]`, or the upper all-ones 5×5 matrix) is `Err`. Second, a rounding
+/// `Field` impl (`Real`) whose checks fail: the result is that of the first stage that passes
+/// its checks, with no accuracy claim, and it can be `Err`.
 pub fn invariant_factors<F: Field>(matrix: &Matrix<F>) -> Result<Vec<UnivariatePolynomial<F>>> {
     if !matrix.is_square() {
         return Err(MathError::InvalidArgument(
             "Invariant factors are only defined for square matrices".to_string(),
         ));
     }
-    invariant_factors_krylov(matrix).or_else(|_| invariant_factors_classical(matrix))
+    invariant_factors_peeled(matrix).or_else(|_| invariant_factors_fallback(matrix))
 }
 
 /// MAGMA `MinimalPolynomial(A)` (Handbook ch. 26 §26.11; also ch. 59 §59.4.3
 /// `MinimalPolynomial(g)`): the monic polynomial `f` of least degree with `f(A) = 0`, which is
 /// the last invariant factor of `A`.
 ///
-/// `Err(InvalidArgument)` if `A` is not square; the constant 1 for the 0×0 matrix. Computed as
-/// in [`invariant_factors`] (Krylov presentation, Smith diagonal of the r×r relation matrix,
-/// no transforms, with the same fallback to the Smith form of `xI - A`); the same complexity
-/// caveat applies.
+/// `Err(InvalidArgument)` if `A` is not square; the constant 1 for the 0×0 matrix. Computed by
+/// the first level of the peeling of [`invariant_factors`] only: a maximal vector, whose
+/// minimal polynomial (with the exponent certificate of that level) is `μ_A`. Complexity:
+/// `O((r + 1)·n³)` field operations, as for [`invariant_factors`] (less when the minimal
+/// polynomial has small degree). The bound holds for this main path only; the fallback has
+/// none.
+///
+/// Fallback: if the peeling returns `Err`, the last invariant factor of the fallback chain of
+/// [`invariant_factors`] (the Smith form of `R`, then of `xI - A`), with the same triggers
+/// (unbound sentinels computed in Z, a rounding `Field` impl). In Z semantics a peeled result is
+/// `μ` over Z and, reduced, over GF(p) for every p (module docs of `frobenius`, "Exactness").
+/// Since only the first level runs, this can answer where [`invariant_factors`] returns `Err`.
 pub fn minimal_polynomial<F: Field>(matrix: &Matrix<F>) -> Result<UnivariatePolynomial<F>> {
-    Ok(invariant_factors(matrix)?
-        .pop()
-        .unwrap_or_else(|| UnivariatePolynomial::new(vec![F::one()])))
-}
-
-/// `p(A)·w`, by Horner's rule on vectors: `v ← A·v + c·w` for the coefficients `c` of `p` from
-/// the top down (`z` as in [`mat_vec`]).
-fn poly_at_matrix_times_vector<F: Field>(
-    p: &UnivariatePolynomial<F>,
-    a: &Matrix<F>,
-    w: &[F],
-    z: &F,
-) -> Vec<F> {
-    let mut v = vec![z.clone(); a.rows()];
-    for c in p.coefficients().iter().rev() {
-        v = mat_vec(a, &v, z);
-        if !c.is_zero() {
-            for (vt, wt) in v.iter_mut().zip(w) {
-                *vt = vt.clone() + c.clone() * wt.clone();
-            }
-        }
+    if !matrix.is_square() {
+        return Err(MathError::InvalidArgument(
+            "Invariant factors are only defined for square matrices".to_string(),
+        ));
     }
-    v
+    if matrix.rows() == 0 {
+        return Ok(UnivariatePolynomial::new(vec![F::one()]));
+    }
+    minimal_polynomial_peeled(matrix).or_else(|_| {
+        Ok(invariant_factors_fallback(matrix)?
+            .pop()
+            .unwrap_or_else(|| UnivariatePolynomial::new(vec![F::one()])))
+    })
 }
 
 /// Compute the rational canonical form of a matrix (MAGMA `RationalForm(A)`, Handbook ch. 26
@@ -516,33 +564,35 @@ fn poly_at_matrix_times_vector<F: Field>(
 /// only when `C` is symmetric, and PARI's (`B·A·B⁻¹ = F_P`) up to the block order; see
 /// [`RationalCanonicalForm::canonical_matrix`] and [`RationalCanonicalForm::change_of_basis`].
 ///
-/// Construction (Dummit–Foote §12.1–12.2): the Krylov presentation (module docs) gives
-/// `F^n ≅ F[x]^r / im(R)` via `φ: e_j ↦ w_j`, with generators `w_j` and an r×r relation
-/// matrix `R`. With `P·R·Q = S` the Smith form, `P` maps the module onto `⊕ F[x]/(d_i)`; the
-/// generator of the i-th summand comes from column i of `P⁻¹`, so
-/// `g_i = Σ_j (P⁻¹)_{j,i}(A)·w_j` has annihilator `d_i`, and `g_i, A·g_i, …, A^{k-1}·g_i`
-/// (`k = deg d_i`) are the columns of `T` for that block. Two refinements keep this cheap when
-/// r > 1 (the values of `P⁻¹` grow with the Smith reduction over Q):
-/// * the column of `P⁻¹` is first reduced modulo `im R` (back substitution on the upper
-///   triangular `R` with monic diagonal brings entry j to degree `< k_j = deg R[j][j]`; `φ`
-///   is unchanged since `im R ⊆ ker φ`), and `g_i` is then a combination of the Krylov basis
-///   vectors `A^t·w_j`, with no evaluation at `A`;
-/// * the Smith form is taken with `P⁻¹·D⁻¹` instead of `P⁻¹`, where `D` is the diagonal of
-///   the leading coefficients that make the pivots monic. This changes each `g_i` by a unit
-///   factor only (so `T` stays a valid change of basis) and keeps out the scalar factors that
-///   reach hundreds of digits over Q.
+/// Construction: the peeling of [`invariant_factors`] (crate module `frobenius`) gives maximal
+/// vectors `v_ℓ` with relations `f_ℓ(A)·v_ℓ = Σ_{i<ℓ} c_{ℓi}(A)·v_i` on the Krylov vectors
+/// already found. Every `c_{ℓi}` is divisible by `f_ℓ` (a consequence of the cyclic
+/// decomposition theorem; each division is checked to be exact), and the clean generators
+/// `g_ℓ = v_ℓ - Σ_i (c_{ℓi}/f_ℓ)(A)·v_i` satisfy `f_ℓ(A)·g_ℓ = 0` and `F^n = ⊕_ℓ K(g_ℓ)`,
+/// `K(g) = span(g, A·g, …)`. The columns of `T` are `g, A·g, …, A^{k-1}·g` block by block
+/// (`k = deg f_ℓ`). For a cyclic `A` (r = 1) `T` is the Krylov basis of the first start vector.
 ///
 /// When `T` is not needed,
 /// `RationalCanonicalForm::from_invariant_factors(invariant_factors(&a)?)` gives the same
 /// factors and `C` (with `change_of_basis = None`) and skips the transforms and the
 /// certificate.
 ///
-/// Fallback: if the Krylov construction returns `Err` (including a failed certificate), the
-/// same construction runs on the classical presentation `F^n ≅ F[x]^n / im(xI - A)` with the
-/// unit vectors `e_j` as generators (and `g_i` by Horner's rule), and its result or error is
-/// returned. As for [`invariant_factors`], this only happens for matrices built only from
-/// unbound `Ring::zero()`/`one()` sentinels, which are computed in Z; there a result is
-/// returned only when every pivot inverted by the Smith steps is ±1 and `det T = ±1`.
+/// Fallback: if the peeled construction returns `Err`, the Krylov construction runs (the Smith
+/// form of the relation matrix `R` with `P⁻¹`, as before), and if that returns `Err` too, the
+/// same construction on the classical presentation by `xI - A` with the unit vectors as
+/// generators; the result or error of the last stage is returned. Over an exact field (Q, bound
+/// GF(p) or GF(p^n)) the first stage does not fail. Two kinds of input reach the fallbacks.
+/// First, matrices built only from the unbound `Ring::zero()`/`one()` sentinels of `PrimeField`
+/// or `FiniteFieldElement`, computed in Z, where only ±1 are invertible: a stage that meets
+/// another pivot returns `Err`. There a result is returned only when every inverted pivot is ±1
+/// and `det T = ±1`, so it is the result over Z and, reduced, over GF(p) for every p. Second, a
+/// rounding `Field` impl (`Real`) whose relation checks or certificate fail; the result is then
+/// whatever stage passes its checks, with no accuracy claim, and it can be `Err` (the 8×8
+/// matrix of the `krylov` tests). The Krylov construction (`rcf_from_presentation`): with
+/// `P·R·Q = S` the Smith form, the generator of the i-th summand comes from column i of `P⁻¹`
+/// (Dummit–Foote §12.1–12.2), reduced modulo `im R` so that it is a combination of the Krylov
+/// basis vectors, and taken from `P⁻¹·D⁻¹` (`D` the leading coefficients that make the pivots
+/// monic) to keep out scalar factors of hundreds of digits over Q.
 ///
 /// Certificate: the result is returned only if `T` is square of size n, `A·T == T·C` and the
 /// columns of `T` are linearly independent; then `A` is similar to a block companion matrix
@@ -556,11 +606,12 @@ fn poly_at_matrix_times_vector<F: Field>(
 /// [`charpoly_berkowitz`]`(T)` is invertible, which in Z semantics means `det T = ±1`, so `T`
 /// is invertible over Z and modulo every p.
 ///
-/// Complexity: no bound is claimed for the Smith step (module docs) or for the transform and
-/// certificate steps, whose cost grows with the size of the entries of `P⁻¹` and `T`. When
-/// r > 1 they dominate: for `A = U·diag(1, …, 20)·U⁻¹`, U unimodular, with r = 2 or 3, the
-/// rational form takes 1–6 s in debug against 0.2–0.6 s for [`invariant_factors`] (before
-/// the two refinements above: 30 s and 65 s on two of these inputs).
+/// Complexity: `O((r + 1)·n³)` field operations for the peeling, the clean generators, `T` and
+/// the certificate (the main path; module docs). Over Q no bit-complexity bound is proved. The
+/// fallbacks have no bound: there the cost of the transform grows with the entries of `P⁻¹`
+/// (for `A = U·diag(1, …, 20)·U⁻¹`, U unimodular, r = 2 or 3, the Krylov construction took
+/// 1–6 s in debug, and on the `W·B·W⁻¹` input with n = 14, 19 s on this tree). Measured times
+/// of the main path are in the module docs.
 pub fn rational_canonical_form<F: Field>(
     matrix: &Matrix<F>,
 ) -> Result<RationalCanonicalForm<F>> {
@@ -576,10 +627,23 @@ pub fn rational_canonical_form<F: Field>(
             change_of_basis: Some(Matrix::from_vec(0, 0, Vec::new())?),
         });
     }
-    rational_canonical_form_krylov(matrix).or_else(|_| rational_canonical_form_classical(matrix))
+    rational_canonical_form_peeled(matrix)
+        .or_else(|_| rational_canonical_form_krylov(matrix))
+        .or_else(|_| rational_canonical_form_classical(matrix))
 }
 
-/// [`rational_canonical_form`] of a square, non-empty `A` by the Krylov path (fast path).
+/// [`rational_canonical_form`] of a square, non-empty `A` by the peeling of `frobenius.rs`
+/// (main path): its invariant factors and clean generators, then [`certified_form`].
+fn rational_canonical_form_peeled<F: Field>(
+    matrix: &Matrix<F>,
+) -> Result<RationalCanonicalForm<F>> {
+    let peeling = peel(matrix, PeelDepth::Full)?;
+    let generators = peeling.generators(matrix)?;
+    certified_form(matrix, peeling.invariant_factors(), generators)
+}
+
+/// [`rational_canonical_form`] of a square, non-empty `A` from the Smith form of the Krylov
+/// relation matrix (first fallback).
 fn rational_canonical_form_krylov<F: Field>(
     matrix: &Matrix<F>,
 ) -> Result<RationalCanonicalForm<F>> {
@@ -593,7 +657,7 @@ fn rational_canonical_form_krylov<F: Field>(
 }
 
 /// [`rational_canonical_form`] of a square, non-empty `A` from the presentation by `xI - A`
-/// on the unit vectors (classical path).
+/// on the unit vectors (classical path, second fallback).
 fn rational_canonical_form_classical<F: Field>(
     matrix: &Matrix<F>,
 ) -> Result<RationalCanonicalForm<F>> {
@@ -687,7 +751,7 @@ fn image_in_krylov_basis<F: Field>(
 }
 
 /// `φ(p) = Σ_j p_j(A)·w_j` for any presentation, by Horner's rule on each `p_j(A)·w_j`
-/// ([`poly_at_matrix_times_vector`]).
+/// (`krylov::poly_mat_vec`).
 fn image_by_horner<F: Field>(
     p: &[UnivariatePolynomial<F>],
     matrix: &Matrix<F>,
@@ -699,7 +763,7 @@ fn image_by_horner<F: Field>(
         if pj.is_zero() {
             continue;
         }
-        let v = poly_at_matrix_times_vector(pj, matrix, w, z);
+        let v = poly_mat_vec(pj, matrix, w, z);
         for (gr, vr) in g.iter_mut().zip(v) {
             *gr = gr.clone() + vr;
         }
@@ -746,10 +810,10 @@ fn rcf_from_presentation<F: Field>(
     let (smith, x) = relations.smith_form_with_scaled_left_inverse()?;
 
     let mut factors = Vec::new();
-    let mut columns: Vec<Vec<F>> = Vec::with_capacity(n);
+    let mut gens: Vec<Vec<F>> = Vec::new();
     for i in 0..r {
         let d = smith.get(i, i);
-        let k = match d.degree() {
+        match d.degree() {
             None => {
                 return Err(MathError::InvalidOperation(
                     "internal: zero diagonal entry in the Smith form of the relation matrix"
@@ -757,11 +821,11 @@ fn rcf_from_presentation<F: Field>(
                 ))
             }
             Some(0) => continue,
-            Some(k) => k,
-        };
+            Some(_) => {}
+        }
         // g_i = φ(column i of X) = Σ_j X_{j,i}(A)·w_j
         let column: Vec<UnivariatePolynomial<F>> = (0..r).map(|j| x.get(j, i).clone()).collect();
-        let mut g = match basis {
+        let g = match basis {
             Some(u) => image_in_krylov_basis(column, relations, u, &z)?,
             None => image_by_horner(&column, matrix, generators, &z),
         };
@@ -770,20 +834,50 @@ fn rcf_from_presentation<F: Field>(
                 "internal: generator image of the wrong length".to_string(),
             ));
         }
-        for _ in 0..k {
-            let next = mat_vec(matrix, &g, &z);
-            columns.push(std::mem::replace(&mut g, next));
-        }
+        gens.push(g);
         factors.push(d.clone());
     }
+    certified_form(matrix, factors, gens)
+}
 
-    let mut rcf = RationalCanonicalForm::from_invariant_factors(factors)?;
-
+/// The certified rational form of a square, non-empty `A` from its non-constant invariant
+/// factors `f_1 | … | f_s` (increasing) and generators `g_1, …, g_s` in the same order, where
+/// `g_i` should generate the i-th cyclic summand (`f_i(A)·g_i = 0`): the columns of `T` are
+/// `g_i, A·g_i, …, A^{k-1}·g_i` block by block (`k = deg f_i`), and `C` comes from the factors
+/// ([`RationalCanonicalForm::from_invariant_factors`]). The result is returned only if `T` is
+/// n×n, `A·T == T·C` and its columns are independent ([`independent_columns`]); otherwise
+/// `Err(InvalidOperation("internal: rational form certificate failed"))`.
+fn certified_form<F: Field>(
+    matrix: &Matrix<F>,
+    factors: Vec<UnivariatePolynomial<F>>,
+    generators: Vec<Vec<F>>,
+) -> Result<RationalCanonicalForm<F>> {
+    let n = matrix.rows();
+    let (z, _, _) = field_constants(matrix.data().iter());
     let certificate_failed = || {
         Err(MathError::InvalidOperation(
             "internal: rational form certificate failed".to_string(),
         ))
     };
+    if factors.len() != generators.len() {
+        return certificate_failed();
+    }
+    let mut columns: Vec<Vec<F>> = Vec::with_capacity(n);
+    for (f, mut g) in factors.iter().zip(generators) {
+        let k = match f.degree() {
+            Some(k) if k > 0 => k,
+            _ => return certificate_failed(),
+        };
+        if g.len() != n || columns.len() + k > n {
+            return certificate_failed();
+        }
+        for _ in 0..k {
+            let next = mat_vec(matrix, &g, &z);
+            columns.push(std::mem::replace(&mut g, next));
+        }
+    }
+
+    let mut rcf = RationalCanonicalForm::from_invariant_factors(factors)?;
     if columns.len() != n || rcf.canonical_matrix.rows() != n {
         return certificate_failed();
     }
@@ -1102,18 +1196,30 @@ mod tests {
         let n = a.rows();
         let fs = invariant_factors(a).unwrap();
         assert_eq!(fs, expected);
-        // Over Q the fast path itself succeeds (the fallback is not what is being tested).
+        // Over Q the main path itself succeeds (the fallback is not what is being tested), and
+        // so does the first fallback (the Smith form of the Krylov relation matrix).
+        assert_eq!(invariant_factors_peeled(a).unwrap(), expected);
         assert_eq!(invariant_factors_krylov(a).unwrap(), expected);
         let mp = minimal_polynomial(a).unwrap();
         assert_eq!(&mp, expected.last().unwrap());
+        assert_eq!(minimal_polynomial_peeled(a).unwrap(), mp);
         assert_eq!(krylov_minpoly(a), mp);
 
         let rcf = rational_canonical_form(a).unwrap();
         assert_eq!(rcf.invariant_factors, expected);
         assert_eq!(rcf.minimal_polynomial(), Some(&mp));
+        // The public T is the peeled one; the Krylov Smith path gives another certified T.
         assert_eq!(
-            rational_canonical_form_krylov(a).unwrap().change_of_basis,
+            rational_canonical_form_peeled(a).unwrap().change_of_basis,
             rcf.change_of_basis
+        );
+        let krylov = rational_canonical_form_krylov(a).unwrap();
+        assert_eq!(krylov.invariant_factors, expected);
+        let tk = krylov.change_of_basis.expect("T is computed");
+        assert_eq!(
+            a.mul(&tk).unwrap(),
+            tk.mul(&krylov.canonical_matrix).unwrap(),
+            "Krylov path: A·T != T·C"
         );
         let mut c = Matrix::<Rational>::zeros(n, n);
         let mut off = 0;
@@ -1406,6 +1512,15 @@ mod tests {
     /// companion matrix of `expected`, `A·T == T·C`, `Matrix::rank(T) == n`, and the product of
     /// the factors equals `charpoly_berkowitz(A)`.
     fn check_forms_timed(a: &Matrix<Rational>, expected: &[UnivariatePolynomial<Rational>]) {
+        check_forms_bounded(a, expected, 60);
+    }
+
+    /// [`check_forms_timed`] with a bound of `bound_secs` seconds on the three public calls.
+    fn check_forms_bounded(
+        a: &Matrix<Rational>,
+        expected: &[UnivariatePolynomial<Rational>],
+        bound_secs: u64,
+    ) {
         let n = a.rows();
         let start = std::time::Instant::now();
         let fs = invariant_factors(a).unwrap();
@@ -1413,14 +1528,15 @@ mod tests {
         let rcf = rational_canonical_form(a).unwrap();
         let elapsed = start.elapsed();
         assert!(
-            elapsed.as_secs() < 60,
-            "n = {n}: the three functions took {elapsed:?}"
+            elapsed.as_secs() < bound_secs,
+            "n = {n}: the three functions took {elapsed:?} (bound {bound_secs} s)"
         );
         assert_eq!(fs, expected);
         assert_eq!(&mp, expected.last().unwrap());
         assert_eq!(rcf.invariant_factors, expected);
-        // The fast path itself succeeds (no fallback to the Smith form of xI - A).
+        // The main path itself succeeds (no fallback).
         assert!(krylov_presentation(a).is_ok());
+        assert_eq!(invariant_factors_peeled(a).unwrap(), expected);
         assert_eq!(rcf.canonical_matrix, block_companion(expected, n));
         let t = rcf.change_of_basis.clone().expect("T is computed");
         assert_eq!(
@@ -1587,11 +1703,10 @@ mod tests {
             .collect()
     }
 
-    #[test]
-    fn invariant_factors_agree_with_smith_of_xi_minus_a() {
-        // T-a6: the Krylov path (called directly, so the fallback cannot mask a failure)
-        // against the Smith form of xI - A, and the classical rational form (the fallback)
-        // against the Krylov one: same factors and C, each with its own certified T.
+    /// The 69 matrices of `invariant_factors_agree_with_smith_of_xi_minus_a`: 9 small ones and
+    /// 60 deterministic ones, n = 1..5 (dense, sparse, diagonal with repeated entries, upper
+    /// triangular with repeated diagonal).
+    fn agreement_matrices() -> Vec<Matrix<Rational>> {
         let mut mats = vec![
             qm(3, &[2, 0, 0, 0, 2, 0, 0, 0, 3]),
             qm(2, &[1, 0, 0, 1]),
@@ -1642,10 +1757,24 @@ mod tests {
             }
             mats.push(qm(n, &v));
         }
+        mats
+    }
+
+    #[test]
+    fn invariant_factors_agree_with_smith_of_xi_minus_a() {
+        // T-a6: the peeled path and the Krylov Smith path (called directly, so the fallback
+        // cannot mask a failure) against the Smith form of xI - A, and the classical rational
+        // form (the last fallback) against the Krylov one: same factors and C, each with its
+        // own certified T.
+        let mats = agreement_matrices();
+        assert_eq!(mats.len(), 69);
         for a in &mats {
             let expected = smith_oracle(a);
+            assert_eq!(invariant_factors_peeled(a).unwrap(), expected, "A = {a:?}");
             assert_eq!(invariant_factors_krylov(a).unwrap(), expected, "A = {a:?}");
             assert_eq!(invariant_factors(a).unwrap(), expected, "A = {a:?}");
+            let peeled = rational_canonical_form_peeled(a).unwrap();
+            assert_eq!(peeled.invariant_factors, expected, "A = {a:?}");
             let fast = rational_canonical_form_krylov(a).unwrap();
             assert_eq!(fast.invariant_factors, expected, "A = {a:?}");
             let classical = rational_canonical_form_classical(a).unwrap();
@@ -1654,7 +1783,8 @@ mod tests {
                 classical.canonical_matrix, fast.canonical_matrix,
                 "A = {a:?}"
             );
-            for rcf in [&fast, &classical] {
+            assert_eq!(peeled.canonical_matrix, fast.canonical_matrix, "A = {a:?}");
+            for rcf in [&peeled, &fast, &classical] {
                 let t = rcf.change_of_basis.clone().expect("T is computed");
                 assert_eq!(
                     inv(&t).mul(a).unwrap().mul(&t).unwrap(),
@@ -1672,10 +1802,22 @@ mod tests {
         // T-a8: prints the times of the three functions; the n = 12 and n = 20 values are the gp
         // ones above, n = 30 is certificate-only (rational_canonical_form returns only a
         // certified result).
+        let prod20 = (1..=20).fold(px(&[1]), |acc, i| acc * px(&[-i, 1]));
         let cases = [
             ("DENSE12", qm(12, &DENSE12), Some(dense12_minpoly())),
             ("DENSE20", qm(20, &DENSE20), Some(dense20_minpoly())),
             ("LCG30", lcg_dense(30, 30), None),
+            // The 2×2 relation matrix case and the r = n case of the peeled-path tests.
+            (
+                "CONJDIAG20_S7",
+                qm(20, &CONJDIAG20_S7),
+                Some(prod20.clone()),
+            ),
+            (
+                "WBW20",
+                conj_start_basis(&qm(20, &upper_b(20, |i| i as i64 + 1))),
+                Some(prod20),
+            ),
         ];
         for (name, a, expected) in cases {
             let t0 = std::time::Instant::now();
@@ -1860,9 +2002,10 @@ mod tests {
         // relation matrix R is 2×2 although A has one invariant factor. P⁻¹ of the Smith form
         // of R has entries of degree up to 34 whose coefficients have numerators and
         // denominators of about 200 digits; before the reduction modulo im R and the scaled
-        // P⁻¹, evaluating them at A took rational_canonical_form 30 s in debug
-        // (invariant_factors: 0.3 s). Measured now: 2.1 s in debug. Bound: 15 s, half the old
-        // time.
+        // P⁻¹ (702d0a5), evaluating them at A took rational_canonical_form 30 s in debug
+        // (invariant_factors: 0.3 s), and the Krylov Smith path then took 2.1 s. The peeled
+        // path (the main path now) needs no P⁻¹: measured 0.17 s in debug.
+        // Bound: 15 s, half the old time.
         // gp: matfrobenius(A,1) == [prod(i=1,20,x-i)] (= 1), minpoly(A) == charpoly(A) (= 1)
         let n = 20;
         let a = qm(n, &CONJDIAG20);
@@ -2142,8 +2285,31 @@ mod tests {
             fs,
             "P = {P}, A = {v:?}"
         );
+        assert_eq!(
+            invariant_factors_peeled(&a).unwrap(),
+            fs,
+            "P = {P}, A = {v:?}"
+        );
+        assert_eq!(
+            &minimal_polynomial_peeled(&a).unwrap(),
+            fs.last().unwrap(),
+            "P = {P}, A = {v:?}"
+        );
+        let peeled = rational_canonical_form_peeled(&a).unwrap();
         let rcf = rational_canonical_form_krylov(&a).unwrap();
         assert_eq!(rcf.invariant_factors, fs, "P = {P}, A = {v:?}");
+        assert_eq!(peeled.invariant_factors, fs, "P = {P}, A = {v:?}");
+        assert_eq!(peeled.canonical_matrix, rcf.canonical_matrix, "P = {P}");
+        let tp = peeled.change_of_basis.expect("T is computed");
+        assert_eq!(
+            a.mul(&tp).unwrap(),
+            tp.mul(&peeled.canonical_matrix).unwrap(),
+            "P = {P}: peeled A·T != T·C"
+        );
+        assert!(
+            tp.inverse().unwrap().is_some(),
+            "P = {P}: peeled T singular"
+        );
         let mut c = Matrix::<Gf<P>>::zeros(n, n);
         let mut off = 0;
         for f in &fs {
@@ -2230,10 +2396,10 @@ mod tests {
         check_krylov_gfp::<3>(2, &[0, 0, 2, 0], &[&[0, 0, 1]]);
     }
 
-    /// The Krylov path over GF(P) against the classical path (Smith form of `xI - A`) on
-    /// deterministic matrices n = 1..8: dense, sparse, scalar plus sparse, and block diagonal
-    /// with repeated blocks (derogatory, r > 1 for small P). Returns the largest r seen.
-    fn krylov_vs_classical_gfp<const P: u64>(seed: u64) -> usize {
+    /// 64 deterministic matrices over GF(P), n = 1..8: dense, sparse, scalar plus sparse, and
+    /// block diagonal with repeated blocks (derogatory, r > 1 for small P), with their integer
+    /// entries.
+    fn gfp_matrices<const P: u64>(seed: u64) -> Vec<(Vec<i64>, Matrix<Gf<P>>)> {
         let mut state = seed;
         let mut next = |m: u64| {
             state = state
@@ -2241,7 +2407,7 @@ mod tests {
                 .wrapping_add(1442695040888963407);
             (state >> 33) % m
         };
-        let mut max_r = 0;
+        let mut out = Vec::with_capacity(64);
         for t in 0..64usize {
             let n = 1 + t % 8;
             let kind = (t / 8) % 4;
@@ -2264,6 +2430,16 @@ mod tests {
                 }
             }
             let a = Matrix::from_vec(n, n, v.iter().map(|&x| Gf::<P>::new(x)).collect()).unwrap();
+            out.push((v, a));
+        }
+        out
+    }
+
+    /// The Krylov path and the peeled path over GF(P) against the classical path (Smith form
+    /// of `xI - A`) on the matrices of [`gfp_matrices`]. Returns the largest r seen.
+    fn krylov_vs_classical_gfp<const P: u64>(seed: u64) -> usize {
+        let mut max_r = 0;
+        for (v, a) in gfp_matrices::<P>(seed) {
             max_r = max_r.max(krylov_presentation(&a).unwrap().relations.rows());
             let expected = invariant_factors_classical(&a).unwrap();
             assert_eq!(
@@ -2271,15 +2447,23 @@ mod tests {
                 expected,
                 "P = {P}, A = {v:?}"
             );
-            let rcf = rational_canonical_form_krylov(&a).unwrap();
-            assert_eq!(rcf.invariant_factors, expected, "P = {P}, A = {v:?}");
-            let t = rcf.change_of_basis.clone().expect("T is computed");
             assert_eq!(
-                a.mul(&t).unwrap(),
-                t.mul(&rcf.canonical_matrix).unwrap(),
+                invariant_factors_peeled(&a).unwrap(),
+                expected,
                 "P = {P}, A = {v:?}"
             );
-            assert!(t.inverse().unwrap().is_some(), "P = {P}, A = {v:?}");
+            let krylov = rational_canonical_form_krylov(&a).unwrap();
+            let peeled = rational_canonical_form_peeled(&a).unwrap();
+            for rcf in [&krylov, &peeled] {
+                assert_eq!(rcf.invariant_factors, expected, "P = {P}, A = {v:?}");
+                let t = rcf.change_of_basis.clone().expect("T is computed");
+                assert_eq!(
+                    a.mul(&t).unwrap(),
+                    t.mul(&rcf.canonical_matrix).unwrap(),
+                    "P = {P}, A = {v:?}"
+                );
+                assert!(t.inverse().unwrap().is_some(), "P = {P}, A = {v:?}");
+            }
         }
         max_r
     }
@@ -2290,5 +2474,567 @@ mod tests {
         assert!(krylov_vs_classical_gfp::<3>(12) >= 3);
         assert!(krylov_vs_classical_gfp::<5>(13) >= 2);
         assert!(krylov_vs_classical_gfp::<7>(14) >= 2);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // The peeled path (frobenius.rs): the inputs on which the Smith form of the Krylov
+    // relation matrix had no bound, multi-level peeling, exact fields, Z semantics, and the
+    // handbook example H26E9.
+    // ---------------------------------------------------------------------------------------
+
+    /// CONJDIAG20_S7 = U·diag(1, …, 20)·U⁻¹, U a product of 80 elementary integer row
+    /// operations (seed 7 of the CONJDIAG20 generator), row-major; in gp:
+    /// A = matrix(20, 20, i, j, v[(i-1)*20+j]).
+    #[rustfmt::skip]
+    const CONJDIAG20_S7: [i64; 400] = [
+        -90, -140, -74, -2706, -428, -336, 98, -598, 817, 0,
+        482, -214, 554, 72, 468, 0, 817, 586, -533, -1208,
+        0, -20, -1, -30, -6, -2, 0, -6, 12, 0,
+        46, -3, 28, 0, 2, 0, 12, 2, -39, -6,
+        0, 0, 57, 438, 54, 106, 0, 110, -108, 0,
+        -92, 27, -110, -56, -78, 0, -108, -72, 63, 190,
+        0, 0, -21, 424, 46, 8, 0, 74, -148, 0,
+        -74, 23, -74, 0, -8, 0, -148, -58, 1, 74,
+        0, 0, 37, -421, -73, 210, -44, -94, 224, 0,
+        94, -39, 94, -20, -122, 0, 232, 41, -36, -8,
+        -26, -52, 3, -1098, -154, -72, 28, -226, 358, 0,
+        217, -77, 226, 18, 112, 0, 358, 202, -151, -370,
+        -52, -104, -36, -1362, -216, -142, 63, -304, 420, 0,
+        286, -108, 304, 36, 208, 0, 420, 288, -300, -592,
+        0, -33, 25, -552, -66, 0, 0, -86, 206, 0,
+        139, -33, 121, 0, 0, 0, 206, 72, -34, -94,
+        -2, -4, -8, 4, 16, -80, 20, 10, -21, 0,
+        -10, 8, -10, 8, 48, 0, -30, 2, 12, -20,
+        -18, -33, -58, 500, 98, -384, 100, 120, -312, 10,
+        -123, 44, -123, 22, 256, 0, -328, -4, 1, -108,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        11, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, -104, 1256, 218, -486, 88, 272, -616, 0,
+        -272, 114, -272, 40, 310, 0, -632, -130, 71, 52,
+        0, -33, -1, -50, -10, -2, 0, -10, 20, 0,
+        52, -5, 45, 0, 2, 0, 20, 4, -33, -10,
+        -13, -26, 5, -49, -10, 60, 14, -16, 35, 0,
+        16, -5, 16, 1, -36, 0, 35, 10, -44, -10,
+        -26, -52, -8, -829, -122, -59, 28, -180, 266, 0,
+        171, -61, 180, 18, 99, 0, 266, 161, -150, -310,
+        0, 0, 0, 2, 0, 0, 0, 0, -1, 0,
+        0, 0, 0, 0, 0, 16, -1, 0, 0, 0,
+        2, 4, -34, 810, 76, 96, -20, 138, -258, 0,
+        -138, 38, -138, -8, -64, 0, -249, -118, -10, 168,
+        0, 0, -76, 190, 28, -74, 0, 0, -112, 0,
+        -18, 14, 0, 56, 46, 0, -112, -16, -61, -52,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 19, 0,
+        0, 0, -28, -42, 0, -14, 0, -28, 0, 0,
+        19, 0, 28, 28, 0, 0, 0, 0, -30, -22,
+    ];
+
+    /// `W·B·W⁻¹`, W the start basis of the Krylov presentation (columns `w_j`): spinning `w_j`
+    /// under it is spinning `e_j` under B, so an upper triangular B gives r = n and `R = xI - B`.
+    fn conj_start_basis<F: Field>(b: &Matrix<F>) -> Matrix<F> {
+        let n = b.rows();
+        let k = field_constants(b.data().iter());
+        let ws = crate::krylov::start_basis(n, &k);
+        let w = Matrix::from_vec(
+            n,
+            n,
+            (0..n * n).map(|idx| ws[idx % n][idx / n].clone()).collect(),
+        )
+        .unwrap();
+        let winv = w.inverse().unwrap().expect("W is unimodular");
+        w.mul(b).unwrap().mul(&winv).unwrap()
+    }
+
+    /// B upper triangular, n×n, row-major: `B[i][i] = diag(i)`, `B[i][j] = ((3i + 5j) mod 7) - 3`
+    /// for j > i (0-indexed; the B of `krylov::tests::fixed_start_basis_worst_case_has_r_equal_n`).
+    fn upper_b(n: usize, diag: impl Fn(usize) -> i64) -> Vec<i64> {
+        let mut b = vec![0i64; n * n];
+        for i in 0..n {
+            b[i * n + i] = diag(i);
+            for j in (i + 1)..n {
+                b[i * n + j] = ((3 * i + 5 * j) % 7) as i64 - 3;
+            }
+        }
+        b
+    }
+
+    /// `Π_{i=1}^{n} (x - i)` over Q.
+    fn prod_x_minus_i(n: i64) -> UnivariatePolynomial<Rational> {
+        (1..=n).fold(px(&[1]), |acc, i| acc * px(&[-i, 1]))
+    }
+
+    /// U, n×n, a product of `4n` elementary integer row operations `row_i += c·row_j` with
+    /// `c ∈ [-2, 2]` (64-bit LCG, MMIX constants; unimodular).
+    fn lcg_unimodular(n: usize, seed: u64) -> Matrix<Rational> {
+        let mut state = seed * 1000 + 7;
+        let mut next = |m: u64| {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (state >> 33) % m
+        };
+        let mut u = Matrix::<Rational>::identity(n);
+        for _ in 0..4 * n {
+            let i = next(n as u64) as usize;
+            let mut j = next(n as u64) as usize;
+            if i == j {
+                j = (i + 1) % n;
+            }
+            let c = Rational::from_integer(next(5) as i64 - 2);
+            for t in 0..n {
+                let v = u.get(i, t).unwrap().clone() + c.clone() * u.get(j, t).unwrap().clone();
+                u.set(i, t, v).unwrap();
+            }
+        }
+        u
+    }
+
+    /// `U·M·U⁻¹`.
+    fn conj(u: &Matrix<Rational>, m: &Matrix<Rational>) -> Matrix<Rational> {
+        u.mul(m).unwrap().mul(&inv(u)).unwrap()
+    }
+
+    #[test]
+    fn peeled_forms_conjdiag20_s7_was_81_s() {
+        // The HANDOFF case: the relation matrix R is 2×2 with diagonal degrees [13, 7], and the
+        // Smith form of R took invariant_factors 81 to 102 s and rational_canonical_form about
+        // 170 s in debug at c79a582 (depending on load). The peeled path needs no Smith form.
+        // gp (v = CONJDIAG20_S7, A = matrix(20,20,i,j,v[(i-1)*20+j])):
+        //     matfrobenius(A,1) == [prod(i=1,20,x-i)] (1), minpoly(A) == charpoly(A) (1),
+        //     matdet(A) == 20! (1)
+        let a = qm(20, &CONJDIAG20_S7);
+        let pr = krylov_presentation(&a).unwrap();
+        assert_eq!(pr.relations.rows(), 2);
+        let degrees: Vec<usize> = (0..2)
+            .map(|j| pr.relations.get(j, j).degree().unwrap())
+            .collect();
+        assert_eq!(degrees, vec![13, 7]);
+        let f = prod_x_minus_i(20);
+        assert_eq!(invariant_factors_peeled(&a).unwrap(), vec![f.clone()]);
+        // The three public calls: measured 0.3 s in debug.
+        check_forms_bounded(&a, &[f], 20);
+    }
+
+    #[test]
+    fn peeled_forms_fixed_start_basis_worst_case_n20() {
+        // The documented worst case of the fixed start basis at n = 20: r = 20 and R = xI - B.
+        // At c79a582 invariant_factors and rational_canonical_form did not finish in 300 s
+        // (n = 14: 95 s for invariant_factors).
+        // gp: B = matrix(20,20,i,j, if(i==j, i, if(j>i, ((3*(i-1)+5*(j-1))%7)-3, 0)));
+        //     matfrobenius(B,1) == [prod(i=1,20,x-i)] (1)
+        let n = 20;
+        let b = upper_b(n, |i| i as i64 + 1);
+        let a = conj_start_basis(&qm(n, &b));
+        let pr = krylov_presentation(&a).unwrap();
+        assert_eq!(pr.relations.rows(), n);
+        for i in 0..n {
+            for j in 0..n {
+                let expected = if i == j {
+                    px(&[-b[i * n + j], 1])
+                } else {
+                    px(&[-b[i * n + j]])
+                };
+                assert_eq!(
+                    pr.relations.get(i, j),
+                    &expected,
+                    "R != xI - B at ({i}, {j})"
+                );
+            }
+        }
+        // The three public calls: measured 0.2 s in debug.
+        check_forms_bounded(&a, &[prod_x_minus_i(20)], 20);
+    }
+
+    #[test]
+    fn peeled_forms_r_equals_n_repeated_eigenvalues() {
+        // r = n = 20 with two invariant factors (diagonal (i mod 3) + 1).
+        // gp: B = matrix(20,20,i,j, if(i==j, (i-1)%3+1, if(j>i, ((3*(i-1)+5*(j-1))%7)-3, 0)));
+        //     matfrobenius(B,1) == [(x-1)^7*(x-2)^7*(x-3)^5, x-3] (1)
+        let n = 20;
+        let a = conj_start_basis(&qm(n, &upper_b(n, |i| (i % 3) as i64 + 1)));
+        assert_eq!(krylov_presentation(&a).unwrap().relations.rows(), n);
+        let pow = |f: UnivariatePolynomial<Rational>, e: usize| {
+            (0..e).fold(px(&[1]), |acc, _| acc * f.clone())
+        };
+        let big = pow(px(&[-1, 1]), 7) * pow(px(&[-2, 1]), 7) * pow(px(&[-3, 1]), 5);
+        // The three public calls: measured 0.6 s in debug.
+        check_forms_bounded(&a, &[px(&[-3, 1]), big], 20);
+    }
+
+    #[test]
+    fn peeled_merges_arrow_n20() {
+        // A = W·B·W⁻¹, B[i][i] = i + 1, B[0][j] = (5j mod 7) - 3 (j ≥ 1), other entries 0:
+        // r = n, and the last generator (spun first) has a minimal polynomial of degree 2, so
+        // merges must run. At c79a582 invariant_factors took 0.04 s and rational_canonical_form
+        // 21.4 s in debug (measured under load, about 2× the bound below: a fast machine could
+        // pass this test at c79a582, so a pass alone does not show the fix).
+        // gp: B = matrix(20,20,i,j, if(i==j, i, if(i==1 && j>1, ((5*(j-1))%7)-3, 0)));
+        //     matfrobenius(B,1) == [prod(i=1,20,x-i)] (1)
+        let n = 20;
+        let mut b = vec![0i64; n * n];
+        for i in 0..n {
+            b[i * n + i] = i as i64 + 1;
+        }
+        // Row 0: B[0][j] for j ≥ 1.
+        for (j, b0j) in b.iter_mut().enumerate().take(n).skip(1) {
+            *b0j = ((5 * j) % 7) as i64 - 3;
+        }
+        let a = conj_start_basis(&qm(n, &b));
+        let pr = krylov_presentation(&a).unwrap();
+        assert_eq!(pr.relations.rows(), n);
+        let z = Rational::from_integer(0);
+        let w = pr.generators[n - 1].clone();
+        let aw = mat_vec(&a, &w, &z);
+        let a2w = mat_vec(&a, &aw, &z);
+        assert!(linearly_independent(&[w.clone(), aw.clone()]).unwrap());
+        assert!(!linearly_independent(&[w, aw, a2w]).unwrap());
+        // The three public calls: measured 0.7 s in debug.
+        check_forms_bounded(&a, &[prod_x_minus_i(20)], 10);
+    }
+
+    #[test]
+    fn peeled_multilevel_families() {
+        // Multi-level peeling: 7, 7 and 40 levels.
+        // gp: D = matconcat(matdiagonal(vector(14,k, if(k%2, matcompanion(x^3+x+1),
+        //         matcompanion(x-2))))); matfrobenius(D,1) == vector(7,k,x^4-2*x^3+x^2-x-2) (1)
+        //     N = matconcat(matdiagonal(vector(7,k,matcompanion(x^k))));
+        //         matfrobenius(N,1) == vector(7,k,x^(8-k)) (1)
+        //     matfrobenius(3*matid(40),1) == vector(40,k,x-3) (1)
+        // (x^3+x+1)(x-2) = x^4 - 2x^3 + x^2 - x - 2.
+        let block_diag = |blocks: &[UnivariatePolynomial<Rational>]| {
+            let n: usize = blocks.iter().map(|f| f.degree().unwrap()).sum();
+            block_companion(blocks, n)
+        };
+        let mut derog = Vec::new();
+        for _ in 0..7 {
+            derog.push(px(&[1, 1, 0, 1]));
+            derog.push(px(&[-2, 1]));
+        }
+        let d = block_diag(&derog);
+        let a = conj(&lcg_unimodular(28, 3), &d);
+        let f = px(&[-2, -1, 1, -2, 1]);
+        check_forms_bounded(&a, &vec![f; 7], 60);
+        let nilp: Vec<_> = (1..=7usize)
+            .map(|k| {
+                let mut c = vec![0; k + 1];
+                c[k] = 1;
+                px(&c)
+            })
+            .collect();
+        let a = conj(&lcg_unimodular(28, 5), &block_diag(&nilp));
+        assert!(krylov_presentation(&a).unwrap().relations.rows() >= 7);
+        check_forms_bounded(&a, &nilp, 60);
+        let mut s = Matrix::<Rational>::zeros(40, 40);
+        for i in 0..40 {
+            s.set(i, i, Rational::from_integer(3)).unwrap();
+        }
+        check_forms_bounded(&s, &vec![px(&[-3, 1]); 40], 60);
+    }
+
+    #[test]
+    fn peeled_path_over_prime_field_r_equals_n() {
+        // The fixed-start-basis worst case over GF(101) at n = 60 (r = 60).
+        // gp: B = matrix(60,60,i,j, if(i==j, i, if(j>i, ((3*(i-1)+5*(j-1))%7)-3, 0)))*Mod(1,101);
+        //     matfrobenius(B,1) == [Mod(1,101)*prod(i=1,60,x-i)] (1)
+        let n = 60;
+        let b = upper_b(n, |i| i as i64 + 1);
+        let bm = Matrix::from_vec(n, n, b.iter().map(|&x| Gf::<101>::new(x)).collect()).unwrap();
+        let a = conj_start_basis(&bm);
+        assert_eq!(krylov_presentation(&a).unwrap().relations.rows(), n);
+        let f = (1..=60).fold(
+            UnivariatePolynomial::new(vec![Gf::<101>::new(1)]),
+            |acc, i| acc * UnivariatePolynomial::new(vec![Gf::<101>::new(-i), Gf::<101>::new(1)]),
+        );
+        let start = std::time::Instant::now();
+        assert_eq!(invariant_factors_peeled(&a).unwrap(), vec![f.clone()]);
+        assert_eq!(minimal_polynomial(&a).unwrap(), f);
+        let rcf = rational_canonical_form(&a).unwrap();
+        // Measured: 0.05 s in debug (the Smith form of R: 0.26 s for the factors alone).
+        let elapsed = start.elapsed();
+        assert!(elapsed.as_secs() < 30, "took {elapsed:?}");
+        assert_eq!(rcf.invariant_factors, vec![f.clone()]);
+        assert_eq!(rcf.canonical_matrix, companion_matrix(&f).unwrap());
+        let t = rcf.change_of_basis.expect("T is computed");
+        assert_eq!(a.mul(&t).unwrap(), t.mul(&rcf.canonical_matrix).unwrap());
+        assert!(t.inverse().unwrap().is_some(), "T singular");
+    }
+
+    /// `peel` at both depths is Ok over an exact field and agrees with `expected`, and the
+    /// clean generators give the certified form.
+    fn check_peel_exact<F: Field>(a: &Matrix<F>, expected: &[UnivariatePolynomial<F>]) {
+        let full = peel(a, PeelDepth::Full).unwrap();
+        assert_eq!(full.invariant_factors(), expected);
+        assert_eq!(full.minimal_polynomial().as_ref(), expected.last());
+        let first = peel(a, PeelDepth::MinimalPolynomial).unwrap();
+        assert_eq!(first.minimal_polynomial().as_ref(), expected.last());
+        let gens = full.generators(a).unwrap();
+        let rcf = certified_form(a, full.invariant_factors(), gens).unwrap();
+        assert_eq!(rcf.invariant_factors, expected);
+    }
+
+    #[test]
+    fn peel_exact_fields_never_fall_back() {
+        // Over an exact field the first stage answers (no fallback): the 69 matrices of
+        // invariant_factors_agree_with_smith_of_xi_minus_a over Q, and the 4×64 matrices of
+        // krylov_vs_classical_gfp, against the classical Smith form of xI - A.
+        for a in agreement_matrices() {
+            check_peel_exact(&a, &smith_oracle(&a));
+        }
+        fn over<const P: u64>(seed: u64) {
+            for (_, a) in gfp_matrices::<P>(seed) {
+                check_peel_exact(&a, &invariant_factors_classical(&a).unwrap());
+            }
+        }
+        over::<2>(11);
+        over::<3>(12);
+        over::<5>(13);
+        over::<7>(14);
+    }
+
+    #[test]
+    fn peeled_generators_are_clean() {
+        // (F7): each clean generator g_ℓ has f_ℓ(A)·g_ℓ = 0, and the cyclic bases
+        // g, A·g, …, A^{k-1}·g of all levels together are independent. Inputs with several
+        // levels: DEROG12 (3 levels), NILP15 (5), and the 5×5 of
+        // forms_r8_derogatory_irreducible_quadratic (2).
+        let mats = [
+            qm(12, &DEROG12),
+            qm(15, &NILP15),
+            qm(
+                5,
+                &[
+                    2, -5, 0, 1, -2, 1, -2, 0, 0, -1, 1, -2, 0, 0, 0, 0, -1, 1, 1, -1, 0, 0, 0, 1,
+                    0,
+                ],
+            ),
+        ];
+        let z = Rational::from_integer(0);
+        for (a, levels) in mats.iter().zip([3, 5, 2]) {
+            let n = a.rows();
+            let p = peel(a, PeelDepth::Full).unwrap();
+            let fs = p.invariant_factors();
+            assert_eq!(fs.len(), levels);
+            let gs = p.generators(a).unwrap();
+            assert_eq!(gs.len(), levels);
+            let mut cols = Vec::new();
+            for (f, g) in fs.iter().zip(&gs) {
+                assert!(
+                    poly_mat_vec(f, a, g, &z).iter().all(|x| x.is_zero()),
+                    "f(A)·g != 0 for f = {f}"
+                );
+                let mut v = g.clone();
+                for _ in 0..f.degree().unwrap() {
+                    let next = mat_vec(a, &v, &z);
+                    cols.push(std::mem::replace(&mut v, next));
+                }
+            }
+            assert_eq!(cols.len(), n);
+            assert!(linearly_independent(&cols).unwrap());
+        }
+    }
+
+    #[test]
+    fn h26e9_invariant_factors_and_rational_form() {
+        // MAGMA Handbook H26E9 (V2.x H51E8), over GF(5):
+        //   a = [0 2 4 2 0; 2 2 2 3 3; 3 4 4 1 3; 0 0 0 0 1; 0 0 0 1 0];
+        //   r, t, f := RationalForm(a); r = [1 0 0 0 0; 0 0 1 0 0; 0 1 0 0 0; 0 0 0 0 1;
+        //   0 0 0 1 0], t = [1 3 0 2 1; 2 1 2 2 0; 3 4 3 4 1; 1 0 0 0 0; 0 2 4 2 0],
+        //   f = [x + 4, x^2 + 4, x^2 + 4].
+        // gp: a = Mod([0,2,4,2,0; 2,2,2,3,3; 3,4,4,1,3; 0,0,0,0,1; 0,0,0,1,0], 5);
+        //     matfrobenius(a,1) = [x^2 + Mod(4,5), x^2 + Mod(4,5), x + Mod(4,5)],
+        //     t*a*t^-1 == r (1, MAGMA's row convention).
+        let g5 = |v: &[i64]| Matrix::from_vec(5, 5, v.iter().map(|&x| Gf::<5>::new(x)).collect());
+        let a = g5(&[
+            0, 2, 4, 2, 0, 2, 2, 2, 3, 3, 3, 4, 4, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+        ])
+        .unwrap();
+        let r = g5(&[
+            1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+        ])
+        .unwrap();
+        let t = g5(&[
+            1, 3, 0, 2, 1, 2, 1, 2, 2, 0, 3, 4, 3, 4, 1, 1, 0, 0, 0, 0, 0, 2, 4, 2, 0,
+        ])
+        .unwrap();
+        let gp5 =
+            |c: &[i64]| UnivariatePolynomial::new(c.iter().map(|&x| Gf::<5>::new(x)).collect());
+        let f = vec![gp5(&[4, 1]), gp5(&[4, 0, 1]), gp5(&[4, 0, 1])];
+        assert_eq!(invariant_factors(&a).unwrap(), f);
+        assert_eq!(invariant_factors_peeled(&a).unwrap(), f);
+        assert_eq!(minimal_polynomial(&a).unwrap(), gp5(&[4, 0, 1]));
+        assert!(krylov_presentation(&a).unwrap().relations.rows() >= 3);
+        let rcf = rational_canonical_form(&a).unwrap();
+        assert_eq!(rcf.invariant_factors, f);
+        // C is the block companion matrix of MAGMA's f; it is symmetric here, so it equals
+        // MAGMA's r (= Cᵀ).
+        assert_eq!(rcf.canonical_matrix, r);
+        let tt = rcf.change_of_basis.expect("T is computed");
+        assert_eq!(a.mul(&tt).unwrap(), tt.mul(&r).unwrap(), "A·T != T·C");
+        assert!(tt.inverse().unwrap().is_some(), "T singular");
+        // MAGMA's own transform satisfies t·a = r·t in our arithmetic.
+        assert_eq!(t.mul(&a).unwrap(), r.mul(&t).unwrap());
+    }
+
+    /// The natural sentinel-only families of rustmath-finitefields (`tests/matrix_forms_gfp.rs`,
+    /// `sentinel_families`) of size n: cyclic shift, reversal, transposition (1 2), all-ones,
+    /// upper and lower all-ones, nilpotent shift, `J_n(1)` and lower `J_n(-1)`.
+    fn sentinel_families(n: usize) -> Vec<Vec<i64>> {
+        let mut fams = Vec::new();
+        let mut v = vec![0; n * n];
+        for i in 0..n {
+            v[i * n + (i + 1) % n] = 1;
+        }
+        fams.push(v);
+        let mut v = vec![0; n * n];
+        for i in 0..n {
+            v[i * n + n - 1 - i] = 1;
+        }
+        fams.push(v);
+        let mut v = vec![0; n * n];
+        for i in 2..n {
+            v[i * n + i] = 1;
+        }
+        v[1] = 1;
+        v[n] = 1;
+        fams.push(v);
+        fams.push(vec![1; n * n]);
+        fams.push((0..n * n).map(|k| i64::from(k / n <= k % n)).collect());
+        fams.push((0..n * n).map(|k| i64::from(k / n >= k % n)).collect());
+        let mut v = vec![0; n * n];
+        for i in 0..n - 1 {
+            v[i * n + i + 1] = 1;
+        }
+        fams.push(v);
+        let mut v = vec![0; n * n];
+        for i in 0..n {
+            v[i * n + i] = 1;
+            if i + 1 < n {
+                v[i * n + i + 1] = 1;
+            }
+        }
+        fams.push(v);
+        let mut v = vec![0; n * n];
+        for i in 0..n {
+            v[i * n + i] = -1;
+            if i + 1 < n {
+                v[(i + 1) * n + i] = 1;
+            }
+        }
+        fams.push(v);
+        fams
+    }
+
+    fn zs_matrix(n: usize, v: &[i64]) -> Matrix<Zs> {
+        Matrix::from_vec(n, n, v.iter().map(|&x| Zs(x)).collect()).unwrap()
+    }
+
+    fn zs_poly(c: &[i64]) -> UnivariatePolynomial<Zs> {
+        UnivariatePolynomial::new(c.iter().map(|&x| Zs(x)).collect())
+    }
+
+    /// The Z-semantics results reduced mod P against the bound GF(P) results of the same integer
+    /// matrix (the classical Smith form of xI - A over GF(P) as the oracle).
+    fn zs_results_reduce_mod<const P: u64>(
+        n: usize,
+        v: &[i64],
+        factors: Option<&[UnivariatePolynomial<Zs>]>,
+        minpoly: Option<&UnivariatePolynomial<Zs>>,
+    ) {
+        let reduce = |f: &UnivariatePolynomial<Zs>| {
+            UnivariatePolynomial::new(f.coefficients().iter().map(|c| Gf::<P>::new(c.0)).collect())
+        };
+        let a = Matrix::from_vec(n, n, v.iter().map(|&x| Gf::<P>::new(x)).collect()).unwrap();
+        let expected = invariant_factors_classical(&a).unwrap();
+        if let Some(fs) = factors {
+            let got: Vec<_> = fs.iter().map(reduce).collect();
+            assert_eq!(got, expected, "P = {P}, A = {v:?}");
+        }
+        if let Some(mp) = minpoly {
+            assert_eq!(Some(&reduce(mp)), expected.last(), "P = {P}, A = {v:?}");
+        }
+    }
+
+    /// Runs the peeled path on the sentinel-like `Zs` matrix `v` (Z semantics) and checks every
+    /// answer against GF(2), GF(3), GF(5), GF(7); a rational form must have `A·T == T·C` and
+    /// `det T = ±1`. Returns which of (invariant factors, minimal polynomial, rational form)
+    /// answered.
+    fn check_zs_peeled(n: usize, v: &[i64]) -> [bool; 3] {
+        let a = zs_matrix(n, v);
+        let fs = invariant_factors_peeled(&a).ok();
+        let mp = minimal_polynomial_peeled(&a).ok();
+        if let (Some(fs), Some(mp)) = (&fs, &mp) {
+            assert_eq!(fs.last(), Some(mp), "A = {v:?}");
+        }
+        zs_results_reduce_mod::<2>(n, v, fs.as_deref(), mp.as_ref());
+        zs_results_reduce_mod::<3>(n, v, fs.as_deref(), mp.as_ref());
+        zs_results_reduce_mod::<5>(n, v, fs.as_deref(), mp.as_ref());
+        zs_results_reduce_mod::<7>(n, v, fs.as_deref(), mp.as_ref());
+        let rcf = rational_canonical_form_peeled(&a).ok();
+        if let Some(rcf) = &rcf {
+            assert_eq!(Some(&rcf.invariant_factors), fs.as_ref(), "A = {v:?}");
+            let t = rcf.change_of_basis.clone().expect("T is computed");
+            assert_eq!(a.mul(&t).unwrap(), t.mul(&rcf.canonical_matrix).unwrap());
+            let det = charpoly_berkowitz(&t).unwrap().coeff(0).0;
+            assert!(det == 1 || det == -1, "A = {v:?}: det T = {det}");
+        }
+        [fs.is_some(), mp.is_some(), rcf.is_some()]
+    }
+
+    #[test]
+    fn peeled_sentinel_results_are_the_results_mod_every_p() {
+        // frobenius.rs, "Exactness": in Z semantics (Zs: only ±1 invertible, the semantics of a
+        // matrix of unbound PrimeField sentinels) a peeled result is the one over Z, and
+        // reduced mod p it is the one over GF(p). Checked on the 45 natural families
+        // n = 2..6 and on 600 deterministic matrices with entries in {-1, 0, 1}, n = 2..6,
+        // against the bound GF(2), GF(3), GF(5), GF(7) results (gp equivalent:
+        // matfrobenius(A*Mod(1,p),1) == Mod(1,p)*matfrobenius(A,1) whenever we answer).
+        let mut answered = [0usize; 3];
+        for n in 2..=6usize {
+            for v in sentinel_families(n) {
+                for (k, ok) in check_zs_peeled(n, &v).into_iter().enumerate() {
+                    answered[k] += usize::from(ok);
+                }
+            }
+        }
+        // Measured: 19 of 45 answer (each of invariant factors, minimal polynomial, rational
+        // form); the other 26 reach the fallbacks (rustmath-finitefields
+        // forms_sentinel_natural_families checks the public chain on all 45).
+        assert!(answered.iter().all(|&k| k >= 19), "{answered:?}");
+        let mut state = 0x9E37_79B9_7F4A_7C15u64;
+        let mut next = |m: u64| {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (state >> 33) % m
+        };
+        let mut random = [0usize; 3];
+        for t in 0..600usize {
+            let n = 2 + t % 5;
+            let v: Vec<i64> = (0..n * n).map(|_| next(3) as i64 - 1).collect();
+            for (k, ok) in check_zs_peeled(n, &v).into_iter().enumerate() {
+                random[k] += usize::from(ok);
+            }
+        }
+        // Measured: 107 of 600 answer (each of the three).
+        assert!(random.iter().all(|&k| k >= 100), "{random:?}");
+    }
+
+    #[test]
+    fn peeled_sentinel_answers_where_the_smith_paths_err() {
+        // A 4×4 sentinel-like matrix (Z semantics) on which both Smith paths meet the pivot 2
+        // ("2 is not a unit of Z"), so c79a582 returned Err for all three functions, while the
+        // peeled path answers; the answer is right over Z and mod every p (frobenius.rs,
+        // "Exactness").
+        // gp: A = [0,0,0,0; -1,1,0,0; 1,0,0,0; 0,-1,1,0]; matfrobenius(A,1) = [x^4 - x^3],
+        //     lift(matfrobenius(A*Mod(1,p),1)) == [x^4 + (p-1)*x^3] for p = 2, 3, 5, 7 (1)
+        let v = [0, 0, 0, 0, -1, 1, 0, 0, 1, 0, 0, 0, 0, -1, 1, 0];
+        let a = zs_matrix(4, &v);
+        assert!(invariant_factors_fallback(&a).is_err());
+        assert!(rational_canonical_form_krylov(&a).is_err());
+        assert!(rational_canonical_form_classical(&a).is_err());
+        let f = zs_poly(&[0, 0, 0, -1, 1]);
+        assert_eq!(invariant_factors(&a).unwrap(), vec![f.clone()]);
+        assert_eq!(minimal_polynomial(&a).unwrap(), f);
+        assert_eq!(check_zs_peeled(4, &v), [true, true, true]);
     }
 }

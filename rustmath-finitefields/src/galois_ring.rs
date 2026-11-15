@@ -117,7 +117,8 @@ impl GaloisRing {
         if !modp[d].is_one() {
             return Err(MathError::InvalidArgument("D must be monic".into()));
         }
-        if d >= 2 && !crate::poly_factor::is_irreducible_fp(&modp, &p) {
+        // p is proven prime above.
+        if d >= 2 && !crate::poly_factor::is_irreducible_fp_unchecked(&modp, &p) {
             return Err(MathError::InvalidArgument(
                 "D must be irreducible mod p".into(),
             ));
@@ -367,17 +368,18 @@ impl Parent for GaloisRing {
 /// * **`is_zero`/`is_one`** look at `c` in `Z`. Generic code that never meets a bound element
 ///   computes in `Z`: eight `R::one()`s add up to `unbound(8)`, which is not `is_zero()`,
 ///   although `8 = 0` in `GR(8, d)`.
-/// * **containers** (polynomials, matrices, ...) bind coefficient by coefficient, so a
-///   container built from `R::one()`/`R::zero()` (for instance with
-///   `UnivariatePolynomial::var()` or `UnivariatePolynomial::constant(R::one())`) keeps an
-///   unbound integer in every coefficient that never met a bound element, and its degree and
-///   zero tests see those integers in `Z`. Over `GR(8, 2)` with generator `w`,
-///   `(x + 1)^8 - x^8 + w` built from `var()` and `R::one()` keeps the coefficients
-///   `[1 + w, 8, 28, 56, 70, 56, 28, 8]` (only the constant term met `w`), so it has degree 7
-///   and differs from the same polynomial built from `r.zero()`/`r.one()`, which is
-///   `(1 + w) + 4x^2 + 6x^4 + 4x^6` of degree 6. Build containers from
-///   [`GaloisRing::zero`]/[`GaloisRing::one`] (bound elements) whenever degrees, zero tests or
-///   equality matter; a polynomial already built can be bound with `scalar_mul(&r.one())`.
+/// * **containers**: `UnivariatePolynomial` (on construction), `MultivariatePolynomial` and
+///   `LaurentPolynomial` (in `add_term`) bind every unbound coefficient to the ring of a bound
+///   coefficient ([`Ring::bind_to_parent_of`]) and drop the terms that become zero. Over
+///   `GR(8, 2)` with generator `w`, `(x + 1)^8 - x^8 + w` built from `var()` and `R::one()`
+///   is `(1 + w) + 4x^2 + 6x^4 + 4x^6` of degree 6, the same polynomial as one built from
+///   `r.zero()`/`r.one()`. A container with only unbound coefficients stays over `Z`
+///   (`(x + 1)^8 - x^8` keeps `[1, 8, 28, 56, 70, 56, 28, 8]`, degree 7) until it meets a
+///   bound element. The generic containers of rustmath-matrix (`Matrix`, `Vector`,
+///   `SparseMatrix`), rustmath-powerseries and rustmath-rings (power and Laurent series)
+///   still bind entry by entry, so there an entry that met only unbound constants stays an
+///   integer in `Z`; build those from [`GaloisRing::zero`]/[`GaloisRing::one`] (bound
+///   elements) whenever degrees, zero tests or equality matter.
 /// * **the `Ring` hooks** (`unit_status`, `nilpotent_status`, `unit_inverse`,
 ///   `multiplicative_order_status`) and the inherent [`is_unit`](Self::is_unit),
 ///   [`unit_inverse`](Self::unit_inverse), [`multiplicative_order`](Self::multiplicative_order),
@@ -1043,6 +1045,27 @@ impl Ring for GaloisRingElement {
         self.coeffs[0].is_one() && self.coeffs[1..].iter().all(|c| c.is_zero())
     }
 
+    /// Every Galois ring is commutative, and an unbound element is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants (see `Ring::is_unbound_constant`): an unbound element is one, and it
+    // binds by the canonical map Z -> GR(p^a, d) (MAGMA `R ! c`, ch. 48 §48.2.3) into the
+    // ring of a bound model.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        self.ring.is_none()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        match (&self.ring, &model.ring) {
+            (None, Some(r)) => Some(self.bind_into(r)),
+            _ => None,
+        }
+    }
+
     // Element predicates on the generic `Ring` path (MAGMA Ch. 48 `IsUnit`: p-adic
     // valuation zero; `IsNilpotent`: every non-unit of a finite chain ring). For a bound
     // element they delegate to the inherent methods. An unbound element is an integer
@@ -1071,14 +1094,22 @@ impl Ring for GaloisRingElement {
     /// The multiplicative order of a unit (see [`GaloisRingElement::multiplicative_order`],
     /// which gives the exact `Integer` when it exceeds `u64` and this hook reports
     /// `FiniteExceedsU64`). Beyond the handbook: MAGMA Ch. 48 lists no `Order`.
+    ///
+    /// The residue order is computed with a cost cap (the residue-field hook's cap: the
+    /// cyclotomic pieces of `p^d - 1` factored with trial division to 10^4, 8191 rho steps,
+    /// the sieve on at most 30 digits, ECPP on at most 256 bits); beyond it the answer is
+    /// `Undecided`. Elements with residue 1 or -1 need no factoring. An `Undecided` can
+    /// become decided later in the same process, once an exact call has factored the same
+    /// numbers (the factorizations are cached); both answers are honest.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         use rustmath_core::MultiplicativeOrder;
         if self.ring.is_none() {
             return crate::ring_hooks::sentinel_order(self.unbound_value());
         }
-        match self.order_by_residue_lifting() {
+        match self.order_by_residue_lifting(crate::group_order::Effort::Capped) {
             UnitOrder::NotAUnit => MultiplicativeOrder::NotAUnit,
             UnitOrder::Finite(order) => crate::ring_hooks::order_from_integer(&order),
+            UnitOrder::Undecided(_) => MultiplicativeOrder::Undecided,
             // Unreachable by the proof on `order_by_residue_lifting`; never guess.
             UnitOrder::Inconsistent => MultiplicativeOrder::Undecided,
         }
@@ -1089,6 +1120,9 @@ impl Ring for GaloisRingElement {
 enum UnitOrder {
     NotAUnit,
     Finite(Integer),
+    /// The residue order needs a factorization that the effort did not reach (capped), or
+    /// a prime factor without a primality proof (an unresolved ECPP proof); the reason.
+    Undecided(String),
     /// The residue of a unit had no order, or the proven bound `j <= a - 1` failed: an
     /// internal inconsistency that the proof rules out, never an order.
     Inconsistent,
@@ -1110,8 +1144,15 @@ impl GaloisRingElement {
     ///
     /// - For an unbound constant other than `0` and `1`: its order depends on the ring it
     ///   binds to (`-1` has order 1 in `GR(2, d)` and 2 elsewhere).
+    /// - When a prime factor of `p^d - 1` has no primality proof (an unresolved ECPP proof),
+    ///   with "GaloisRingElement::multiplicative_order: {why}".
     /// - On an internal inconsistency that the proof on the algorithm rules out (the
     ///   residue of a unit having no order, or the `p`-power bound `j <= a - 1` failing).
+    ///
+    /// # Cost
+    /// The residue order in `GF(p^d)` (the exact `FiniteFieldElement::multiplicative_order`:
+    /// a factorization of `p^d - 1` with MAGMA's default limits, no time bound), then at most
+    /// `a - 1` `p`-th powers.
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if self.ring.is_none() {
             return match crate::ring_hooks::sentinel_order(self.unbound_value()) {
@@ -1120,9 +1161,12 @@ impl GaloisRingElement {
                 _ => self.undecided_unbound("multiplicative_order()"),
             };
         }
-        match self.order_by_residue_lifting() {
+        match self.order_by_residue_lifting(crate::group_order::Effort::Complete) {
             UnitOrder::NotAUnit => None,
             UnitOrder::Finite(order) => Some(order),
+            UnitOrder::Undecided(why) => {
+                panic!("GaloisRingElement::multiplicative_order: {why}")
+            }
             UnitOrder::Inconsistent => unreachable!(
                 "GaloisRingElement::multiplicative_order: the order of {self} is not m * p^j \
                  with j <= a - 1, contradicting the structure of GR(p^a, d)^*"
@@ -1144,15 +1188,20 @@ impl GaloisRingElement {
     /// with Identity* (1974), Ch. XVI; Z.-X. Wan, *Lectures on Finite Fields and Galois
     /// Rings* (2003), Ch. 14 (structure of `GR(p^a, d)^*`).
     ///
+    /// The residue order goes through `FiniteFieldElement::order_factored` with `effort`, so
+    /// the shortcuts for 1 and -1 apply to the residue (no factoring): -1 has residue order 2
+    /// and order 2; an element with residue 1 has a `p`-power order.
+    ///
     /// Only for bound elements (the callers handle the unbound sentinel first).
-    fn order_by_residue_lifting(&self) -> UnitOrder {
+    fn order_by_residue_lifting(&self, effort: crate::group_order::Effort) -> UnitOrder {
         let a = self.data("multiplicative_order()").a;
         if !GaloisRingElement::is_unit(self) {
             return UnitOrder::NotAUnit;
         }
-        let m = match self.residue().multiplicative_order() {
-            Some(m) => m,
-            None => return UnitOrder::Inconsistent, // unreachable: the residue of a unit is nonzero
+        let m = match self.residue().order_factored(effort) {
+            Ok(Some(f)) => crate::group_order::product(&f),
+            Ok(None) => return UnitOrder::Inconsistent, // unreachable: the residue of a unit is nonzero
+            Err(why) => return UnitOrder::Undecided(why),
         };
         let p = self.p().clone();
         let mut y = GaloisRingElement::pow(self, &m);

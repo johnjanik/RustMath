@@ -1,4 +1,13 @@
 //! Integer partitions and partition generation
+//!
+//! MAGMA Handbook ch. 145 (digest `rustmath-lava/docs/Chapter_145_Partitions_Words_and_Young_Tableaux.md`):
+//! §145.2 partitions and `NumberOfPartitions` (the exact count is
+//! [`crate::number_of_partitions`]; [`partition_count`] is its usize form), §145.4.9
+//! `NumberOfStandardTableaux` ([`number_of_standard_tableaux`]: Frobenius's formula with
+//! cancellation, or the hook length formula of Frame, Robinson and Thrall; W. Fulton,
+//! *Young Tableaux*, LMS Student Texts 35 (1997), §4.3).
+
+use rustmath_integers::Integer;
 
 /// A partition of an integer n is a way of writing n as a sum of positive integers
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -97,32 +106,20 @@ impl Partition {
         hooks
     }
 
-    /// Compute the dimension (number of standard Young tableaux)
+    /// Compute the dimension (number of standard Young tableaux) as a usize: the usize form of
+    /// [`number_of_standard_tableaux`] (MAGMA `NumberOfStandardTableaux`, ch. 145 §145.4.9).
     ///
-    /// Uses the hook length formula: n! / product(hook lengths)
+    /// # Panics
+    ///
+    /// If f^lambda exceeds usize::MAX. Every f^lambda with n <= 35 fits 64 bits; n = 36 has
+    /// the first shape with a larger one. Use [`number_of_standard_tableaux`] for the exact
+    /// value.
     pub fn dimension(&self) -> usize {
-        if self.parts.is_empty() {
-            return 1;
-        }
-
-        let n = self.sum();
-        let hooks = self.hook_lengths();
-
-        // Compute n!
-        let mut numerator = 1usize;
-        for i in 2..=n {
-            numerator *= i;
-        }
-
-        // Compute product of hook lengths
-        let mut denominator = 1usize;
-        for row in hooks {
-            for hook in row {
-                denominator *= hook;
-            }
-        }
-
-        numerator / denominator
+        usize::try_from(&number_of_standard_tableaux(self)).unwrap_or_else(|_| {
+            panic!(
+                "Partition::dimension: f^lambda exceeds usize::MAX; use number_of_standard_tableaux"
+            )
+        })
     }
 
     /// Check if this partition dominates another in the dominance ordering
@@ -1254,26 +1251,21 @@ fn generate_partitions(
     }
 }
 
-/// Count the number of partitions of n (partition function p(n))
+/// Count the number of partitions of n (partition function p(n)) as a usize: the usize form
+/// of [`crate::number_of_partitions`] (MAGMA `NumberOfPartitions`, ch. 145 §145.2), which
+/// returns an `Integer` for every n up to 10^16.
 ///
-/// Uses a simple recurrence relation. For large n, more sophisticated
-/// methods like Hardy-Ramanujan or Rademacher formulas would be needed.
+/// # Panics
+///
+/// If p(n) exceeds usize::MAX (from n = 417 on 64-bit targets), with "partition_count: p(n)
+/// exceeds usize::MAX; use number_of_partitions". n > 1000 panics before any work: p(1000)
+/// exceeds 2^64, so no usize of 64 bits or fewer can hold p(n) for n > 1000.
 pub fn partition_count(n: usize) -> usize {
-    if n == 0 {
-        return 1;
+    const MSG: &str = "partition_count: p(n) exceeds usize::MAX; use number_of_partitions";
+    if n > 1000 {
+        panic!("{MSG}");
     }
-
-    // Use dynamic programming
-    let mut dp = vec![0; n + 1];
-    dp[0] = 1;
-
-    for part in 1..=n {
-        for sum in part..=n {
-            dp[sum] += dp[sum - part];
-        }
-    }
-
-    dp[n]
+    usize::try_from(&crate::number_of_partitions(n as u64)).unwrap_or_else(|_| panic!("{MSG}"))
 }
 
 /// Generate partitions of n with at most k parts
@@ -1583,7 +1575,14 @@ fn generate_partitions_even(
     }
 }
 
-/// Count partitions with restrictions using dynamic programming
+/// Count the partitions of n with at most k parts, by the dynamic programme
+/// `dp[i][j] = dp[i][j-1] + dp[i-j][j]` over (n + 1)(k + 1) machine words.
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX, with "count_partitions_with_max_parts: the count exceeds
+/// usize::MAX". The check is exact: the number of partitions of i with at most j parts does
+/// not decrease in i or j, so every table entry is at most the final count.
 pub fn count_partitions_with_max_parts(n: usize, k: usize) -> usize {
     if n == 0 {
         return 1;
@@ -1593,7 +1592,7 @@ pub fn count_partitions_with_max_parts(n: usize, k: usize) -> usize {
     }
 
     // dp[i][j] = number of partitions of i with at most j parts
-    let mut dp = vec![vec![0; k + 1]; n + 1];
+    let mut dp = vec![vec![0usize; k + 1]; n + 1];
     dp[0][0] = 1;
     for j in 1..=k {
         dp[0][j] = 1; // Empty partition
@@ -1602,17 +1601,85 @@ pub fn count_partitions_with_max_parts(n: usize, k: usize) -> usize {
     for i in 1..=n {
         for j in 1..=k {
             // Partitions with < j parts (same as with at most j-1 parts)
-            dp[i][j] = dp[i][j - 1];
+            let mut v = dp[i][j - 1];
 
             // Partitions with exactly j parts
             // Remove 1 from each part: partition of (i-j) with at most j parts
             if i >= j {
-                dp[i][j] += dp[i - j][j];
+                v = v.checked_add(dp[i - j][j]).unwrap_or_else(|| {
+                    panic!("count_partitions_with_max_parts: the count exceeds usize::MAX")
+                });
             }
+            dp[i][j] = v;
         }
     }
 
     dp[n][k]
+}
+
+/// MAGMA `NumberOfStandardTableaux(P)` (ch. 145 §145.4.9): f^lambda, the number of standard
+/// tableaux of shape lambda, exactly: Frobenius's formula with cancellation for thin shapes,
+/// the hook length formula for fat ones.
+///
+/// f^lambda is invariant under conjugation, so lambda is first replaced by its conjugate when
+/// it has more rows than columns; let r be its number of rows and n its size. With
+/// l_i = lambda_i + r - i (strictly decreasing, l_1 <= n):
+///
+/// - If r(r-1)/2 <= n, Frobenius's formula (\[Ful97\] §4.3, where the hook length formula of
+///   Frame, Robinson and Thrall, Canad. J. Math. 6 (1954) 316-324, is derived from it):
+///   f^lambda = n! prod_{i<j} (l_i - l_j) / prod_i l_i!, evaluated as
+///   [prod_{t=l_1+1}^{n} t] [prod_{i<j} (l_i - l_j)] / [prod_{i>=2} l_i!] with one exact
+///   division. Only O(n - lambda_1 + r^2) factors are above 1, so (n) and (1^n) cost nothing.
+/// - Otherwise (fat shapes such as the hook (m, 1^(m-1))): n! / prod_cells h(c), 2n factors.
+///
+/// The empty partition gives 1 (one tableau of shape ()). n and the factors are u128, so no
+/// arithmetic wraps even for shapes whose usize size would overflow.
+///
+/// # Examples
+///
+/// ```
+/// use rustmath_combinatorics::{number_of_standard_tableaux, Partition};
+/// use rustmath_integers::Integer;
+///
+/// // H145E13: the shape (3, 2) has 5 standard tableaux (hook lengths 4, 3, 1, 2, 1: 5!/24).
+/// // (11, 10): gp 21!/prod of its hook lengths = 58786.
+/// assert_eq!(number_of_standard_tableaux(&Partition::new(vec![3, 2])), Integer::from(5));
+/// assert_eq!(number_of_standard_tableaux(&Partition::new(vec![11, 10])), Integer::from(58786));
+/// ```
+pub fn number_of_standard_tableaux(p: &Partition) -> Integer {
+    use crate::factorials::{product_tree, product_u128s, product_u64s};
+
+    if p.parts.is_empty() {
+        return Integer::from(1u32);
+    }
+    let conjugate;
+    let q: &Partition = if p.parts.len() > p.parts[0] {
+        conjugate = p.conjugate();
+        &conjugate
+    } else {
+        p
+    };
+    let parts = &q.parts;
+    let r = parts.len() as u128;
+    let n: u128 = parts.iter().map(|&x| x as u128).sum();
+    if r * (r - 1) / 2 <= n {
+        let l: Vec<u128> = parts
+            .iter()
+            .enumerate()
+            .map(|(i, &x)| x as u128 + (r - 1 - i as u128))
+            .collect();
+        let tail = product_u128s(l[0] + 1..=n); // n! / l_1!
+        let diffs = product_u128s(
+            (0..l.len()).flat_map(|i| l[i + 1..].iter().map(move |&lj| (i, lj))).map(|(i, lj)| l[i] - lj),
+        );
+        let den = product_tree(l[1..].iter().map(|&x| product_u128s(2..=x)).collect());
+        &(&tail * &diffs) / &den
+    } else {
+        let hooks = q.hook_lengths();
+        let num = product_u128s(2..=n);
+        let den = product_u64s(hooks.iter().flatten().map(|&h| h as u64));
+        &num / &den
+    }
 }
 
 #[cfg(test)]

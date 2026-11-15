@@ -343,15 +343,22 @@ impl Poset {
     /// Get all order ideals of the poset
     ///
     /// Returns a vector of all possible order ideals (including empty set and full set)
+    ///
+    /// Cost: 2^n subsets are tested.
+    ///
+    /// # Panics
+    ///
+    /// If the poset has usize::BITS or more elements: its 2^n subsets cannot be listed.
     pub fn all_order_ideals(&self) -> Vec<HashSet<usize>> {
         let mut ideals = Vec::new();
         let n = self.elements.len();
 
         // Generate all subsets and check which are order ideals
-        for mask in 0..(1 << n) {
+        let count: usize = crate::machine_word::subset_mask_count(n, "Poset::all_order_ideals");
+        for mask in 0..count {
             let mut subset = HashSet::new();
             for i in 0..n {
-                if (mask & (1 << i)) != 0 {
+                if (mask & (1usize << i)) != 0 {
                     subset.insert(self.elements[i]);
                 }
             }
@@ -609,15 +616,22 @@ impl Poset {
     /// Find all antichains in the poset
     ///
     /// An antichain is a subset where no two elements are comparable
+    ///
+    /// Cost: 2^n subsets are tested.
+    ///
+    /// # Panics
+    ///
+    /// If the poset has usize::BITS or more elements: its 2^n subsets cannot be listed.
     pub fn all_antichains(&self) -> Vec<HashSet<usize>> {
         let mut antichains = Vec::new();
         let n = self.elements.len();
 
         // Generate all subsets and check which are antichains
-        for mask in 0..(1 << n) {
+        let count: usize = crate::machine_word::subset_mask_count(n, "Poset::all_antichains");
+        for mask in 0..count {
             let mut subset = HashSet::new();
             for i in 0..n {
-                if (mask & (1 << i)) != 0 {
+                if (mask & (1usize << i)) != 0 {
                     subset.insert(self.elements[i]);
                 }
             }

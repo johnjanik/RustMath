@@ -343,11 +343,14 @@ impl PullBack {
             return self.apply_to_one_form(form, source_chart, target_chart);
         }
 
-        // For p > 1, the pullback is more complex
-        // It involves pulling back each component and wedging appropriately
-        // This is a simplified placeholder
-        let tensor = form.tensor().clone();
-        Ok(DiffForm::from_tensor(tensor, p)?)
+        // For p > 1 the pullback needs the Jacobian minors; HEAD returned the input form
+        // relabelled (a facade).
+        let _ = (source_chart, target_chart);
+        Err(ManifoldError::NotImplemented(
+            "the pullback of a p-form for p > 1 needs the Jacobian minors \
+             (f^*ω)_I = Σ_J (ω_J ∘ f) det(∂f^J/∂x^I)"
+                .to_string(),
+        ))
     }
 
     /// Apply the pullback to a general (0,q) tensor (covariant tensor)
@@ -385,31 +388,14 @@ impl PullBack {
             ));
         }
 
-        // Get the map
-        let mut map = (*self.map).clone();
-        let jacobian = map.jacobian(source_chart, target_chart)?;
-
-        // Get tensor components
-        let t_components = tensor.components(target_chart)?;
-
-        // For a general (0,q) tensor, we need to pull back using the Jacobian
-        // This requires sophisticated multi-index arithmetic
-        // For now, provide a basic implementation
-
-        let n_source = self.map.source.dimension();
-        let n_target = self.map.target.dimension();
-
-        // Simplified: assume we can pull back componentwise
-        // A full implementation would require proper tensor index contraction
-        let pulled_components = t_components.clone();
-
-        TensorField::from_components(
-            self.map.source.clone(),
-            0,
-            q,
-            source_chart,
-            pulled_components,
-        )
+        // HEAD computed the Jacobian and then returned the target components unchanged on the
+        // source manifold (a facade).
+        let _ = (source_chart, target_chart);
+        Err(ManifoldError::NotImplemented(format!(
+            "the pullback of a (0, {}) tensor field for q >= 2 needs \
+             (f^*T)_J = Σ_I (T_I ∘ f) Π_b ∂f^{{i_b}}/∂x^{{j_b}}",
+            q
+        )))
     }
 
     /// Apply the pullback to an arbitrary tensor
@@ -468,31 +454,14 @@ impl PushForward {
             ));
         }
 
-        // Get the map
-        let mut map = (*self.map).clone();
-        let jacobian = map.jacobian(source_chart, target_chart)?;
-
-        // Get tensor components
-        let t_components = tensor.components(source_chart)?;
-
-        // For a general (p,0) tensor, we need to push forward using the Jacobian
-        // This requires sophisticated multi-index arithmetic
-        // For now, provide a basic implementation
-
-        let n_source = self.map.source.dimension();
-        let n_target = self.map.target.dimension();
-
-        // Simplified: assume we can push forward componentwise
-        // A full implementation would require proper tensor index contraction
-        let pushed_components = t_components.clone();
-
-        TensorField::from_components(
-            self.map.target.clone(),
-            p,
-            0,
-            target_chart,
-            pushed_components,
-        )
+        // HEAD computed the Jacobian and then returned the source components unchanged on the
+        // target manifold (a facade).
+        let _ = (source_chart, target_chart);
+        Err(ManifoldError::NotImplemented(format!(
+            "the pushforward of a ({}, 0) tensor field for p >= 2 needs \
+             (f_* T)^J = Σ_I T^I Π_a ∂f^{{j_a}}/∂x^{{i_a}}, composed with the inverse map",
+            p
+        )))
     }
 
     /// Apply the pushforward to an arbitrary tensor
@@ -913,5 +882,22 @@ mod tests {
         let pullback = PullBack::new(map);
 
         assert!(true); // Just test creation
+    }
+
+    #[test]
+    fn test_pull_push_facades_not_implemented() {
+        // HEAD returned the input components relabelled (pullback of 2-forms and (0, 2)
+        // tensors, pushforward of (2, 0) tensors)
+        let r2 = Arc::new(EuclideanSpace::new(2).manifold().clone());
+        let c = r2.default_chart().unwrap().clone();
+        let id = Arc::new(SmoothMap::new(r2.clone(), r2.clone(), "id"));
+        let pull = PullBack::new(id.clone());
+        let push = PushForward::new(id);
+        let w = DiffForm::from_independent_components(r2.clone(), &c, 2, vec![Expr::from(1)]).unwrap();
+        assert!(matches!(pull.apply_to_form(&w, &c, &c), Err(ManifoldError::NotImplemented(_))));
+        let t02 = TensorField::from_components(r2.clone(), 0, 2, &c, vec![Expr::from(1); 4]).unwrap();
+        assert!(matches!(pull.apply_to_tensor(&t02, &c, &c), Err(ManifoldError::NotImplemented(_))));
+        let t20 = TensorField::from_components(r2.clone(), 2, 0, &c, vec![Expr::from(1); 4]).unwrap();
+        assert!(matches!(push.apply_to_tensor(&t20, &c, &c), Err(ManifoldError::NotImplemented(_))));
     }
 }

@@ -4,7 +4,7 @@
 
 use crate::connection::KernelSockets;
 use crate::protocol::*;
-use crate::repl::ReplContext;
+use crate::repl::{EvalError, EvalResult};
 use std::collections::HashMap;
 
 /// Handle kernel_info_request
@@ -49,25 +49,22 @@ pub fn handle_kernel_info(msg: &JupyterMessage) -> JupyterMessage {
     msg.reply("kernel_info_reply", serde_json::to_value(content).unwrap())
 }
 
-/// Handle execute_request
-pub async fn handle_execute(
+/// The result of one evaluation on the worker thread (S13).
+#[derive(Debug)]
+pub struct EvalOutcome {
+    pub result: Result<EvalResult, EvalError>,
+    pub stdout: String,
+    pub stderr: String,
+}
+
+/// First half of execute_request: publish busy and execute_input. Returns the parsed request.
+pub async fn begin_execute(
     msg: &JupyterMessage,
-    ctx: &mut ReplContext,
+    execution_count: u64,
     sockets: &mut KernelSockets,
-) -> Result<JupyterMessage, Box<dyn std::error::Error>> {
+) -> Result<ExecuteRequest, Box<dyn std::error::Error>> {
     let request: ExecuteRequest = serde_json::from_value(msg.content.clone())?;
-
-    // Increment execution count if storing history
-    if request.store_history {
-        ctx.increment_count();
-    }
-
-    let execution_count = ctx.execution_count();
-
-    // Publish busy status
     publish_status(sockets, msg, "busy").await?;
-
-    // Publish execute_input if not silent
     if !request.silent {
         let input_content = ExecuteInputContent {
             code: request.code.clone(),
@@ -76,35 +73,26 @@ pub async fn handle_execute(
         let input_msg = msg.reply("execute_input", serde_json::to_value(input_content)?);
         sockets.publish(&input_msg).await?;
     }
+    Ok(request)
+}
 
-    // Execute the code
-    let result = ctx.eval(&request.code);
-
-    // Handle stdout
-    let stdout = ctx.stdout().to_string();
-    if !stdout.is_empty() && !request.silent {
-        let stream_content = StreamContent {
-            name: "stdout".to_string(),
-            text: stdout,
-        };
-        let stream_msg = msg.reply("stream", serde_json::to_value(stream_content)?);
-        sockets.publish(&stream_msg).await?;
+/// Second half of execute_request: publish the outputs and idle, and return execute_reply.
+pub async fn finish_execute(
+    msg: &JupyterMessage,
+    request: &ExecuteRequest,
+    execution_count: u64,
+    outcome: EvalOutcome,
+    sockets: &mut KernelSockets,
+) -> Result<JupyterMessage, Box<dyn std::error::Error>> {
+    for (name, text) in [("stdout", outcome.stdout), ("stderr", outcome.stderr)] {
+        if !text.is_empty() && !request.silent {
+            let stream_content = StreamContent { name: name.to_string(), text };
+            let stream_msg = msg.reply("stream", serde_json::to_value(stream_content)?);
+            sockets.publish(&stream_msg).await?;
+        }
     }
-
-    // Handle stderr
-    let stderr = ctx.stderr().to_string();
-    if !stderr.is_empty() && !request.silent {
-        let stream_content = StreamContent {
-            name: "stderr".to_string(),
-            text: stderr,
-        };
-        let stream_msg = msg.reply("stream", serde_json::to_value(stream_content)?);
-        sockets.publish(&stream_msg).await?;
-    }
-
-    let reply = match result {
+    let reply = match outcome.result {
         Ok(eval_result) => {
-            // Publish result if there's output
             if eval_result.has_output && !request.silent {
                 let result_content = ExecuteResultContent {
                     execution_count,
@@ -114,7 +102,6 @@ pub async fn handle_execute(
                 let result_msg = msg.reply("execute_result", serde_json::to_value(result_content)?);
                 sockets.publish(&result_msg).await?;
             }
-
             ExecuteReply {
                 status: "ok".to_string(),
                 execution_count,
@@ -126,7 +113,6 @@ pub async fn handle_execute(
             }
         }
         Err(eval_error) => {
-            // Publish error
             if !request.silent {
                 let error_content = ErrorContent {
                     ename: eval_error.name.clone(),
@@ -136,7 +122,6 @@ pub async fn handle_execute(
                 let error_msg = msg.reply("error", serde_json::to_value(error_content)?);
                 sockets.publish(&error_msg).await?;
             }
-
             ExecuteReply {
                 status: "error".to_string(),
                 execution_count,
@@ -148,15 +133,31 @@ pub async fn handle_execute(
             }
         }
     };
-
-    // Publish idle status
     publish_status(sockets, msg, "idle").await?;
-
     Ok(msg.reply("execute_reply", serde_json::to_value(reply)?))
 }
 
+/// execute_reply with status "aborted", for requests dropped after an error when
+/// `stop_on_error` is set (Jupyter messaging protocol, "Execute").
+pub fn aborted_reply(msg: &JupyterMessage, execution_count: u64) -> JupyterMessage {
+    let content = serde_json::json!({ "status": "aborted", "execution_count": execution_count });
+    msg.reply("execute_reply", content)
+}
+
+/// Publish a stream message on IOPub.
+pub async fn publish_stream(
+    sockets: &mut KernelSockets,
+    parent: &JupyterMessage,
+    name: &str,
+    text: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let content = StreamContent { name: name.to_string(), text: text.to_string() };
+    let msg = parent.reply("stream", serde_json::to_value(content)?);
+    sockets.publish(&msg).await
+}
+
 /// Handle complete_request (tab completion)
-pub fn handle_complete(msg: &JupyterMessage, _ctx: &ReplContext) -> JupyterMessage {
+pub fn handle_complete(msg: &JupyterMessage) -> JupyterMessage {
     let request: CompleteRequest = serde_json::from_value(msg.content.clone()).unwrap_or(CompleteRequest {
         code: String::new(),
         cursor_pos: 0,

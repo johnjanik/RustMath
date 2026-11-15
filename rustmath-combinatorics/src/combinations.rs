@@ -1,4 +1,9 @@
 //! Combinations and combination generation
+//!
+//! MAGMA Handbook ch. 144 §144.3 (subsets). Ranks are machine words: a rank that exceeds
+//! usize::MAX is a documented panic, never a wrapped value (design C1 §1.6, item 24).
+
+use crate::machine_word::binomial_usize_checked;
 
 /// A combination (k-subset of n elements)
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,20 +64,31 @@ impl Combination {
     ///
     /// This is the position of this combination in the lexicographically ordered
     /// list of all C(n, k) combinations
+    ///
+    /// # Panics
+    ///
+    /// If the rank exceeds usize::MAX ("Combination::rank: the rank exceeds usize::MAX").
+    /// Every binomial term is a summand of the rank, so a term or a partial sum that does
+    /// not fit means the rank does not fit.
     pub fn rank(&self) -> usize {
         let k = self.k();
-        let mut rank = 0;
+        let mut rank: usize = 0;
+        let add = |rank: usize, m: usize, j: usize| -> usize {
+            binomial_usize_checked(m as u128, j as u128)
+                .and_then(|t| rank.checked_add(t))
+                .unwrap_or_else(|| panic!("Combination::rank: the rank exceeds usize::MAX"))
+        };
 
         for (i, &idx) in self.indices.iter().enumerate() {
             if i == 0 {
                 // Count all combinations that come before this one
                 for j in 0..idx {
-                    rank += binomial_usize(self.n - 1 - j, k - 1);
+                    rank = add(rank, self.n - 1 - j, k - 1);
                 }
             } else {
                 let prev_idx = self.indices[i - 1];
                 for j in (prev_idx + 1)..idx {
-                    rank += binomial_usize(self.n - 1 - j, k - 1 - i);
+                    rank = add(rank, self.n - 1 - j, k - 1 - i);
                 }
             }
         }
@@ -92,13 +108,15 @@ impl Combination {
 
         for i in 0..k {
             for j in start..n {
-                let count = binomial_usize(n - 1 - j, k - 1 - i);
-                if remaining_rank < count {
-                    indices.push(j);
-                    start = j + 1;
-                    break;
+                // None: the count exceeds usize::MAX, so it is larger than any usize rank.
+                match binomial_usize_checked((n - 1 - j) as u128, (k - 1 - i) as u128) {
+                    Some(count) if remaining_rank >= count => remaining_rank -= count,
+                    _ => {
+                        indices.push(j);
+                        start = j + 1;
+                        break;
+                    }
                 }
-                remaining_rank -= count;
             }
         }
 
@@ -153,25 +171,6 @@ fn generate_combinations(
         generate_combinations(n, k, i + 1, current, result);
         current.pop();
     }
-}
-
-/// Compute binomial coefficient using usize (for internal use)
-fn binomial_usize(n: usize, k: usize) -> usize {
-    if k > n {
-        return 0;
-    }
-    if k == 0 || k == n {
-        return 1;
-    }
-
-    let k = k.min(n - k);
-    let mut result = 1usize;
-
-    for i in 0..k {
-        result = result * (n - i) / (i + 1);
-    }
-
-    result
 }
 
 #[cfg(test)]

@@ -6,17 +6,25 @@
 //! - 1 is mapped to 0 (not to 1)
 //! - 2 is mapped to 3 (not to 2)
 //! - 3 is mapped to 2 (not to 3)
+//!
+//! The count D(n) (the subfactorial, OEIS A000166) is computed by binary splitting of the
+//! inclusion-exclusion sum (Haible and Papanikolaou, ANTS-III, 1998); see
+//! [`count_derangements`]. MAGMA has no intrinsic for it.
 
 use crate::permutations::Permutation;
-use rustmath_core::Ring;
 use rustmath_integers::Integer;
-use rustmath_rationals::Rational;
 
-/// Count the number of derangements of n elements using inclusion-exclusion
+/// Count the number of derangements of n elements (the subfactorial !n, OEIS A000166).
 ///
-/// The formula is: D(n) = n! * Σ(i=0 to n) (-1)^i / i!
+/// By inclusion-exclusion, D(n) = n! sum_{k=0}^{n} (-1)^k / k! = sum_k (-1)^k (k+1)(k+2)...n,
+/// which is approximately n!/e for large n.
 ///
-/// This is approximately n!/e for large n.
+/// Computed by binary splitting of that sum (the recurrence D(n) = n D(n-1) + (-1)^n run as a
+/// balanced tree; B. Haible, T. Papanikolaou, *Fast multiprecision evaluation of series of
+/// rational numbers*, ANTS-III, LNCS 1423 (1998) 338-350). With
+/// T(a, b) = sum_{k=a}^{b} (-1)^k prod_{j=k+1}^{b} j and P(a, b) = prod_{j=a+1}^{b} j:
+/// T(a, b) = T(a, m) P(m, b) + T(m+1, b), P(m, b) = (m+1) P(m+1, b),
+/// P(a, b) = P(a, m) P(m, b), and D(n) = T(0, n). Cost O(M(B) log n) for a B-bit result.
 ///
 /// # Examples
 ///
@@ -31,29 +39,31 @@ use rustmath_rationals::Rational;
 /// assert_eq!(count_derangements(4), Integer::from(9));
 /// ```
 pub fn count_derangements(n: u32) -> Integer {
-    if n == 0 {
-        return Integer::one();
+    derangement_split(0, u64::from(n)).0
+}
+
+/// (T(a, b), P(a, b)) of [`count_derangements`]. Leaves of fewer than 32 terms are summed
+/// directly from k = b down to a. Recursion depth at most log2(n / 32) + 1.
+fn derangement_split(a: u64, b: u64) -> (Integer, Integer) {
+    if b - a < 32 {
+        let mut t = Integer::zero();
+        let mut p = Integer::one(); // prod_{j=k+1}^{b} j for the current k
+        let mut k = b;
+        loop {
+            t = if k.is_multiple_of(2) { &t + &p } else { &t - &p };
+            if k == a {
+                break;
+            }
+            p = &p * &Integer::from(k);
+            k -= 1;
+        }
+        return (t, p);
     }
-    if n == 1 {
-        return Integer::zero();
-    }
-
-    // Use the formula: D(n) = n! * Σ(i=0 to n) (-1)^i / i!
-    // We can compute this exactly using rationals
-    let mut sum = Rational::zero();
-
-    for i in 0..=n {
-        let sign = if i % 2 == 0 { 1 } else { -1 };
-        let factorial_i = crate::factorial(i);
-        let term = Rational::from_integer(Integer::from(sign)) / Rational::from_integer(factorial_i);
-        sum = sum + term;
-    }
-
-    let factorial_n = crate::factorial(n);
-    let result = Rational::from_integer(factorial_n) * sum;
-
-    // The result should always be an integer
-    result.numerator().clone()
+    let m = a + (b - a) / 2;
+    let (t1, p1) = derangement_split(a, m);
+    let (t2, p2) = derangement_split(m + 1, b);
+    let pmb = &p2 * &Integer::from(m + 1);
+    (&(&t1 * &pmb) + &t2, &p1 * &pmb)
 }
 
 /// Count derangements using the recurrence relation
@@ -193,6 +203,7 @@ fn generate_derangements(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_rationals::Rational;
 
     #[test]
     fn test_count_derangements() {

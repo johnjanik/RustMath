@@ -34,4 +34,6 @@ fn integer_units_nilpotents_orders() {
     let big = Integer::from(2).pow(100u32) + Integer::from(1);
     assert_eq!(big.unit_status(), Some(false));
     assert_eq!(<Integer as Ring>::static_characteristic(), Some(0));
+    // MAGMA IsCommutative(Integers()) and IsCommutative(Rationals()) are true.
+    assert_eq!(<Integer as Ring>::static_is_commutative(), Some(true));
 }

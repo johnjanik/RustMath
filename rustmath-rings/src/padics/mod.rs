@@ -31,7 +31,8 @@ pub use newton_lift::newton_lift_bivariate;
 pub mod extension;
 
 pub use extension::{
-    ExtensionType, GaloisGroup, PadicEmbedding, PadicExtension, PadicExtensionElement,
+    ExtensionType, FieldCertificate, GaloisGroup, PadicEmbedding, PadicExtension,
+    PadicExtensionElement,
 };
 
 // Low-level Z/p^N and GF(p) polynomial arithmetic shared by the extension

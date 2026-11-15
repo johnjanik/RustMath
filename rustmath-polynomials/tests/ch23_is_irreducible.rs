@@ -858,3 +858,17 @@ fn generic_euclidean_domain_decides_only_what_it_can() {
     assert!(is_irreducible(&zw(&[-1, 0, 1])).is_err());
     assert!(is_irreducible(&zw(&[1, 0, 1])).is_err());
 }
+
+/// Sage's `Polynomial.is_irreducible` doctests on the content (`polynomial_element.pyx`,
+/// develop branch on GitHub): over ZZ, `R(2*x).is_irreducible()` is False (2x = 2·x, two
+/// non-units), `R(1)` and `R(4)` are False, `R(5)` is True; over QQ, `R(2*x)` is True.
+/// `is_irreducible` follows the same ring convention (MAGMA's handbook text, V2.19 §23.8.1,
+/// does not settle it).
+#[test]
+fn sage_content_examples() {
+    assert_eq!(is_irreducible(&z(&[0, 2])), Ok(false));
+    assert_eq!(is_irreducible(&z(&[1])), Ok(false));
+    assert_eq!(is_irreducible(&z(&[4])), Ok(false));
+    assert_eq!(is_irreducible(&z(&[5])), Ok(true));
+    assert_eq!(is_irreducible(&q(&[(0, 1), (2, 1)])), Ok(true));
+}

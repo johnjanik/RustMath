@@ -18,7 +18,7 @@
 use crate::laurent::LaurentSeries;
 use crate::precision::{Precision, DEFAULT_PRECISION};
 use crate::series::PowerSeries;
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, Result, Ring};
+use rustmath_core::{CommutativeRing, Field, IntegralDomain, MultiplicativeOrder, Result, Ring};
 use rustmath_rationals::Rational;
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
@@ -262,6 +262,35 @@ impl<R: Ring> Ring for PuiseuxSeries<R> {
     }
     fn is_one(&self) -> bool {
         self.e == 1 && self.inner.is_one()
+    }
+
+    // Ring predicates (MAGMA Ch. 49 §49.4.4): those of the inner Laurent series in
+    // y = x^(1/e) (R⟨⟨x⟩⟩ ⊇ R((y)) as rings, and an element lies in one R((y))), with the
+    // same weak-zero convention and precondition (see `LaurentSeries`).
+
+    fn static_characteristic() -> Option<u64> {
+        R::static_characteristic()
+    }
+
+    fn static_is_commutative() -> Option<bool> {
+        R::static_is_commutative()
+    }
+
+    fn unit_status(&self) -> Option<bool> {
+        self.inner.unit_status()
+    }
+
+    /// The inverse of the inner Laurent series, with the same exponent denominator.
+    fn unit_inverse(&self) -> Result<Self> {
+        Ok(PuiseuxSeries::from_laurent(self.e, self.inner.unit_inverse()?))
+    }
+
+    fn nilpotent_status(&self) -> Option<bool> {
+        self.inner.nilpotent_status()
+    }
+
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        self.inner.multiplicative_order_status()
     }
 }
 

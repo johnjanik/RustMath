@@ -120,7 +120,9 @@ pub struct ExecuteRequest {
     pub user_expressions: HashMap<String, String>,
     #[serde(default = "default_true")]
     pub allow_stdin: bool,
-    #[serde(default)]
+    /// The protocol default is true: after an error, the execute requests already queued are
+    /// answered "aborted" (S13).
+    #[serde(default = "default_true")]
     pub stop_on_error: bool,
 }
 

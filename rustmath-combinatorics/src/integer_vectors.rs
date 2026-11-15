@@ -16,6 +16,7 @@
 //! assert_eq!(count_integer_vectors_with_sum(3, 4), 15);
 //! ```
 
+use crate::machine_word::{binomial_usize_checked, subset_mask_count};
 use rustmath_core::{NumericConversion, Ring};
 use rustmath_integers::Integer;
 use std::collections::{HashSet, VecDeque};
@@ -212,14 +213,15 @@ fn enumerate_vectors_recursive(
 
     // If this is the last position, put all remaining in it
     if index == length - 1 {
-        current[index] = Integer::from(remaining as i64);
+        // usize to u64 is lossless on every Rust target (an i64 cast would turn 2^63 negative).
+        current[index] = Integer::from(remaining as u64);
         result.push(IntegerVector::new(current.clone()));
         return;
     }
 
     // Try all possible values for current position
     for value in 0..=remaining {
-        current[index] = Integer::from(value as i64);
+        current[index] = Integer::from(value as u64);
         enumerate_vectors_recursive(length, remaining - value, index + 1, current, result);
     }
 }
@@ -236,6 +238,12 @@ fn enumerate_vectors_recursive(
 ///
 /// assert_eq!(count_integer_vectors_with_sum(3, 4), 15); // C(6,2) = 15
 /// ```
+///
+/// # Panics
+///
+/// If C(sum + length - 1, length - 1) exceeds usize::MAX ("count_integer_vectors_with_sum:
+/// C(sum+length-1, length-1) exceeds usize::MAX"). The binomial is formed in u128 and checked
+/// in at most 65 steps.
 pub fn count_integer_vectors_with_sum(length: usize, sum: usize) -> usize {
     if length == 0 {
         return if sum == 0 { 1 } else { 0 };
@@ -245,9 +253,8 @@ pub fn count_integer_vectors_with_sum(length: usize, sum: usize) -> usize {
     }
 
     // C(sum + length - 1, length - 1)
-    use crate::binomial;
-    NumericConversion::to_usize(&binomial((sum + length - 1) as u32, (length - 1) as u32))
-        .unwrap_or(0)
+    binomial_usize_checked(sum as u128 + length as u128 - 1, length as u128 - 1)
+        .expect("count_integer_vectors_with_sum: C(sum+length-1, length-1) exceeds usize::MAX")
 }
 
 /// Enumerate integer vectors with weighted sum constraint
@@ -331,7 +338,7 @@ fn enumerate_weighted_recursive(
     };
 
     for value in 0..=max_val {
-        current[index] = Integer::from(value as i64);
+        current[index] = Integer::from(value as u64);
         let new_remaining = remaining_weight - value * weight;
         enumerate_weighted_recursive(
             weights,
@@ -401,19 +408,25 @@ fn enumerate_box_recursive(
 ///
 /// assert_eq!(count_integer_vectors_in_box(&[0, 0], &[2, 3]), 12); // 3 * 4
 /// ```
+///
+/// # Panics
+///
+/// If the count exceeds usize::MAX ("count_integer_vectors_in_box: the count exceeds
+/// usize::MAX"). An empty side (some max < min) gives 0 before any product. The widths are
+/// i128 (at most 2^64) and the product is a checked u128.
 pub fn count_integer_vectors_in_box(min: &[i64], max: &[i64]) -> usize {
     assert_eq!(min.len(), max.len(), "Min and max must have same dimension");
 
-    min.iter()
-        .zip(max.iter())
-        .map(|(mn, mx)| {
-            if mx >= mn {
-                (mx - mn + 1) as usize
-            } else {
-                0
-            }
-        })
-        .product()
+    if min.iter().zip(max.iter()).any(|(mn, mx)| mx < mn) {
+        return 0;
+    }
+    const MSG: &str = "count_integer_vectors_in_box: the count exceeds usize::MAX";
+    let mut count: u128 = 1;
+    for (&mn, &mx) in min.iter().zip(max.iter()) {
+        let width = (i128::from(mx) - i128::from(mn) + 1) as u128; // 1 ..= 2^64
+        count = count.checked_mul(width).unwrap_or_else(|| panic!("{MSG}"));
+    }
+    usize::try_from(count).unwrap_or_else(|_| panic!("{MSG}"))
 }
 
 /// Enumerate integer vectors with bounded L1 norm
@@ -431,6 +444,12 @@ pub fn count_integer_vectors_in_box(min: &[i64], max: &[i64]) -> usize {
 /// // Should include: [0,0], [1,0], [-1,0], [0,1], [0,-1]
 /// assert!(vecs.len() >= 5);
 /// ```
+///
+/// Cost: 2^dimension sign patterns per non-negative vector.
+///
+/// # Panics
+///
+/// If dimension >= usize::BITS: the 2^dimension sign patterns cannot be listed.
 pub fn integer_vectors_with_l1_norm_bounded(dimension: usize, max_norm: usize) -> Vec<IntegerVector> {
     let mut result = Vec::new();
 
@@ -449,19 +468,25 @@ pub fn integer_vectors_with_l1_norm_bounded(dimension: usize, max_norm: usize) -
     result
 }
 
-/// Helper to generate all sign patterns of a vector
+/// Helper to generate all sign patterns of a vector: 2^n iterations.
+///
+/// # Panics
+///
+/// If the vector has usize::BITS or more components: its 2^n sign patterns cannot be listed
+/// with a usize mask.
 fn generate_all_sign_patterns(components: &[usize], result: &mut Vec<IntegerVector>) {
     let n = components.len();
-    let num_patterns = 1 << n; // 2^n patterns
+    let num_patterns: usize = subset_mask_count(n, "integer_vectors_with_l1_norm_bounded"); // 2^n patterns
 
     for pattern in 0..num_patterns {
         let mut signed_vec = Vec::with_capacity(n);
-        for i in 0..n {
-            let val = components[i] as i64;
+        for (i, &c) in components.iter().enumerate() {
+            // usize to u64 is lossless; the negation is done on the Integer.
+            let val = Integer::from(c as u64);
             if (pattern >> i) & 1 == 1 {
-                signed_vec.push(Integer::from(-val));
+                signed_vec.push(-val);
             } else {
-                signed_vec.push(Integer::from(val));
+                signed_vec.push(val);
             }
         }
         result.push(IntegerVector::new(signed_vec));
@@ -545,8 +570,9 @@ impl Iterator for IntegerVectorSumIter {
         }
 
         if let Some(ref current) = self.current {
-            let result = IntegerVector::from_i64(
-                current.iter().map(|&x| x as i64).collect()
+            // usize to u64 is lossless (an i64 cast would turn 2^63 negative).
+            let result = IntegerVector::new(
+                current.iter().map(|&x| Integer::from(x as u64)).collect()
             );
 
             if !self.advance() {

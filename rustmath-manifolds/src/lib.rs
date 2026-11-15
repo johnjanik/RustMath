@@ -41,6 +41,7 @@ pub mod traits;
 pub mod vector_field;
 pub mod tensor_field;
 pub mod diff_form;
+pub mod expr_zero;
 pub mod tangent_space;
 pub mod modules;
 pub mod riemannian;
@@ -84,6 +85,7 @@ pub use transition::TransitionFunction;
 pub use vector_field::VectorField;
 pub use tensor_field::{TensorField, MultiIndex};
 pub use diff_form::DiffForm;
+pub use expr_zero::{zero_test, zero_test_with_budget, ZeroTest};
 pub use tangent_space::{TangentVector, TangentSpace, Covector, CotangentSpace};
 pub use modules::{
     DiffScalarFieldAlgebra, VectorFieldModule, VectorFieldFreeModule,

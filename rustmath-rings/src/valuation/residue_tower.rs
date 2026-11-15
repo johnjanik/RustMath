@@ -17,9 +17,10 @@
 //!
 //! - squarefree reduction handling inseparable inputs by the correct
 //!   `p`-th-root reduction `f(y) = g(y^p) => g` (coefficient-wise inverse
-//!   Frobenius `c -> c^{q/p}`); this mirrors the fix for the KNOWN HAZARD in
-//!   `rustmath_polynomials::fp_factor::factor`, which is wrong on inseparable
-//!   inputs — nothing here trusts that routine,
+//!   Frobenius `c -> c^{q/p}`). `rustmath_polynomials::fp_factor::factor`
+//!   handles inseparable inputs over the prime field since commit 5ff8749;
+//!   this module works over the tower and keeps its own pipeline for the
+//!   multiplicities and the reconstruction certificate,
 //! - distinct-degree factorization via `y^{q^i} mod f`,
 //! - equal-degree splitting: Cantor–Zassenhaus for odd `q`, the GF(2)-trace
 //!   map `r + r^2 + ... + r^{2^{Fd-1}}` for `p = 2`,

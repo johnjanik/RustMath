@@ -24,7 +24,10 @@
 
 use crate::precision::{Precision, DEFAULT_PRECISION};
 use crate::series::PowerSeries;
-use rustmath_core::{CommutativeRing, Field, IntegralDomain, MathError, NumericConversion, Result, Ring};
+use rustmath_core::{
+    CommutativeRing, Field, IntegralDomain, MathError, MultiplicativeOrder, NumericConversion,
+    Result, Ring,
+};
 use std::cell::RefCell;
 use std::fmt;
 use std::ops::{Add, Mul, Neg, Sub};
@@ -280,6 +283,70 @@ impl<R: Ring + 'static> Ring for LazyPowerSeries<R> {
     }
     fn is_one(&self) -> bool {
         self.coeff(0).is_one() && (1..WEAK_TERMS).all(|i| self.coeff(i).is_zero())
+    }
+
+    // Ring predicates (MAGMA Ch. 50 `IsUnit`; Ch. 49 §49.4.4). The coefficients are exact,
+    // but `is_zero`/`is_one` look at `WEAK_TERMS` coefficients only, so these hooks never
+    // read them: a bounded search that finds nothing decides nothing. The coefficient
+    // rules are proofs when the coefficient type's `is_zero` is exact (see
+    // `series_core_impls` for the facts used).
+
+    fn static_characteristic() -> Option<u64> {
+        R::static_characteristic()
+    }
+
+    fn static_is_commutative() -> Option<bool> {
+        R::static_is_commutative()
+    }
+
+    /// `coeff(0).unit_status()` (coefficient 0 is exact; f is a unit iff f(0) is).
+    fn unit_status(&self) -> Option<bool> {
+        self.coeff(0).unit_status()
+    }
+
+    /// The lazy inverse g_0 = f_0^-1, g_n = -g_0 Σ_{k=1..n} f_k g_(n-k) (as `try_inverse`,
+    /// but through `unit_inverse`, so for any R). A proven non-unit constant term gives
+    /// `Err(NotInvertible)`; other errors of its `unit_inverse` are passed on.
+    fn unit_inverse(&self) -> Result<Self> {
+        let g0 = self.coeff(0).unit_inverse()?;
+        let f = self.clone();
+        Ok(Self::from_recursive(move |g, n| {
+            if n == 0 {
+                return g0.clone();
+            }
+            let mut acc = f.coeff(1) * g.coeff(n - 1);
+            for k in 2..=n {
+                acc = acc + f.coeff(k) * g.coeff(n - k);
+            }
+            -(g0.clone() * acc)
+        }))
+    }
+
+    /// Searches the first `WEAK_TERMS` coefficients for the lowest nonzero one (finding one
+    /// proves it is the lowest): non-nilpotent gives `Some(false)`; for commutative R, any
+    /// found coefficient non-nilpotent gives `Some(false)`. Otherwise `None`, also when all
+    /// of them are zero (x^30 is not nilpotent).
+    fn nilpotent_status(&self) -> Option<bool> {
+        let lowest = (0..WEAK_TERMS).find(|&i| !self.coeff(i).is_zero())?;
+        if self.coeff(lowest).nilpotent_status() == Some(false) {
+            return Some(false);
+        }
+        if R::static_is_commutative() == Some(true)
+            && (lowest..WEAK_TERMS).any(|i| self.coeff(i).nilpotent_status() == Some(false))
+        {
+            return Some(false);
+        }
+        None
+    }
+
+    /// A proven non-unit: `NotAUnit`; otherwise `Undecided` (1 + x^25 is weakly one; no
+    /// bounded test decides an order).
+    fn multiplicative_order_status(&self) -> MultiplicativeOrder {
+        if self.unit_status() == Some(false) {
+            MultiplicativeOrder::NotAUnit
+        } else {
+            MultiplicativeOrder::Undecided
+        }
     }
 }
 

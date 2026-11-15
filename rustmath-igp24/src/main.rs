@@ -273,6 +273,14 @@ fn main() {
             .collect(),
         None => DEFAULT_PRIMES.to_vec(),
     };
+    // cycle_type and ramification_type need primes <= fp_factor::MAX_P (they panic
+    // otherwise): refuse a bad entry here, with its reason.
+    for &p in &primes {
+        if let Err(why) = rustmath_polynomials::fp_factor::check_modulus(p) {
+            eprintln!("igp24: {why}");
+            std::process::exit(2);
+        }
+    }
 
     if batch {
         // One polynomial per stdin line, one JSON result per stdout line. The 24T

@@ -32,6 +32,12 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 ///   `unbound(v) == bound(w mod p)` iff `v ≡ w (mod p)`. Two unbound
 ///   elements compare in Z; two bound elements are equal iff value *and*
 ///   modulus match (cross-modulus stays `false`, as before).
+/// * **containers**: `UnivariatePolynomial` (on construction), `MultivariatePolynomial` and
+///   `LaurentPolynomial` (in `add_term`) bind every unbound coefficient to the parent of a
+///   bound coefficient ([`Ring::bind_to_parent_of`]) and drop the terms that become zero. A
+///   container with only unbound coefficients stays over Z until it meets a bound element.
+///   The generic containers of rustmath-matrix, rustmath-powerseries and rustmath-rings
+///   still bind entry by entry.
 /// * operations that *need* a modulus and cannot get one
 ///   ([`Self::legendre_symbol`], [`Self::discrete_log`], ...) return an error
 ///   or panic with a precise message rather than fabricate an answer.
@@ -98,9 +104,28 @@ impl PrimeField {
         &self.modulus
     }
 
-    /// Compute the multiplicative order of this element
+    /// MAGMA `Order(a)` (ch. 19 §19.7, ch. 21 §21.4.7): the smallest k > 0 such
+    /// that self^k = 1, or `None` for a non-unit (0, and for a composite modulus
+    /// every value sharing a factor with it).
     ///
-    /// Returns the smallest k > 0 such that self^k = 1
+    /// Exact: H. Cohen, GTM 138, Alg. 1.4.3 on a factored multiple of the
+    /// order: `m - 1` when `a^(m-1) = 1 (mod m)` (always for a prime modulus, so
+    /// the modulus itself is neither factored nor proven prime), else the
+    /// Carmichael function λ(m). This is right for every modulus `m`
+    /// ([`PrimeField::new`] does not check primality). Every prime of the
+    /// factorization used is proven. 1 and -1 need no factoring.
+    ///
+    /// For the modulus-0 sentinel (an element of Z): `Some(1)` for 1, `Some(2)`
+    /// for -1, `None` otherwise.
+    ///
+    /// # Cost
+    /// One exponentiation mod m, then the factorization of `m - 1` (or of `m`
+    /// and each `p - 1`) with MAGMA's default limits; no time bound. The
+    /// factorizations are cached for the process.
+    ///
+    /// # Panics
+    /// Only when a prime factor of that exponent has no primality proof (an
+    /// unresolved ECPP proof); the message names the number.
     pub fn multiplicative_order(&self) -> Option<Integer> {
         if self.value.is_zero() {
             return None;
@@ -117,27 +142,27 @@ impl PrimeField {
             };
         }
 
-        let mut power = self.clone();
-        let mut k = Integer::one();
-
-        let one = PrimeField::new(Integer::one(), self.modulus.clone()).unwrap();
-
-        while power != one {
-            power = power * self.clone();
-            k = k + Integer::one();
-
-            // Safety check to prevent infinite loops
-            if k > self.modulus.clone() {
-                return None;
-            }
+        if !self.value.gcd(&self.modulus).is_one() {
+            return None;
         }
-
-        Some(k)
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Complete,
+        ) {
+            Ok(f) => Some(crate::group_order::product(&f)),
+            Err(why) => panic!("PrimeField::multiplicative_order: {why}"),
+        }
     }
 
     /// Check if this is a generator (primitive element) of the multiplicative group
+    /// (MAGMA `IsPrimitive`, ch. 19 §19.7, ch. 21 §21.4.4).
     ///
-    /// An element g is a generator if its order equals p-1
+    /// An element g is a generator if its order equals p-1. For a composite
+    /// modulus m this is always false (every order divides λ(m) < m - 1).
+    ///
+    /// # Panics
+    /// As [`PrimeField::multiplicative_order`].
     pub fn is_generator(&self) -> bool {
         if let Some(order) = self.multiplicative_order() {
             order == self.modulus.clone() - Integer::one()
@@ -208,6 +233,57 @@ impl PrimeField {
                     self.modulus
                 )
             })
+    }
+
+    /// MAGMA `IsSquare(a)` (ch. 21 §21.4.4): the same contract, cost and panics as
+    /// [`Self::is_quadratic_residue`] (an alias). Both it and [`Self::sqrt`] test the modulus
+    /// with Baillie-PSW only (no ECPP proof), and they agree.
+    pub fn is_square(&self) -> bool {
+        self.is_quadratic_residue()
+    }
+
+    /// MAGMA `Sqrt(a)` (ch. 21 §21.4.7) and the root of `IsSquare(a)`: for a prime modulus,
+    /// the least root in `[0, p)`, or `None` when `self` is not a square (a proof: a Jacobi
+    /// symbol of -1).
+    ///
+    /// - A zero element gives `Some(0)` for every modulus (as `is_quadratic_residue`).
+    /// - The modulus-0 sentinel (an element of Z, see the type docs): the non-negative root of
+    ///   a perfect square in Z, as a sentinel; otherwise `None`.
+    /// - Otherwise the modulus is tested with Baillie-PSW (`prime::is_probable_prime`), then
+    ///   `Integer::try_sqrt_mod_prime` (Cohen GTM 138, Alg. 1.5.1) gives a root `r` that was
+    ///   squared back, and the result is `min(r, m - r)`. For a BPSW pseudoprime modulus (none
+    ///   is known) the answer is still never wrong: a root is checked and a `None` comes only
+    ///   from a Jacobi symbol of -1, which proves non-squareness modulo any odd m; the
+    ///   computation can only panic there.
+    ///
+    /// # Panics
+    /// "PrimeField::sqrt: the modulus {m} is not prime" when Baillie-PSW rejects the modulus
+    /// ([`PrimeField::new`] does not check primality), and "PrimeField::sqrt: the modulus {m}
+    /// is not prime ({e})" when the root computation proves it composite.
+    pub fn sqrt(&self) -> Option<PrimeField> {
+        if self.value.is_zero() {
+            return Some(self.clone());
+        }
+        if self.modulus.is_zero() {
+            if self.value.signum() < 0 {
+                return None;
+            }
+            let r = self.value.sqrt().ok()?;
+            return (r.clone() * r.clone() == self.value).then(|| PrimeField::make(r, Integer::zero()));
+        }
+        let m = &self.modulus;
+        if !rustmath_integers::prime::is_probable_prime(m) {
+            panic!("PrimeField::sqrt: the modulus {m} is not prime");
+        }
+        match self.value.try_sqrt_mod_prime(m) {
+            Ok(Some(r)) => {
+                let other = m.clone() - r.clone();
+                let least = if other < r { other } else { r };
+                Some(PrimeField::make(least, m.clone()))
+            }
+            Ok(None) => None,
+            Err(e) => panic!("PrimeField::sqrt: the modulus {m} is not prime ({e})"),
+        }
     }
 
     /// Compute discrete logarithm: given g^x = h, find x
@@ -437,6 +513,24 @@ impl Ring for PrimeField {
         self.value.is_one()
     }
 
+    /// Z/mZ is commutative for every m, and the modulus-0 sentinel is an integer.
+    fn static_is_commutative() -> Option<bool> {
+        Some(true)
+    }
+
+    // Unbound constants (see `Ring::is_unbound_constant`): the modulus-0 sentinel is one,
+    // and it binds by the canonical map Z -> GF(p) into the modulus of a bound model.
+    const HAS_UNBOUND_CONSTANTS: bool = true;
+
+    fn is_unbound_constant(&self) -> bool {
+        self.modulus.is_zero()
+    }
+
+    fn bind_to_parent_of(&self, model: &Self) -> Option<Self> {
+        (self.modulus.is_zero() && !model.modulus.is_zero())
+            .then(|| PrimeField::make(self.value.clone(), model.modulus.clone()))
+    }
+
     // Element predicates on the generic `Ring` path (MAGMA Ch. 21 `IsUnit`, `Order`).
     // `PrimeField::new` does not check that the modulus is prime, so a bound element is
     // a unit iff gcd(value, modulus) = 1 (not merely nonzero), and nilpotent iff every
@@ -467,8 +561,14 @@ impl Ring for PrimeField {
         <Self as Field>::inverse(self)
     }
 
-    /// The order of a unit by the inherent `multiplicative_order`, a complete search (the
-    /// order of a unit mod m is at most phi(m) < m).
+    /// The order of a unit, as the inherent `multiplicative_order` (Cohen
+    /// Alg. 1.4.3), but with a cost cap: the group exponent is factored with
+    /// trial division to 10^4, 8191 rho steps per composite, the sieve only on
+    /// composites of at most 30 digits, and ECPP only on probable primes of at
+    /// most 256 bits. Beyond the cap the answer is `Undecided` (1 and -1 need no
+    /// factoring). An `Undecided` can become decided later in the same process,
+    /// once an exact call has factored the same exponent (the factorizations are
+    /// cached); both answers are honest.
     fn multiplicative_order_status(&self) -> rustmath_core::MultiplicativeOrder {
         if self.modulus.is_zero() {
             return crate::ring_hooks::sentinel_order(&self.value);
@@ -476,9 +576,13 @@ impl Ring for PrimeField {
         if self.unit_status() != Some(true) {
             return rustmath_core::MultiplicativeOrder::NotAUnit;
         }
-        match PrimeField::multiplicative_order(self) {
-            Some(k) => crate::ring_hooks::order_from_integer(&k),
-            None => rustmath_core::MultiplicativeOrder::Undecided,
+        match crate::group_order::unit_order_mod(
+            &self.value,
+            &self.modulus,
+            crate::group_order::Effort::Capped,
+        ) {
+            Ok(f) => crate::ring_hooks::order_from_integer(&crate::group_order::product(&f)),
+            Err(_) => rustmath_core::MultiplicativeOrder::Undecided,
         }
     }
 }
