@@ -1,0 +1,7 @@
+[0;31m  ***   Warning: new stack size = 100000000 (95.367 Mbytes).[0m
+monic irreducibles over F_5 of degree 1..4 (Gauss): [5, 10, 40, 150], direct: [5, 10, 40, 150]
+over F_13 of degree 2: 78, direct 78
+E6 at 7: criterion ["absolute", [["FibresInY", 2, 11], "coprime"]]; x-fibre over a degree-2 point: [Mod(1, 7)*x^2 + Mod(1, 7)*x + Mod(6, 7), 1]; PARI factor over F_p: 1 factor(s)
+E6 at 11: criterion ["nofibre", 24]; x-fibre over a degree-2 point: [Mod(1, 11)*x^2 + Mod(6, 11)*x + Mod(7, 11), 4]; PARI factor over F_p: 1 factor(s)
+E6 at 13: criterion ["absolute", [["FibresInX", 2, 3], "coprime"]]; x-fibre over a degree-2 point: [Mod(1, 13)*x^2 + Mod(8, 13)*x + Mod(5, 13), 4]; PARI factor over F_p: 1 factor(s)
+x^2 + 11 at 13: factor Mat([Mod(1, 13)*x^2 + Mod(11, 13), 1])

@@ -1,0 +1,19 @@
+[0;31m  ***   Warning: new stack size = 200000000 (190.735 Mbytes).[0m
+== (iv) E1 alone at 13 (regress.gp): the first smooth F_13-point in the Rust order
+first rational x-fibre irreducible: ["x-fibre", 0]; first smooth point: [3, 6]
+== S1: a (2,2) form at p = 3 with no irreducible F_3-rational fibre (F-9 review 1, m3)
+coefficient matrix [i][j] of x^i y^j: [1, 2, 0; 1, 1, 0; 1, 1, 1]
+factors over F_3 and F_9 (number, with multiplicity): [1, 1] [1, 1]
+an F_3-rational fibre irreducible of full degree: 0
+x-discriminant y^3 + y^2 + 2*y: degree 3, squarefree 1
+the first x-fibre over a point of degree 2 irreducible over F_9 (Rust order): [t^2 + 1, 1]
+#V(S1)(F_3^k), k = 1..3, brute force: [6, 12, 18]
+hyperellcharpoly of y^2 = D: x^2 + 2*x + 3; counts [6, 12, 18]
+== S2: a (4,2) form at p = 3, an irreducible F_3-rational fibre and no smooth F_3-point (F-9 review 1, m3)
+coefficient matrix [i][j] of x^i y^j: [2, 0, 2; 2, 2, 2; 1, 2, 1; 1, 2, 2; 2, 0, 2]
+factors over F_3 and F_9 (number, with multiplicity): [1, 1] [1, 1]
+the first F_3-rational fibre irreducible of full degree: ["x-fibre", 1]; smooth F_3-point: 0
+the first fibre over a point of degree 2 irreducible over F_9 (Rust order): x-fibre [t^2 + 2*t + 2, 3], y-fibre [t^2 + 2*t + 2, 3]
+== E6: y^3 - x^4 of bidegree (4,3) at 11
+an F_11-rational fibre irreducible of full degree: 0
+the first x-fibre over a point of degree 2 irreducible over F_121 (Rust order): [t^2 + t + 6, 8]

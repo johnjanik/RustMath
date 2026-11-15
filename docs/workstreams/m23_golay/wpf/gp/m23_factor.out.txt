@@ -1,0 +1,7 @@
+[0;31m  ***   Warning: new stack size = 400000000 (381.470 Mbytes).[0m
+factor G mod 31: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]
+factor G7 mod 31: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]
+factor G13 mod 31: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]
+factor G mod 107: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]
+factor G7 mod 107: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]
+factor G13 mod 107: 1 factor(s), bidegrees [[4, 23]] multiplicities [1]

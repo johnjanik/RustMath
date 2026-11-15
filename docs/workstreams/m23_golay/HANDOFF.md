@@ -23,7 +23,7 @@ contribution to the paper `paper/golay_m23.pdf`.
 
 | Work package | Goal | Reference data exists | New mathematics |
 |---|---|---|---|
-| WP-F | Reproduce and extend the Frobenius table of the genus 4 curve X | yes, 18 primes | no |
+| WP-F | Reproduce and extend the Frobenius table of the genus 4 curve X | yes, 18 primes (19 at the owner's main `2d11038`) | no |
 | WP-P | Reproduce and extend the table of three-point class vectors of M23 (Phase 6 of the research note) | yes, all 57 class vectors | the covers themselves are open |
 | WP-A | Find an explicit polynomial for the A8 field cut out by the Golay Lagrangian (Question 10.1 of the paper) | acceptance tests only | yes, the field is unknown |
 
@@ -45,7 +45,10 @@ Read `paper/golay_m23.pdf` Sections 1, 2 and 4 for the full statements. The mini
   (paper, Theorem 4.1).
 - **What is known about W.** Galois acts on `W = F_2^4` through all of `GL_4(F_2) = A_8`
   (paper, Theorem 4.8). The kernel field `K_W` is an A8 extension of Q unramified outside
-  `{2,3,5,23}`. Complex conjugation acts as a transvection. No polynomial for `K_W` is known.
+  `{2,3,23}`. This is the paper at the owner's main `2d11038`; at `d05475b` it said
+  `{2,3,5,23}`. The prime 5 left the set because X has good reduction at 5, by Lemma 9.1 of
+  the paper (checked by the owner's classifier and by WP-F: Section 3, Status). Complex
+  conjugation acts as a transvection. No polynomial for `K_W` is known.
 - **Conventions.** Permutations act on the right: `x^(gh) = (x^g)^h`. Products are read left
   to right, as in MAGMA and GAP. Published cycles are 1-based; the Python library is 0-based.
   `23A`, `23B` are the classes of the published `g2`, `g3`. Class names of other split pairs
@@ -70,6 +73,12 @@ Everything below is in the M23 repository unless a URL is given.
 | `data/m23_three_point_nielsen.json` | exact sizes of the 57 Nielsen classes and numbers of real points |
 | `data/passports_C_23A_23B.json` | the six class vectors `(C,23A,23B)` in detail: representatives, ovals |
 | `scripts/` | the scripts that produced each file; the README has a command table |
+
+At the owner's main `2d11038` the two zeta files carry his corrected rows (p = 5 is counted)
+and, on each row, the singular points found by his classifier (`m23golay/curve.py`). Two files
+are new there: `data/rustmath_wpf_tables.json` (RustMath's WP-F rows as he recorded them) and
+`data/rustmath_crosscheck.json` (his recount of RustMath's rows at 83, 97 and 107). See Section
+3, Status.
 
 External data, not vendored:
 
@@ -253,7 +262,7 @@ WP-A:
 - Maximal order, integral basis, field discriminant: `rustmath-numberfields/src/round2.rs:1086`,
   `:745`, `:732` [done, checked against LMFDB]. Limit: only primes up to 10^5 whose square divides
   `disc(f)` are made maximal (`:682`, bound set at `:733`), and a larger one stays in the answer. A
-  result supported on `{2, 3, 5, 23}` therefore proves test 3 of 5.2. A large prime in it must be
+  result supported on `{2, 3, 23}` therefore proves test 3 of 5.2. A large prime in it must be
   checked.
 - Prime decomposition: `rustmath-numberfields/src/ideals.rs:127` [done, LMFDB], with `p` an `i64`.
 - polred: `rustmath-numberfields/src/polred.rs:302` [done, LMFDB]. The output always defines the
@@ -376,39 +385,52 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
 
 ### Status (2026-11-15)
 
-The WP-F core is done (Section 8, step 1). Extensions 3 and 5 of 3.3 are done, 1 and 2 in part
-(see below). The code is on branch `claude/m23-wpf` (base `origin/main` `0d277f0`).
+The WP-F core is done (Section 8, step 1). The owner decided the follow-ups on 2026-11-15:
+F-9 is done (Lemma 9.1 of his paper is the reduction certificate, and the delta-sum certificate
+is Decided, with its own label); F-5 is closed (p = 23, see below); F-8 is done by the owner at
+his main `2d11038` (data and paper); F-1 (p = 3) waits for the model of WP-A step A0.
+Of the extensions of 3.3 (see below), 3 and 5 are done; 1 is done by the delta-sum certificate
+(no recount on a second model); 2 is done for p = 5, and p = 3 moves to WP-A A0 (F-1). The code
+is on branch `claude/m23-wpf` (base `origin/main` `0d277f0`).
 
-The design, its review, the implementation report, the code review, the docs check and the report
-on the minor fixes are in `docs/workstreams/m23_golay/wpf/` (`design/`, `impl/`). The PARI/GP
-scripts behind the small-curve tests, with their output, are in `wpf/gp/`.
+The records are in `docs/workstreams/m23_golay/wpf/` (its README lists them): the WP-F design,
+reviews, implementation report, docs check and minor fixes in `design/` and `impl/`, and the
+F-9 design, design review, implementation report, code review and the check of its minor fixes
+in `followup_f9/`. The PARI/GP scripts behind the small-curve and F-9 tests, with their output,
+are in `wpf/gp/`.
 
 Code:
 
 - `rustmath-finitefields/src/small_field.rs:55` `SmallFq<K>` (word-size `GF(p^K)`, `p < 2^16`,
   `K <= 8`, `p^K < 2^63`) and `:654` `count_distinct_roots`.
 - `rustmath-curves/src/nodal_biprojective/fibres.rs:165` `plane_point_count`, `singular.rs:426`
-  `singular_locus`, `local.rs:200` the local classifier, `certify.rs:138` `certify` and `:319`
-  `normalization_point_counts`.
+  `singular_locus`, `local.rs:200` the local classifier, `irreducible.rs:481`
+  `absolute_irreducibility`, `certify.rs:231` `certify` and `:449` `normalization_point_counts`,
+  `form.rs:183` `reduce_primitive`.
 - `rustmath-curves/src/weil.rs:112` `FrobeniusPolynomial::from_point_counts`, `:281` `is_weil`
   (exact, by Sturm sequences), `:347` `reciprocal_halves_mod2`, `:398`
   `two_torsion_frobenius_order`.
 - Tests: `rustmath-curves/tests/m23_zeta.rs`, `rustmath-curves/tests/biprojective_small_curves.rs`,
   `rustmath-finitefields/tests/small_field.rs`. Data: `rustmath-curves/tests/data/m23/`
-  (`zeta_X.json`, `zeta_L.json`, `h62.json` from `d05475b`, and Le Lay's CC0 form G, with a
-  README). `polynomial_F.m` and `polynomial_calF.m` are read only from `$M23ISGALOIS`.
+  (`zeta_X.json` and `zeta_L.json` from the owner's main `2d11038`, with his corrected rows,
+  `h62.json` from `d05475b`, and Le Lay's CC0 form G, with a README). `polynomial_F.m` and
+  `polynomial_calF.m` are read only from `$M23ISGALOIS`.
 
 The counts of X run on G, which is F after a Moebius change of `V`. The test
 `env_f_equals_g_by_mobius` checks `F o M = c G` exactly. Two more integral models, G7 and G13, are
 built from G at run time for p = 7 and p = 13.
 
-Reproduced:
+Reproduced (against the owner's main `2d11038`):
 
-- `zeta_X.json`: all 18 rows at k = 4 (`full_x_table_k4`, release, about 83 s).
-- `zeta_L.json`: the refusals at 5 and 11 and the rows at 7, 19, 41 and 43 (`env_l_table`). The row
-  at (31, 12) is reproduced only under the reference rule (see below). An L row (p, s0) is the
-  degree-one prime (p, s - s0) of L.
+- `zeta_X.json`: all 19 rows at k = 4, p = 5 included (`full_x_table_k4`, release), and on
+  every row the singular points of the owner's classifier (`x_certificates_equal_the_owners`,
+  debug, about 6 s, certificates only).
+- `zeta_L.json`: the refusals at (5, 3), (11, 2), (23, 5), (23, 15) and the rows at 7, 19, 31, 41
+  and 43, with the owner's singular points (`env_l_table`). An L row (p, s0) is the degree-one
+  prime (p, s - s0) of L.
 - The anchor at 53: 45, 52, 57, all three Decided (`env_anchor_53`).
+- The owner's recount of RustMath's rows at 83, 97 and 107 (`data/rustmath_crosscheck.json`;
+  `full_x_owner_recount_83_97_107`, release; the four `full_` tests take about 7 min together).
 - The derived checks of 3.1 step 6 on every counted row: the exact Weil test,
   `P(chi(p)) = P(chi(p) p) = 0 mod 23` and `P mod 2 = Q Q^rev`
   (`reference_polynomials_pass_the_derived_checks` on the reference rows; `full_x_table_k4`,
@@ -416,56 +438,73 @@ Reproduced:
   Both fibrations give the same counts
   (`both_fibrations_and_brute_force`, `full_both_fibrations_k3`).
 
-Statuses. Decided means the nodal certificate: every singular point of the model mod p is a node,
-and there are 62 of them. The genus 4 is a trusted input.
+Statuses. The certificate is Lemma 9.1 of the owner's paper (`paper/golay_m23.tex` at `2d11038`,
+`\label{lem:reduction}`): if `F mod p` keeps its bidegree, is absolutely irreducible, and the
+delta invariants of its singular points over `F_p-bar` add up to `(a - 1)(b - 1) - g`, the curve
+has good reduction at p and the counts of the normalization are those of its reduction. All three
+conditions are checked. Absolute irreducibility (`absolute_irreducibility`, new with F-9): no line
+of a ruling, then a fibre that is irreducible of full degree over the residue field of its base
+point; for X and the covers `gcd(4, 23) = 1` finishes the proof. Two kinds of Decided, with their
+own labels: `Decided: nodal (62 nodes)` and `Decided: delta-sum, Lemma 9.1 (61 nodes, A2)`.
+Unresolved means an unclassified point, a delta-sum above `p_a - g`, or absolute irreducibility
+not shown. A line of a ruling, or a drop of the bidegree, is a refusal of the model. The genus 4
+is a trusted input.
 
-- X, Decided: 7, 11, 17, 19, 29, 37, 43, 47, 53, 59, 61, 67, 71, 79.
-- X, Unresolved (`DeltaSumCertified`): 13, 31, 41, 73. Each model has 61 nodes and one ordinary
-  cusp, classified exactly. The counts equal the table. This explains the D flags. Under the project
-  rule they stay Unresolved (`x_at_13_and_31_one_cusp`).
-- L, Decided: (7, 5), (19, 3), (41, 8), (43, 15).
-- L, (31, 12): Unresolved (`DeltaSumCertified`: 57 nodes, an ordinary triple point and a tacnode
-  with conjugate branches). The exact counts are `43, 1017, 30265, 923729`,
-  `a = (11, 88, 682, 4438)`, Q = `x^4+x^3+x^2+1` up to reversal. The published row
-  `44, 1014, 30266, 923726` fails the mod 23 check, and its prediction of N_5 fails (`env_l31_k5`).
-- X at p = 5: the reference row is not a Weil polynomial. The exact counts are `7, 37, 169, 561`,
-  `a = (1, 6, 20, 16)`: 60 nodes and one tacnode with conjugate branches. N_5 and N_6 are the values
-  P predicts. Weil, mod 23 and mod 2 hold. Status Unresolved (`DeltaSumCertified`)
-  (`x_at_5_tacnode_with_conjugate_branches`).
+- X, Decided, nodal: 7 (G7), 11, 17, 19, 29, 37, 43, 47, 53, 59, 61, 67, 71, 79, 83, 89, 97, 101,
+  103, 109, 113, 127, 131.
+- X, Decided, delta-sum: 5 (60 nodes and a tacnode with conjugate branches; no `F_5`-rational
+  fibre is irreducible, the fibre over the root of `y^2 + 2` is), 13 (G13), 31, 41, 73 (61 nodes
+  and one ordinary cusp each), 107 (60 nodes and a tacnode with rational branches).
+- So, by Lemma 9.1, X has good reduction at every prime from 5 to 131 except 23: at 5, 13, 31,
+  41, 73 and 107 by the delta-sum certificate, at the others by the nodal one. The owner's paper
+  at `2d11038` uses the same lemma for its table and now gives `K_W` unramified outside
+  `{2, 3, 23}` (Theorem 4.8; Section 1).
+- L, Decided, nodal: (7, 5), (19, 3), (41, 8), (43, 15), (47, 13), (53, 21), (53, 36), (53, 41),
+  (61, 52), (67, 15), (67, 42), (71, 37), (71, 67), (79, 40), (79, 46), (89, 57), (89, 69),
+  (97, 76), (101, 74), (101, 98), (127, 63), (127, 74).
+- L, Decided, delta-sum: (31, 12) (57 nodes, an ordinary triple point and a tacnode with
+  conjugate branches), (79, 15), (103, 93) (60 nodes and a tacnode with rational branches).
 - Refused, because the discriminant vanishes identically mod p: X at 3 and 23 for every model
-  (`x_at_3_and_23_refused`); L at (5, 3), (11, 2), (23, 5), (23, 15).
+  (`x_at_3_and_23_refused`); L at (5, 3), (11, 2), (23, 5), (23, 15). The refusal at 23 is final
+  (F-5, closed by the owner's decision): by Le Lay's Section 5 X acquires good reduction at 23
+  only over a ramified extension, so there is no model over `Z_(23)` with smooth special fibre
+  to count on. The refusal at 3 stays until WP-A step A0 gives another model to test at 3
+  (F-1); whether X has good reduction at 3 is open (the paper's Question 10.1).
+- The owner's corrected rows (F-8, done by the owner at `2d11038`): X at 5, `7, 37, 169, 561`,
+  `a = (1, 6, 20, 16)`, and L at (31, 12), `43, 1017, 30265, 923729`, `a = (11, 88, 682, 4438)`.
+  The rows they replace (`8, 36, 170, 560`; `44, 1014, 30266, 923726`) are what the
+  assumed-unibranch rule gives; the tests keep them as such
+  (`x_at_5_tacnode_with_conjugate_branches`, `env_l_table`, `env_l31_k5`).
+- Regression: a reducible reduction is never Decided (`reducible_reductions_are_never_decided`:
+  two (2,2) curves meeting in 8 nodes, a curve times its conjugate over `F_169`, a line
+  component; each was `Decided: nodal` before F-9).
 
-New primes (k <= 4, with the example `m23_zeta`). Every row passes the exact Weil test and the
-mod 23 check, and was checked again in PARI/GP.
+The full tables, with times, are in `wpf/impl/WPF.md` Section 3 (counts) and
+`wpf/followup_f9/F9_impl.md` Section 3 (statuses after F-9, with the irreducibility witness and
+the owner's singular-point labels of every row). The counts did not change.
 
-- X: 83, 89, 97, 101, 103, 109, 113, 127, 131 Decided. 107 Unresolved (`DeltaSumCertified`: one
-  tacnode with rational branches).
-- L, Decided: (47, 13), (53, 21), (53, 36), (53, 41), (61, 52), (67, 15), (67, 42), (71, 37),
-  (71, 67), (79, 40), (79, 46), (89, 57), (89, 69), (97, 76), (101, 74), (101, 98), (127, 63),
-  (127, 74). L, Unresolved (`DeltaSumCertified`: one tacnode with rational branches):
-  (79, 15), (103, 93).
-- The full tables, with times, are in `wpf/impl/WPF.md`, Section 3.
-
-Order of Frobenius on `Jac(X)[2]` (3.3 item 5): 15 and Decided at X for p = 11, 79, 97 and at L for
-(53, 41), (67, 15). At X for p = 31 it is 15 if the counts are right (the row is not Decided).
-Elsewhere only bounds (`weil.rs:398`, `two_torsion_orders`).
+Order of Frobenius on `Jac(X)[2]` (3.3 item 5): 15 and Decided at X for p = 11, 31, 79, 97 and at
+L for (53, 41), (67, 15). Elsewhere only bounds (`weil.rs:398`, `two_torsion_orders`).
 
 Extensions of 3.3:
 
-1. D flags: explained (one cusp each), not removed. Le Lay's (8,23) model does not help: the
-   certificate needs fibre degree 2 to 4, and that model has two non-nodal points over Q.
-2. p = 5: exact counts as above, Unresolved. If the owner promotes `DeltaSumCertified` to Decided
-   (F-9), X has good reduction at 5. p = 3: refused by every model (F-1).
+1. D flags: explained and certified. Each of 13, 31, 41 and 73 has one ordinary cusp, and the
+   delta-sum certificate makes the rows Decided. Not recounted on a second model: Le Lay's
+   (8,23) model does not fit the point counter (fibre degree 2 to 4 is needed; its fibre
+   degrees are 8 and 23).
+2. p = 5: Decided, good reduction (delta-sum certificate). p = 3: refused by every model; it
+   waits for the model of WP-A step A0 (F-1).
 3. More primes: X to 131, L to 127.
 4. Q versus Q^rev: not attempted (WP-A, F-7).
 5. Done as above.
 
-Follow-ups (`wpf/impl/WPF.md`, Section 7): F-1 a 3-adically good model; F-2 Le Lay's model as a
-cross-check; F-4 a faster quartic root count above p = 131; F-5 p = 23; F-6 a CC0 route for the L
-covers; F-7 Q versus Q^rev; F-8 report the two corrected rows to the owner; F-9 the owner's
-decision on `DeltaSumCertified`; F-10 JSON output of the example; F-11 a test of an ordinary
-m-fold point over a residue field of degree > 1 (the `A_k` part is closed: degree-3 nodes, A3 at
-a degree-2 place and A15, in both branch classes, `biprojective_small_curves.rs`).
+Follow-ups (`wpf/impl/WPF.md`, Section 7, and `wpf/followup_f9/F9_impl.md`, Section 7): F-1
+p = 3 on the model of WP-A step A0; F-2 Le Lay's model as a cross-check; F-4 a faster quartic
+root count above p = 131; F-5 closed (p = 23 refused for good, the owner's decision);
+F-6 a CC0 route for the L covers; F-7 Q versus Q^rev; F-8 done by the owner at `2d11038` (data
+and paper); F-9 done; F-10 JSON output of the example; F-11 a test of an ordinary m-fold point
+over a residue field of degree > 1 (the `A_k` part is closed: degree-3 nodes, A3 at a degree-2
+place and A15, in both branch classes, `biprojective_small_curves.rs`).
 
 The six minor items of the code review (`wpf/impl/WPF.review1.md`, Section 3) are fixed
 (`wpf/impl/WPF_minors.md`): a test of the Unclassified path (`unclassified_e6_points`), the cost
@@ -477,18 +516,21 @@ Frobenius on `Jac[2]` above `u64::MAX` (possible from genus 64 on) panics; neith
 
 Commands:
 
-- `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 7 s);
+- `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 10 s);
 - `cargo test -p rustmath-curves --test biprojective_small_curves` (debug, about 2 s), and
   `cargo test --release -p rustmath-curves --test biprojective_small_curves -- --ignored`
   (`node_of_degree_3_up_to_k6`, about 2 s);
 - `cargo test --release -p rustmath-curves --test m23_zeta -- --ignored full_`;
 - `M23ISGALOIS=<checkout of shaowuz/m23isgalois> cargo test --release -p rustmath-curves --test m23_zeta -- --ignored env_`;
-- `cargo run --release -p rustmath-curves --example m23_zeta -- <pmin> <pmax> <kmax> [--cover L]`.
+- `cargo run --release -p rustmath-curves --example m23_zeta -- <pmin> <pmax> <kmax>`, with
+  `--cover L` for the covers over L and `--reference-rule` for the counts of the
+  assumed-unibranch rule (never certified).
 
-Two older lines of this file are now out of date. The JSON files are vendored (the opening
-paragraph says nothing is). Section 2's "Point counts, zeta functions and L-polynomials of curves
-of genus >= 2: absent" no longer holds for curves in `P^1 x P^1` with fibre degree 2 to 4,
-odd `p < 2^16`, `k <= 8` and `p^k < 2^63`.
+Three older lines of this file are now out of date. The JSON files are vendored (the opening
+paragraph says nothing is). WP-F uses the owner's main `2d11038` for `data/zeta_X.json`,
+`data/zeta_L.json` and the paper, not the pinned `d05475b`. Section 2's "Point counts, zeta
+functions and L-polynomials of curves of genus >= 2: absent" no longer holds for curves in
+`P^1 x P^1` with fibre degree 2 to 4, odd `p < 2^16`, `k <= 8` and `p^k < 2^63`.
 
 ### 3.1 Specification
 
@@ -524,6 +566,13 @@ Algorithm (reference: `m23golay/curve.py`, `count_points` with `fibre="V"`):
      same counts.
 
 ### 3.2 Reference values
+
+The two tables below are those of `d05475b`, as the brief first gave them. After WP-F the owner
+corrected the row at p = 5 (now `7, 37, 169, 561`, a Weil polynomial) and the L row at
+(31, 12) (now `43, 1017, 30265, 923729`), and gave every row the singular points of his
+classifier, which explain the D flags (follow-up F-8, main `2d11038`). RustMath tests against
+`2d11038` (Status above). At `2d11038` the paper certifies every row by Lemma 9.1, and its
+proof of Theorem 4.8 uses the good reduction at 5, 7 and 11.
 
 `T` = model stays nodal mod p; `D` = the plane model has a non-nodal singular point mod p and the
 count treats it as unibranch (accepted because it passes the Weil test, not proved).
@@ -573,15 +622,17 @@ Published anchor: at 53 the three degree-one primes give 45, 57, 52 points over 
 
 ### 3.3 Extensions wanted
 
-1. **Remove the D flags.** At p = 13, 31, 41, 73 recount on a second model with different
-   singular points and reconcile. Candidates: Le Lay's bidegree (8,23) model
-   (`data/Fint_coefficients_Z.json` in his repository, 84 nodes) or a plane projection of the
-   canonical model. Expected: the same `N_k`.
-2. **Decide p = 3 and p = 5.** The reference count at 5 fails the Weil test, which says only that
-   this plane model is too degenerate there. Find a model that is nodal mod p with the right
-   number of nodes, or show that the canonical model has singular reduction. This matters for
-   WP-A: if X has good reduction at 3 and 5, the A8 field is unramified outside `{2,23}`
-   or `{2,3,23}`.
+1. **Remove the D flags.** (Status: explained, one ordinary cusp each, and Decided by the
+   delta-sum certificate of Lemma 9.1; no second model was counted.) At p = 13, 31, 41, 73
+   recount on a second model with different singular points and reconcile. Candidates: Le Lay's
+   bidegree (8,23) model (`data/Fint_coefficients_Z.json` in his repository, 84 nodes) or a
+   plane projection of the canonical model. Expected: the same `N_k`.
+2. **Decide p = 3 and p = 5.** (Status: p = 5 is Decided, good reduction, by the delta-sum
+   certificate; p = 3 waits for the model of WP-A step A0, follow-up F-1.) The reference count
+   at 5 fails the Weil test, which says only that this plane model is too degenerate there. Find
+   a model that is nodal mod p with the right number of nodes, or show that the canonical model
+   has singular reduction. This matters for WP-A: X has good reduction at 5, so the A8 field is
+   unramified outside `{2,3,23}`; good reduction at 3 as well would give `{2,23}`.
 3. **More primes.** p up to about 127. The cost is dominated by k = 4 (`q = p^4` base points,
    one quartic root count each).
 4. **Resolve `Q` versus `Q^rev`.** The table gives the characteristic polynomial of Frobenius
@@ -831,7 +882,8 @@ such that:
    primes, together with the square discriminant, prove that the group is A8 (the only maximal
    subgroup of A8 containing an element of order 15 is `(A5 x 3):2`, of order 360).
 2. `g8` has no real root (complex conjugation is a transvection, cycle type `2^4`).
-3. The field discriminant of `g8` is divisible only by primes in `{2, 3, 5, 23}`.
+3. The field discriminant of `g8` is divisible only by primes in `{2, 3, 23}` (5 is a prime of
+   good reduction of X: Section 3, Status).
 4. `g15 mod p` has the factorization type of the matching element of `GL_4(2)` on the 15
    hyperplanes of `F_2^4`.
 
@@ -1074,7 +1126,9 @@ for anyone extending the work.
 2. Steiner labelling exercise (end of Section 6): done when the six integers and one degree 253
    resolvent are reproduced.
 3. WP-P table (4.2, 4.3): done when all 57 rows are reproduced and the three dictionaries hold.
-4. WP-F extensions 1 and 2 (the D flags, p = 3 and 5).
+4. WP-F extensions 1 and 2 (the D flags, p = 3 and 5; Section 3, Status): 1 done by the
+   delta-sum certificate (no recount on a second model); 2 done for p = 5, and p = 3 moves to
+   WP-A A0 (follow-up F-1).
 5. WP-A A0 and A1 with their predictions. Stop and report if a prediction fails.
 6. WP-A A2 to A5, then the tests of 5.2 against the table.
 7. WP-P 4.4, item 2: the genus 0 class vectors, after the Belyi engine is generalized (Section 2).

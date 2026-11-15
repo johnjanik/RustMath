@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5188 | 95 | 343 | 1250 | 18 | 152 | 3453 (26%) | 8000 (60%) |
+| 13341 | 5189 | 95 | 343 | 1251 | 18 | 152 | 3453 (26%) | 7999 (60%) |
 
 ## By chapter
 
@@ -135,7 +135,7 @@ automatic `candidate`/`missing` counts.
 | 111 | Differential Rings | XIV | 158 | 0 | 0 | 0 | 0 | 0 | 0 | 72 | 86 | none | `rustmath-polynomials` |
 | 112 | Schemes | XV | 337 | 0 | 0 | 0 | 0 | 0 | 0 | 153 | 184 | partial | `rustmath-schemes + rustmath-affineschemes` |
 | 113 | Coherent Sheaves | XV | 40 | 0 | 0 | 0 | 0 | 0 | 0 | 18 | 22 | stub | `rustmath-schemes (line_bundle.rs / proj.rs) — needs new rustmath-sheaves crate` |
-| 114 | Algebraic Curves | XV | 314 | 8 | 0 | 0 | 8 | 0 | 0 | 158 | 148 | substantial | `rustmath-curves` |
+| 114 | Algebraic Curves | XV | 314 | 9 | 0 | 0 | 9 | 0 | 0 | 158 | 147 | substantial | `rustmath-curves` |
 | 115 | Resolution Graphs and Splice Diagrams | XV | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | 39 | none | `rustmath-geometry (new module) building on rustmath-graphs` |
 | 116 | Algebraic Surfaces | XV | 78 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 71 | none | `rustmath-schemes` |
 | 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
