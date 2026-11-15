@@ -102,6 +102,13 @@ impl GaloisRing {
     /// Construct `GR(p^a, D)` from a caller-supplied monic `D` (little-endian
     /// over `Z`) that is irreducible mod `p` (MAGMA `GaloisRing(p, a, D)`). `D`'s
     /// degree fixes `d`; coefficients are reduced mod `p^a`.
+    ///
+    /// `D` is accepted when its leading coefficient is `1` mod `p`. That coefficient is then a
+    /// unit mod `p^a`, and `D` is replaced by `D[d]^{-1} D` mod `p^a`, which generates the same
+    /// ideal. So the stored defining polynomial ([`GaloisRing::defining_polynomial`]) is monic
+    /// mod `p^a` and the generator is a root of it. (Before this normalization a `D` with
+    /// `D[d] = 6` at `p = 5`, `a = 2` was stored as given, and the reduction, which assumes
+    /// `D[d] = 1`, worked modulo a different polynomial.)
     pub fn with_modulus(p: Integer, a: u32, modulus: Vec<Integer>) -> Result<Self> {
         if !rustmath_integers::prime::try_is_prime(&p)? {
             return Err(MathError::InvalidArgument(format!("{p} is not prime")));
@@ -124,7 +131,15 @@ impl GaloisRing {
             ));
         }
         let residue = FiniteField::with_modulus(p.clone(), modp)?;
-        let modulus: Vec<Integer> = modulus.iter().map(|c| red(c.clone(), &pa)).collect();
+        // D[d] = 1 mod p, so it is a unit mod p^a: make D monic mod p^a (same ideal).
+        let lead_inv = modulus[d]
+            .mod_inverse(&pa)
+            .expect("D[d] = 1 mod p is a unit mod p^a");
+        let modulus: Vec<Integer> = modulus
+            .iter()
+            .map(|c| red(c.clone() * lead_inv.clone(), &pa))
+            .collect();
+        debug_assert!(modulus[d].is_one());
         Ok(Self::from_data(GaloisRingData {
             p,
             a,
@@ -140,6 +155,28 @@ impl GaloisRing {
         let key = d.key();
         GaloisRing {
             data: GaloisRingData::get_unique(key, || d),
+        }
+    }
+
+    /// The defining polynomial `D`, little-endian, length `d + 1`, coefficients in `[0, p^a)`,
+    /// `D[d] = 1` (MAGMA `DefiningPolynomial`). The generator [`GaloisRing::generator`] is a
+    /// root of `D` (for `d >= 2`).
+    pub fn defining_polynomial(&self) -> &[Integer] {
+        &self.data.modulus
+    }
+
+    /// An element from coefficients already canonical (length `d`, each in `[0, p^a)`), without
+    /// a reduction. Crate-internal: the fast paths of `galois_ring_frobenius` build their
+    /// results with it.
+    pub(crate) fn canonical_element(&self, coeffs: Vec<Integer>) -> GaloisRingElement {
+        debug_assert!(
+            coeffs.len() == self.data.d
+                && coeffs.iter().all(|c| c.signum() >= 0 && c < &self.data.pa),
+            "canonical_element: coefficients not canonical"
+        );
+        GaloisRingElement {
+            coeffs,
+            ring: Some(self.clone()),
         }
     }
 
@@ -432,6 +469,18 @@ impl GaloisRingElement {
         &self.coeffs
     }
 
+    /// `Some(a_0)` (in `[0, p^a)`) when `a_1 = ... = a_{d-1} = 0`, that is when the element lies
+    /// in the base ring `Z/p^a`; `None` otherwise. This is the fixed ring of the Frobenius
+    /// ([`frobenius`](Self::frobenius)). Panics for an unbound element (see the type docs).
+    pub fn base_ring_value(&self) -> Option<Integer> {
+        self.require_ring("base_ring_value()");
+        if self.coeffs[1..].iter().all(|c| c.is_zero()) {
+            Some(self.coeffs[0].clone())
+        } else {
+            None
+        }
+    }
+
     /// An unbound element holding the integer constant `c` (see the type docs).
     fn unbound(c: Integer) -> Self {
         GaloisRingElement {
@@ -661,6 +710,10 @@ impl GaloisRingElement {
     /// `φ` is the unique ring automorphism lifting `x ↦ x^p` on the residue
     /// field; it generates `Gal(GR(p^a, d) / Z_{p^a}) ≅ Z/dZ`, and its fixed
     /// subring is exactly the base ring `Z/p^a = GR(p^a, 1)`.
+    ///
+    /// Cost: all `a` Teichmüller digits per call. For repeated use,
+    /// [`crate::FrobeniusMatrix`] gives the same map (tested equal) as one matrix-vector product
+    /// after a Newton lift of `φ(w)`.
     pub fn frobenius(&self) -> GaloisRingElement {
         let ring = self.require_ring("frobenius()");
         let p = ring.data.p.clone();
@@ -991,23 +1044,57 @@ impl Mul for GaloisRingElement {
                 return Self::unbound(a.unbound_value().clone() * b.unbound_value().clone())
             }
         };
-        let pa = a.pa().clone();
-        let mut prod = vec![Integer::zero(); a.coeffs.len() + b.coeffs.len() - 1];
-        for (i, ai) in a.coeffs.iter().enumerate() {
-            if ai.is_zero() {
-                continue;
-            }
-            for (j, bj) in b.coeffs.iter().enumerate() {
-                prod[i + j] = red(prod[i + j].clone() + ai.clone() * bj.clone(), &pa);
+        let data = a.data("mul()");
+        let coeffs = mul_reduce(&a.coeffs, &b.coeffs, &data.modulus, &data.pa);
+        GaloisRingElement {
+            coeffs,
+            ring: a.ring,
+        }
+    }
+}
+
+/// The product of two canonical elements of `(Z/m)[x]/(D)`: `a`, `b` of length `d`, entries in
+/// `[0, m)`; `d_mod_m` is `D` (length `d + 1`, entries in `[0, m)`, `D[d] = 1`). Lazy
+/// reduction: the convolution is accumulated over `Z` without intermediate reduction; then,
+/// from the top degree down, `c = r[k] mod m` and `r[k - d + i] -= c D[i]`; finally every entry
+/// is reduced mod `m`. The result is canonical and equal to the schoolbook product with a
+/// reduction after every operation (the canonical remainder mod `(m, D)` is unique). Measured
+/// 2 to 4 times faster than that schoolbook loop for `d = 23` (design SL, Section 9).
+pub(crate) fn mul_reduce(
+    a: &[Integer],
+    b: &[Integer],
+    d_mod_m: &[Integer],
+    m: &Integer,
+) -> Vec<Integer> {
+    let d = d_mod_m.len() - 1;
+    debug_assert!(a.len() == d && b.len() == d && d_mod_m[d].is_one());
+    if d == 0 {
+        return Vec::new();
+    }
+    let mut r = vec![Integer::zero(); 2 * d - 1];
+    for (i, x) in a.iter().enumerate() {
+        if x.is_zero() {
+            continue;
+        }
+        for (j, y) in b.iter().enumerate() {
+            if !y.is_zero() {
+                r[i + j] = &r[i + j] + &(x * y);
             }
         }
-        let ring = a.ring;
-        let coeffs = ring
-            .as_ref()
-            .expect("coerce_pair returns bound operands")
-            .reduce(prod);
-        GaloisRingElement { coeffs, ring }
     }
+    for k in (d..2 * d - 1).rev() {
+        let c = r[k].modulo(m);
+        if c.is_zero() {
+            continue;
+        }
+        for i in 0..d {
+            if !d_mod_m[i].is_zero() {
+                r[k - d + i] = &r[k - d + i] - &(&c * &d_mod_m[i]);
+            }
+        }
+    }
+    r.truncate(d);
+    r.into_iter().map(|c| c.modulo(m)).collect()
 }
 
 impl Neg for GaloisRingElement {

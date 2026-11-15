@@ -28,6 +28,7 @@ pub mod zmod;
 // --- MAGMA port Wave 1 (chapters 21, 19, 48) ---
 pub mod finite_field; // ch 21: GF(p^n) as a shared Parent (Conway embeddings)
 pub mod galois_ring; // ch 48: Galois rings GR(p^a, d) (finite chain rings)
+pub mod galois_ring_frobenius; // ch 47, 48: Frobenius matrix, traces, orbit polynomials, Frobenius-ordered roots
 mod group_order; // ch 19, 21: orders from the factored group exponent (Cohen Alg. 1.4.3)
 pub mod poly_factor; // ch 21: Cantor–Zassenhaus / DDF / EDF / irreducibility
                      // ch 19 (Integers(m) = Z/mZ) lives in `zmod` / `integer_mod`.
@@ -56,6 +57,9 @@ pub use zmod::{Integers, Zmod};
 pub use embedding::FieldEmbedding;
 pub use finite_field::{FiniteField, FiniteFieldElement};
 pub use galois_ring::{GaloisRing, GaloisRingElement};
+pub use galois_ring_frobenius::{
+    orbit_polynomial, FrobeniusMatrix, FrobeniusRoots, FrobeniusRootsError, NotInBaseRing,
+};
 pub use small_field::{count_distinct_roots, SmallFq, SmallFqElt};
 pub use poly_factor::{
     distinct_degree_factorization, equal_degree_factorization, factor as factor_fq,

@@ -14,7 +14,8 @@
 //! - **Reed-Solomon Codes**: MDS codes with a real algebraic decoder
 //!   (Berlekamp-Massey + Chien search + Forney's formula)
 //! - **BCH Codes**: Binary BCH codes for error correction
-//! - **Golay Codes**: Binary and ternary perfect codes
+//! - **Golay Codes**: Binary and ternary perfect codes; the two cyclic binary Golay codes
+//!   `G+`, `G-` of length 23 with their heptads (`cyclic_golay`)
 
 pub mod linear_code;
 pub mod generic_code;
@@ -23,6 +24,7 @@ pub mod reed_solomon;
 pub mod reed_solomon_generic;
 pub mod bch;
 pub mod golay;
+pub mod cyclic_golay; // ch 152 CyclicCode (H152E5): the cyclic Golay codes G+, G-, S(4,7,23)
 pub mod syndrome;
 
 pub use linear_code::LinearCode;
@@ -36,6 +38,7 @@ pub use reed_solomon_generic::{
 };
 pub use bch::BCHCode;
 pub use golay::{BinaryGolayCode, TernaryGolayCode};
+pub use cyclic_golay::GolaySign;
 
 #[cfg(test)]
 mod tests {

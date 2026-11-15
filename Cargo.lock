@@ -2967,6 +2967,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "rand 0.8.8",
+ "rustmath-combinatorics",
  "rustmath-core",
  "rustmath-finitefields",
  "rustmath-integers",
@@ -3170,6 +3171,8 @@ name = "rustmath-galois"
 version = "0.1.0"
 dependencies = [
  "num-traits",
+ "rustmath-coding",
+ "rustmath-combinatorics",
  "rustmath-core",
  "rustmath-finitefields",
  "rustmath-groups",
@@ -3177,6 +3180,7 @@ dependencies = [
  "rustmath-numberfields",
  "rustmath-polynomials",
  "rustmath-rationals",
+ "serde_json",
 ]
 
 [[package]]
