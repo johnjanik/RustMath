@@ -268,7 +268,7 @@ mod tests {
 
         // δ(0) should return symbolic form
         let delta_zero = dirac_delta(&Expr::from(0));
-        assert!(matches!(delta_zero, Expr::Function(name, _) if name == "dirac_delta"));
+        assert!(matches!(&delta_zero, Expr::Function(name, _) if name == "dirac_delta"));
     }
 
     #[test]
@@ -276,7 +276,7 @@ mod tests {
         let x = Symbol::new("x");
         let delta = dirac_delta(&Expr::Symbol(x));
 
-        assert!(matches!(delta, Expr::Function(name, _) if name == "dirac_delta"));
+        assert!(matches!(&delta, Expr::Function(name, _) if name == "dirac_delta"));
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
         let x = Symbol::new("x");
         let h = heaviside(&Expr::Symbol(x));
 
-        assert!(matches!(h, Expr::Function(name, _) if name == "heaviside"));
+        assert!(matches!(&h, Expr::Function(name, _) if name == "heaviside"));
     }
 
     #[test]
@@ -335,7 +335,7 @@ mod tests {
         let x = Symbol::new("x");
         let sgn = signum(&Expr::Symbol(x));
 
-        assert!(matches!(sgn, Expr::Function(name, _) if name == "sgn"));
+        assert!(matches!(&sgn, Expr::Function(name, _) if name == "sgn"));
     }
 
     #[test]
@@ -397,7 +397,7 @@ mod tests {
 
         // Different symbols
         let delta_ij = kronecker_delta(&Expr::Symbol(i), &Expr::Symbol(j));
-        assert!(matches!(delta_ij, Expr::Function(name, _) if name == "kronecker_delta"));
+        assert!(matches!(&delta_ij, Expr::Function(name, _) if name == "kronecker_delta"));
     }
 
     #[test]
@@ -439,7 +439,7 @@ mod tests {
         }
 
         // sgn(x)² = 1 for x ≠ 0
-        if let Expr::Integer(s) = sgn_x {
+        if let Expr::Integer(s) = &sgn_x {
             assert_eq!(s.clone() * s.clone(), Integer::one());
         }
     }

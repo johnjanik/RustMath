@@ -377,7 +377,7 @@ mod tests {
         let result = func.eval(&[arg.clone()]).unwrap();
 
         // Should return an unevaluated function call
-        match result {
+        match &result {
             Expr::Function(name, args) => {
                 assert_eq!(name, "f");
                 assert_eq!(args.len(), 1);

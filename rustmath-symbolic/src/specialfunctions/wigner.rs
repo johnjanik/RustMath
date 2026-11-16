@@ -370,7 +370,7 @@ mod tests {
             &Expr::from(0),
             &Expr::from(0),
         );
-        assert!(matches!(w, Expr::Function(name, args)
+        assert!(matches!(&w, Expr::Function(name, args)
             if name == "wigner_3j" && args.len() == 6));
     }
 
@@ -384,7 +384,7 @@ mod tests {
             &Expr::from(1),
             &Expr::from(1),
         );
-        assert!(matches!(w, Expr::Function(name, args)
+        assert!(matches!(&w, Expr::Function(name, args)
             if name == "wigner_6j" && args.len() == 6));
     }
 
@@ -401,7 +401,7 @@ mod tests {
             &Expr::from(1),
             &Expr::from(0),
         );
-        assert!(matches!(w, Expr::Function(name, args)
+        assert!(matches!(&w, Expr::Function(name, args)
             if name == "wigner_9j" && args.len() == 9));
     }
 
@@ -415,7 +415,7 @@ mod tests {
             &Expr::from(0),
             &Expr::from(0),
         );
-        assert!(matches!(cg, Expr::Function(name, args)
+        assert!(matches!(&cg, Expr::Function(name, args)
             if name == "clebsch_gordan" && args.len() == 6));
     }
 
@@ -429,7 +429,7 @@ mod tests {
             &Expr::from(1),
             &Expr::from(0),
         );
-        assert!(matches!(w, Expr::Function(name, args)
+        assert!(matches!(&w, Expr::Function(name, args)
             if name == "racah" && args.len() == 6));
     }
 
@@ -443,7 +443,7 @@ mod tests {
             &Expr::from(0),
             &Expr::from(0),
         );
-        assert!(matches!(g, Expr::Function(name, args)
+        assert!(matches!(&g, Expr::Function(name, args)
             if name == "gaunt" && args.len() == 6));
     }
 

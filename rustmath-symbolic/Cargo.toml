@@ -11,7 +11,11 @@ rustmath-core = { path = "../rustmath-core" }
 rustmath-integers = { path = "../rustmath-integers" }
 rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+# MPFR balls of the series engine (S1 design §2.3, `series_ball.rs`)
+rustmath-reals = { path = "../rustmath-reals" }
+rug = { version = "1.24", default-features = false, features = ["float", "integer"] }
 num-traits = { workspace = true }
+num-bigint = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true, optional = true }
 nom = "7.1"
@@ -20,3 +24,8 @@ once_cell = "1.20"
 [features]
 default = []
 serde = ["dep:serde"]
+
+[dev-dependencies]
+# MPC evaluation of the series engine's coefficients against PARI/GP in the S1 tests
+# (tests/s1_regressions.rs, tests/s1_singular_points.rs, tests/s1_fuzz_data.rs)
+rustmath-complex = { path = "../rustmath-complex" }

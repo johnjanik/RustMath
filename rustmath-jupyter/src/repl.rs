@@ -2124,24 +2124,40 @@ impl ReplContext {
                     Expr::Symbol(s) => s.name().to_string(),
                     _ => return Err(EvalError::new("TypeError", "Second argument must be a variable")),
                 };
-                let var = args[0].symbols().iter()
-                    .find(|s| s.name() == var_name)
-                    .cloned()
-                    .ok_or_else(|| EvalError::new("ValueError",
-                        format!("Variable '{}' not found in expression", var_name)))?;
+                // Symbols are interned by name, so this is the expression's symbol. The test is a
+                // DAG walk (a value built by `e = e + e` has 2^40 tree nodes after 40 lines).
+                let var = Symbol::new(&var_name);
+                if !rustmath_symbolic::mentions_symbol(&args[0], &var) {
+                    return Err(EvalError::new("ValueError",
+                        format!("Variable '{}' not found in expression", var_name)));
+                }
                 // `simplify` folds the parser's Neg(Integer(1)) to Integer(-1), so a negative
                 // literal order reaches the range check instead of silently becoming 5.
                 let order = if args.len() == 4 {
-                    match args[3].simplify() {
-                        Expr::Integer(n) => int_arg::<usize>("taylor", "order", &n, 0..=repl_limits::TAYLOR_ORDER, "REPL limit")?,
+                    match &args[3].simplify() {
+                        Expr::Integer(n) => int_arg::<usize>("taylor", "order", n, 0..=repl_limits::TAYLOR_ORDER, "REPL limit")?,
                         other => return Err(EvalError::new("TypeError", format!(
                             "taylor: order must be an integer, got {}", other))),
                     }
                 } else {
                     5
                 };
-                let result = args[0].taylor(&var, &args[2], order);
-                Ok(RustMathValue::Expr(result))
+                // rustmath-symbolic's series engine (S1) under the REPL's work budget. A property
+                // of the input (an exact division by zero, a bad point) is a ValueError; a refusal
+                // of the engine (no Laurent expansion, an unsupported function, an undecided
+                // constant, the budget or a structural cap) is a ComputationError.
+                match args[0].taylor_with_budget(&var, &args[2], order, repl_limits::TAYLOR_WORK) {
+                    Ok(result) => Ok(RustMathValue::Expr(result)),
+                    Err(e) => {
+                        use rustmath_symbolic::SeriesError as SE;
+                        let kind = match e {
+                            SE::DivisionByZero(_) | SE::InvalidPoint(_) | SE::Pole { .. }
+                            | SE::ValuationBelowMinimum { .. } => "ValueError",
+                            _ => "ComputationError",
+                        };
+                        Err(EvalError::new(kind, format!("taylor: {e}")))
+                    }
+                }
             }
 
             // Solve equation: solve(expr, var) - finds where expr = 0
@@ -10879,8 +10895,105 @@ fn try_eval_to_f64(expr: &Expr) -> Option<f64> {
     }
 }
 
-/// Convert a symbolic expression to LaTeX
+/// Convert a symbolic expression to LaTeX.
+///
+/// A work-list writer into one `String` (rustmath-symbolic S1 design §3.1): each node pushes its
+/// prefix, then its children and separators on an explicit list, and its suffix, so the time is
+/// linear in the text and the stack use does not depend on the depth. The recursive writer it
+/// replaces formatted each node from its children's finished strings, copying every subtree's text
+/// once per ancestor (O(text x depth): a taylor result that shares a depth-33 000 kernel among 101
+/// terms took 32 s there). The text is the same byte for byte.
 fn expr_to_latex(expr: &Expr) -> String {
+    use rustmath_symbolic::expression::{BinaryOp, UnaryOp};
+    enum Item<'a> {
+        Node(&'a Expr),
+        Str(&'static str),
+    }
+    let mut out = String::new();
+    let mut stack: Vec<Item<'_>> = vec![Item::Node(expr)];
+    while let Some(it) = stack.pop() {
+        let e = match it {
+            Item::Str(s) => {
+                out.push_str(s);
+                continue;
+            }
+            Item::Node(e) => e,
+        };
+        match e {
+            Expr::Integer(n) => out.push_str(&decimal_string(n)),
+            Expr::Rational(r) => {
+                out.push_str("\\frac{");
+                out.push_str(&decimal_string(r.numerator()));
+                out.push_str("}{");
+                out.push_str(&decimal_string(r.denominator()));
+                out.push('}');
+            }
+            Expr::Real(f) => out.push_str(&format!("{:.6}", f)),
+            Expr::Symbol(s) => out.push_str(s.name()),
+            Expr::Binary(op, l, r) => {
+                let (pre, mid, post) = match op {
+                    BinaryOp::Add => ("", " + ", ""),
+                    BinaryOp::Sub => ("", " - ", ""),
+                    BinaryOp::Mul => ("", " \\cdot ", ""),
+                    BinaryOp::Div => ("\\frac{", "}{", "}"),
+                    BinaryOp::Pow => ("", "^{", "}"),
+                    BinaryOp::Mod => ("", " \\mod ", ""),
+                };
+                out.push_str(pre);
+                stack.push(Item::Str(post));
+                stack.push(Item::Node(r));
+                stack.push(Item::Str(mid));
+                stack.push(Item::Node(l));
+            }
+            Expr::Unary(op, i) => {
+                let (pre, post) = match op {
+                    UnaryOp::Neg => ("-", ""),
+                    UnaryOp::Sin => ("\\sin(", ")"),
+                    UnaryOp::Cos => ("\\cos(", ")"),
+                    UnaryOp::Tan => ("\\tan(", ")"),
+                    UnaryOp::Exp => ("e^{", "}"),
+                    UnaryOp::Log => ("\\ln(", ")"),
+                    UnaryOp::Sqrt => ("\\sqrt{", "}"),
+                    UnaryOp::Abs => ("|", "|"),
+                    UnaryOp::Sign => ("\\text{sign}(", ")"),
+                    UnaryOp::Sinh => ("\\sinh(", ")"),
+                    UnaryOp::Cosh => ("\\cosh(", ")"),
+                    UnaryOp::Tanh => ("\\tanh(", ")"),
+                    UnaryOp::Arcsin => ("\\arcsin(", ")"),
+                    UnaryOp::Arccos => ("\\arccos(", ")"),
+                    UnaryOp::Arctan => ("\\arctan(", ")"),
+                    UnaryOp::Arcsinh => ("\\text{arcsinh}(", ")"),
+                    UnaryOp::Arccosh => ("\\text{arccosh}(", ")"),
+                    UnaryOp::Arctanh => ("\\text{arctanh}(", ")"),
+                    UnaryOp::Gamma => ("\\Gamma(", ")"),
+                    UnaryOp::Factorial => ("", "!"),
+                    UnaryOp::Erf => ("\\text{erf}(", ")"),
+                    UnaryOp::Zeta => ("\\zeta(", ")"),
+                };
+                out.push_str(pre);
+                stack.push(Item::Str(post));
+                stack.push(Item::Node(i));
+            }
+            Expr::Function(name, args) => {
+                out.push_str("\\text{");
+                out.push_str(name);
+                out.push_str("}(");
+                stack.push(Item::Str(")"));
+                for (k, a) in args.iter().enumerate().rev() {
+                    stack.push(Item::Node(a));
+                    if k > 0 {
+                        stack.push(Item::Str(", "));
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// The recursive writer before S1, the reference of `expr_to_latex` in the tests.
+#[cfg(test)]
+fn expr_to_latex_reference(expr: &Expr) -> String {
     use rustmath_symbolic::expression::{BinaryOp, UnaryOp};
 
     match expr {
@@ -10889,8 +11002,8 @@ fn expr_to_latex(expr: &Expr) -> String {
         Expr::Real(f) => format!("{:.6}", f),
         Expr::Symbol(s) => s.name().to_string(),
         Expr::Binary(op, left, right) => {
-            let left_latex = expr_to_latex(left);
-            let right_latex = expr_to_latex(right);
+            let left_latex = expr_to_latex_reference(left);
+            let right_latex = expr_to_latex_reference(right);
             match op {
                 BinaryOp::Add => format!("{} + {}", left_latex, right_latex),
                 BinaryOp::Sub => format!("{} - {}", left_latex, right_latex),
@@ -10901,7 +11014,7 @@ fn expr_to_latex(expr: &Expr) -> String {
             }
         }
         Expr::Unary(op, inner) => {
-            let inner_latex = expr_to_latex(inner);
+            let inner_latex = expr_to_latex_reference(inner);
             match op {
                 UnaryOp::Neg => format!("-{}", inner_latex),
                 UnaryOp::Sin => format!("\\sin({})", inner_latex),
@@ -10928,7 +11041,7 @@ fn expr_to_latex(expr: &Expr) -> String {
             }
         }
         Expr::Function(name, args) => {
-            let args_latex: Vec<String> = args.iter().map(|a| expr_to_latex(a)).collect();
+            let args_latex: Vec<String> = args.iter().map(|a| expr_to_latex_reference(a)).collect();
             format!("\\text{{{}}}({})", name, args_latex.join(", "))
         }
     }
@@ -11075,16 +11188,52 @@ mod repl_limits {
     pub const SIGMA_SECONDS: f64 = 10.0;
     /// About k · log2|n|, the bits of sigma_k(n): a memory bound (sigma(2, 2^28): 445 MB).
     pub const SIGMA_BITS: f64 = 268_435_456.0; // 2^28
-    /// Bounds the order only. Every term keeps n!, so even f = x needs 320 MB at order 20000
-    /// (0.6 s); for most f the unsimplified derivatives grow exponentially and exhaust memory
-    /// far below this order (x^2: 233 MB at order 8; 2*x+1 at order 3000: over 3 GB), which
-    /// no order bound can prevent (rustmath-symbolic `Expr::taylor`, a split-out). The series
-    /// is a left-deep sum that `simplify` and its drop walk recursively: order 20000 ran in a
-    /// release build on an 8 MB thread, but overflows that stack in a debug build (order
-    /// 10000 does not); the recursion is part of the same split-out. Since J1b the kernel runs
-    /// the REPL on a thread of 64 MiB (`kernel::EVAL_STACK_BYTES`); the limit waits for the
-    /// rustmath-symbolic unit (S1) to be re-measured.
+    /// An argument check: a clear refusal of absurd orders before any work, the value before S1.
+    /// It bounds neither the work nor the output: `TAYLOR_WORK` refuses `exp(x)` at order 20000
+    /// in well under a second, while `x + 1` costs under a thousand units there. For plain series
+    /// the order sets the size of the text: exp(x) prints 5.3 MB at order 2000 and 38 MB at 5000.
     pub const TAYLOR_ORDER: usize = 20_000;
+    /// The work budget of one `taylor` call (rustmath-symbolic's series engine, S1). It bounds
+    /// the work of the call and its memory: every big-number operation is charged by a bound of
+    /// its cost, and every constant, term, monomial, expression node, kernel, kernel key, series
+    /// term and buffer slot by its size, before it is made, at most about 3 bytes per unit;
+    /// copies of coefficients and of kernels' expressions are shared. So 1e8 units hold at most
+    /// about 300 MB plus the parsed input. Hard caps bound the length of a monomial, the number
+    /// of kernels, the size of a constant, the depth of a kernel expression and the result's size
+    /// as a tree: 2^21 nodes, and 2^27 units of printing weight (the digits and names of the
+    /// result's tree and of the tree `simplify` makes of it, counted at every occurrence, a float
+    /// by its printed length and a long integer above 2^16 digits by its slower conversion; so a
+    /// shared kernel with a long literal counts at each term that names it, and a kernel's source
+    /// such as `(2^254+1)^4096` counts as the literal it folds to), and 2^31 units of the
+    /// constant folding `simplify` may do on that tree (S1 fix-up round 4: a kernel's source holds
+    /// the input's own literal arithmetic, which `simplify` folds left to right where the engine
+    /// folded it in pairwise rounds). S1 fix-up round 5: the text and the folding are counted at
+    /// every occurrence in the tree, the literals every node may fold to also weigh in the text
+    /// cap, and the literals of the distinct nodes are at most 2^22 words (32 MiB), so that
+    /// `subs`, `expand` and `diff`, which rebuild the tree, stay bounded too. `simplify` simplifies
+    /// a node with two or more parents in the walked DAG once while its memo holds at most 32 MiB
+    /// of literals (past that it recomputes, as HEAD), releases a value after its last use, and
+    /// folds a rational power only up to 2^20 bits (the engine's own cap). So, in release on an
+    /// 8 MB thread, for an accepted result: `simplify` of it and of its `subs`, `expand` and `diff`
+    /// folds for at most a few seconds (at most 4.1 s measured at the caps), the printing of each
+    /// takes at most about 8 s (8.0 s measured at the text cap), and `subs` and `==` walk at most 2^21
+    /// nodes; all within the S1 bar (20 s, 512 MB; a 2^21-node result took about 200 MB, and 2^27
+    /// units add at most 128 MiB of copies). On other values `simplify` does HEAD's work:
+    /// `simplify` of an input with a long chain of literal divisions can take minutes (HEAD's
+    /// rules). Before these caps (S1 fix-up rounds 2 to 5):
+    /// `simplify(taylor("sqrt(N)/(1-x)", x, 0, 20000))` with N of 99 950 digits took 824 MB,
+    /// `simplify` of the 48-byte `taylor(((2^256+1)^4096*x)^4096, x, 0, 4096)` did not finish in
+    /// 60 s, `simplify` of `taylor(sin((2^254+1)^4096/3/.../3)/(1-x), x, 0, 1)` with 12 000
+    /// divisions took 355 s (debug; now refused at once), `s = simplify(t)` after a chain of
+    /// 6 000 lines `a_k = a_{k-1}*3` reached 761 MB, `d = diff(t, x)` of the same result written
+    /// as text 839 MB, and `simplify(subs(t, x, 2))` of `taylor(sin(K/3/.../3)/(1-x), x, 0, 10)`
+    /// with 2 535 divisions 207 s (debug; these `taylor` lines are now refused at once). The
+    /// result is most of a call's memory, and it outlives the call: a line or a cell that keeps
+    /// several results holds each. A kernel is stored once and printed in every coefficient that
+    /// contains it. The display budget (`OUTPUT_BYTES`) bounds the text a line prints, and the
+    /// time to print it. The release measurements of the S1 report (fu2/s1impl/S1_impl.md) give
+    /// the slowest families at about 1 to 4 s for 1e8 units.
+    pub const TAYLOR_WORK: u64 = 100_000_000;
     /// EuclideanSpace(n) builds n coordinate names: 221 MB at 4·10^6, 385 MB at 7·10^6 (0.49 s).
     /// A Manifold value is shared (Arc), so the names are never copied.
     pub const EUCLIDEAN_DIM: usize = 7_000_000;
@@ -14700,6 +14849,468 @@ mod tests {
         let e = ctx.eval("taylor(\"x^2\", x, 0, y)").unwrap_err();
         assert_eq!(e.name, "TypeError");
         assert!(e.message.contains("taylor: order must be an integer"), "{}", e.message);
+    }
+
+    /// Asserts a ComputationError whose message contains `frag`.
+    fn computation_err(ctx: &mut ReplContext, cmd: &str, frag: &str) -> String {
+        match ctx.eval(cmd) {
+            Ok(r) => panic!("{cmd}: expected a ComputationError, got {}", r.text),
+            Err(e) => {
+                assert_eq!(e.name, "ComputationError", "{cmd}: {}", e.message);
+                assert!(e.message.contains(frag), "{cmd}: message {:?} lacks {:?}", e.message, frag);
+                e.message
+            }
+        }
+    }
+
+    // rustmath-symbolic's series engine (S1 design §4.5). Reference values: gp,
+    // `1/sin(x) + O(x^4)` = x^-1 + 1/6*x + 7/360*x^3 + O(x^4).
+    #[test]
+    fn test_taylor_engine() {
+        let mut ctx = ReplContext::new();
+        let r = ctx.eval("taylor(\"1/sin(x)\", x, 0, 3)").unwrap();
+        assert_eq!(r.text, "(((1 / x) + (1/6 * x)) + (7/360 * (x ^ 3)))");
+        computation_err(&mut ctx, "taylor(\"log(x)\", x, 0, 3)", "logarithmic singularity");
+        computation_err(&mut ctx, "taylor(\"gamma(x)\", x, 1, 3)", "taylor:");
+        computation_err(&mut ctx, "taylor(\"exp(x)*sin(x)\", x, 0, 2000)", "budget");
+        assert_eq!(ctx.eval("taylor(\"x^2/4\", x, 0, 2)").unwrap().text, "(1/4 * (x ^ 2))");
+        value_err(&mut ctx, "taylor(\"1/(x-x)\", x, 0, 2)", "division by an exact zero");
+        assert!(ctx.eval("taylor(\"1/(x + sin(2^100000000) + 2)\", x, 0, 2)").is_ok());
+        value_err(&mut ctx, "taylor(\"5\", x, 0, 3)", "Variable 'x' not found in expression");
+        assert_eq!(ctx.eval("taylor(\"x + 1\", x, 0, 20000)").unwrap().text, "(1 + x)");
+        computation_err(&mut ctx, "taylor(\"exp(x)\", x, 0, 20000)", "budget");
+        assert_eq!(ctx.eval("expr(\"-(-x)\")").unwrap().text, "-(-x)");
+        // an undecided constant with a long printed form gives a short message
+        let mut c = String::from("x");
+        for k in 1..=30 {
+            c.push_str(&format!(" + (sin({k})^2 + cos({k})^2 - 1)*x^0"));
+        }
+        let m = computation_err(&mut ctx, &format!("taylor(\"1/({c})\", x, 0, 1)"), "zero");
+        assert!(m.len() < 300, "{m}");
+    }
+
+    // S1 design §4.5, review 5 m1: the variable lookup and the "not found" test walk the DAG,
+    // and the engine refuses the 2^40-term sum under the budget.
+    #[test]
+    fn test_taylor_shared_dag() {
+        let mut ctx = ReplContext::new();
+        ctx.eval("e = x").unwrap();
+        for _ in 0..40 {
+            ctx.eval("e = e + e").unwrap();
+        }
+        let t = std::time::Instant::now();
+        let r = ctx.eval("taylor(e, x, 0, 1)");
+        assert!(t.elapsed().as_secs_f64() < 20.0);
+        match r {
+            Ok(v) => panic!("expected a refusal, got {}", v.text),
+            Err(e) => assert_eq!(e.name, "ComputationError", "{}", e.message),
+        }
+        value_err(&mut ctx, "taylor(e, y, 0, 1)", "Variable 'y' not found in expression");
+    }
+
+    // S1 design §4.6: expand under a minus. gp: -(3/7 - 1) = 4/7.
+    #[test]
+    fn test_expand_under_minus() {
+        let mut ctx = ReplContext::new();
+        let r = ctx.eval("expand(expr(\"-(x - 1)\"))").unwrap();
+        assert_eq!(r.text, "(-x + 1)");
+    }
+
+    // S1 design §4.5 (red team 1, memory H1): the work-list LaTeX writer equals the recursive
+    // one on every node kind and on a taylor result.
+    #[test]
+    fn test_expr_latex_work_list() {
+        use rustmath_symbolic::expression::{BinaryOp, UnaryOp};
+        use std::sync::Arc;
+        let x = || Arc::new(Expr::symbol("x"));
+        let mut cases: Vec<Expr> = vec![
+            Expr::from(5),
+            Expr::Integer(Integer::from(10).pow(100_000)),
+            Expr::Rational(rustmath_rationals::Rational::new(Integer::from(2), Integer::from(3)).unwrap()),
+            Expr::Real(1.5),
+            Expr::symbol("x"),
+            Expr::Function("f".into(), vec![]),
+            Expr::Function("f".into(), vec![x()]),
+            Expr::Function("g".into(), vec![x(), Arc::new(Expr::from(2)), x()]),
+        ];
+        for op in [BinaryOp::Add, BinaryOp::Sub, BinaryOp::Mul, BinaryOp::Div, BinaryOp::Pow, BinaryOp::Mod] {
+            cases.push(Expr::Binary(op, x(), Arc::new(Expr::from(3))));
+        }
+        use UnaryOp::*;
+        for op in [Neg, Sin, Cos, Tan, Exp, Log, Sqrt, Abs, Sign, Sinh, Cosh, Tanh, Arcsin, Arccos, Arctan,
+            Arcsinh, Arccosh, Arctanh, Gamma, Factorial, Erf, Zeta] {
+            cases.push(Expr::Unary(op, x()));
+        }
+        let f = rustmath_symbolic::parse("(sin(x)+sign(pi)+f(2,3)+(2/3)^x)/(1-x)").unwrap();
+        let t = f
+            .taylor_with_budget(&Symbol::new("x"), &Expr::from(0), 20, repl_limits::TAYLOR_WORK)
+            .unwrap();
+        cases.push(t);
+        for e in &cases {
+            assert_eq!(expr_to_latex(e), expr_to_latex_reference(e));
+        }
+    }
+
+    // S1 design §4.5: a result whose coefficients share a deep kernel prints in linear time. F =
+    // f(f(...f(1)...)) with 33 000 levels; at order 60 the result's tree has about 2.0e6 nodes
+    // (order 100 passes the engine's tree cap, 2^21 nodes).
+    #[test]
+    fn test_taylor_display_linear() {
+        let r = std::thread::Builder::new()
+            .stack_size(256 << 20)
+            .spawn(|| {
+                use std::sync::Arc;
+                let mut f = Expr::from(1);
+                for _ in 0..33_000 {
+                    f = Expr::Function("f".into(), vec![Arc::new(f)]);
+                }
+                let g = f / (Expr::from(1) - Expr::symbol("x"));
+                let t0 = std::time::Instant::now();
+                let t = g
+                    .taylor_with_budget(&Symbol::new("x"), &Expr::from(0), 60, repl_limits::TAYLOR_WORK)
+                    .unwrap();
+                let d = RustMathValue::Expr(t).to_display();
+                let secs = t0.elapsed().as_secs_f64();
+                assert!(secs < 20.0, "{secs} s");
+                d.latex.map(|l| l.len()).unwrap_or(0)
+            })
+            .unwrap()
+            .join()
+            .expect("the thread panicked");
+        assert!(r > 10_000_000, "LaTeX of {r} bytes");
+    }
+
+    // S1 fix-up round 2 (review 2, resources lens, B2): a result whose tree repeats a long leaf
+    // (here sqrt(N), N of 99 950 digits, named by every term) is refused by the engine's leaf-text
+    // cap (2^27 characters), so `simplify(t)` cannot copy 2 GB; before the cap the first line was
+    // Ok and `simplify(t)` reached 824 MB. At order 200 the result holds about 2e7 characters and
+    // stays a value.
+    #[test]
+    fn test_taylor_leaf_text_cap() {
+        let n: String = (0..99_950)
+            .map(|i| {
+                if i == 99_949 {
+                    '7'
+                } else {
+                    char::from(b'1' + (i % 9) as u8)
+                }
+            })
+            .collect();
+        let r = std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let mut ctx = ReplContext::new();
+                let m = computation_err(
+                    &mut ctx,
+                    &format!("t = taylor(\"sqrt({n})/(1-x)\", x, 0, 20000)"),
+                    "leaf text",
+                );
+                assert!(m.len() < 300, "{m}");
+                assert!(ctx
+                    .eval(&format!("t = taylor(\"sqrt({n})/(1-x)\", x, 0, 200)"))
+                    .is_ok());
+                let t0 = std::time::Instant::now();
+                assert!(ctx.eval("s = simplify(t)").is_ok());
+                t0.elapsed().as_secs_f64()
+            })
+            .unwrap()
+            .join()
+            .expect("the thread panicked");
+        assert!(r < 20.0, "{r} s");
+    }
+
+    // S1 fix-up round 3 (review 3, resources lens, B2): `simplify` of a result whose kernel's
+    // source is a power above the engine's 2^20-bit cap, (2^256+1)^4096, keeps the power (before
+    // the fix it built ((2^256+1)^4096)^4096, an integer of 4.3e9 bits, and `s = simplify(t)` was
+    // not done after 60 s; review 3 measured 34.8 s for the second line pair). A result that names
+    // the source (2^254+1)^4096 at every term has it folded once.
+    #[test]
+    fn test_taylor_simplify_of_kernel_sources() {
+        let r = std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let mut ctx = ReplContext::new();
+                let t0 = std::time::Instant::now();
+                for (t, order) in [
+                    ("((2^256+1)^4096*x)^4096", 4096),
+                    ("exp(x + (2^256+1)^4096)", 300),
+                    ("sin((2^254+1)^4096)/(1-x)", 100),
+                ] {
+                    let line = format!("t = taylor({t}, x, 0, {order})");
+                    assert!(ctx.eval(&line).is_ok(), "{line}");
+                    assert!(ctx.eval("s = simplify(t)").is_ok(), "simplify of {line}");
+                }
+                t0.elapsed().as_secs_f64()
+            })
+            .unwrap()
+            .join()
+            .expect("the thread panicked");
+        assert!(r < 20.0, "{r} s");
+    }
+
+    /// S1 fix-up round 4 (review 4 resources, B2): the 93 861-byte session of the review,
+    /// `a1 = expr("(2^254+1)^4096")`, `a2 = a1*3`, ..., `a6000 = a5999*3`,
+    /// `z = sin(a6000)/(1-x)`, `t = taylor(z, x, 0, 1)`, `s = simplify(t)`. Each line stores a
+    /// shallow clone of the previous value, so every child of a_k is held by two `Arc`s and has one
+    /// parent in the DAG of a6000. Round 3's memo of `simplify` kept the value of every such node:
+    /// VmHWM 761 MB at `s = simplify(t)` (debug; the assignments and `taylor` stay at 16 MB). The
+    /// session runs in a child process of this test binary, so that VmHWM is its own, and must stay
+    /// under 512 MB (the bar's memory) with every line `Ok`.
+    ///
+    /// S1 fix-up round 5 (review 5 resources, B1 and B2): the line `t = taylor(z, x, 0, 1)` may now
+    /// be the engine's typed refusal (`ComputationError`, a structural limit), and the session gains
+    /// `s2 = simplify(z)`, the same chain held by the variables without the engine, so the memory of
+    /// `simplify` on it is still measured. Round 4 asserted that `t` is `Ok`; that acceptance was the
+    /// defect: review 5 measured `d = diff(t, x)` of the same result (written as text,
+    /// `replA_mul3_6000_diff.txt`) at VmHWM 839 MB, over the bar, and `simplify` after a consumer
+    /// that rebuilds the tree folds the chain once per term (two terms: 2.2e9 units of the fold
+    /// model, over `MAX_RESULT_FOLD_WORK`). The result's distinct nodes fold to 6 000 literals of
+    /// 2^20 bits (98e6 words, over `MAX_RESULT_MEMO_WORDS`). Every other line must be `Ok`.
+    #[test]
+    fn test_simplify_of_a_variable_chain_memory() {
+        let exe = std::env::current_exe().expect("the test binary");
+        let out = std::process::Command::new(exe)
+            .args([
+                "--exact",
+                "repl::tests::s1r4_variable_chain_session_child",
+                "--ignored",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env("S1R4_CHAIN_CHILD", "1")
+            .output()
+            .expect("run the child");
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        assert!(out.status.success(), "child failed: {stdout}\n{stderr}");
+        // the harness prints "test <name> ... " before the test's own output, on the same line
+        let at = stdout
+            .find("S1R4 VmHWM ")
+            .unwrap_or_else(|| panic!("no measurement in the child's output: {stdout}\n{stderr}"));
+        let mb: u64 = stdout[at + "S1R4 VmHWM ".len()..]
+            .split(' ')
+            .next()
+            .and_then(|n| n.parse().ok())
+            .expect("a number of MB");
+        assert!(mb < 512, "the session's peak is {mb} MB");
+    }
+
+    /// The session of `test_simplify_of_a_variable_chain_memory`, run only in its child process.
+    #[test]
+    #[ignore = "run in a child process by test_simplify_of_a_variable_chain_memory"]
+    fn s1r4_variable_chain_session_child() {
+        if std::env::var_os("S1R4_CHAIN_CHILD").is_none() {
+            return;
+        }
+        let mut lines = vec!["a1 = expr(\"(2^254+1)^4096\")".to_string()];
+        for k in 2..=6000 {
+            lines.push(format!("a{k} = a{}*3", k - 1));
+        }
+        lines.push("z = sin(a6000)/(1-x)".into());
+        lines.push("t = taylor(z, x, 0, 1)".into());
+        lines.push("s = simplify(t)".into());
+        assert_eq!(lines.iter().map(|l| l.len() + 1).sum::<usize>(), 93_861);
+        // S1 fix-up round 5: the chain itself, held by the variables
+        lines.push("s2 = simplify(z)".into());
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let mut ctx = ReplContext::new();
+                for line in &lines {
+                    match ctx.eval(line) {
+                        Ok(_) => {}
+                        // S1 fix-up round 5: the engine's typed refusal of the result
+                        Err(e)
+                            if line.starts_with("t = taylor")
+                                && e.name == "ComputationError"
+                                && e.message.contains("structural limit") => {}
+                        Err(e) => panic!("{line}: {} {}", e.name, e.message),
+                    }
+                }
+            })
+            .unwrap()
+            .join()
+            .expect("the session panicked");
+        let st = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
+        let kb: u64 = st
+            .lines()
+            .find(|l| l.starts_with("VmHWM"))
+            .and_then(|l| l.split_whitespace().nth(1))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        println!("S1R4 VmHWM {} MB", kb / 1024);
+    }
+
+    /// S1 fix-up round 5 (review 5 semantics, B1): a variable named `pi` or `i` (the parser maps `i`
+    /// to `I`) is never written for a constant the engine makes. Before the fix,
+    /// `t = taylor(acos(0*pi), pi, 0, 2)` was `(1/2 * pi)` and `subs(t, pi, 0)` gave 0, where
+    /// acos(0) = 1.5707963267948966192 (gp); `t = taylor(acosh(0*i) + i, i, 0, 2)` was
+    /// `((1/2 * (pi * I)) + I)` and `subs(t, i, 0)` simplified to 0, where acosh(0) =
+    /// 1.5707963267948966192*I (gp). HEAD gives `arccos(0)` and `acosh(0) + I`.
+    #[test]
+    fn test_taylor_variable_named_like_a_constant() {
+        let mut ctx = ReplContext::new();
+        let value = |ctx: &ReplContext, name: &str| match ctx.variables.get(name) {
+            Some(RustMathValue::Expr(e)) => e.clone(),
+            other => panic!("{name} is not an expression: {:?}", other.map(|v| v.to_display().text)),
+        };
+        for (line, var, at) in [
+            ("t = taylor(acos(0*pi), pi, 0, 2)", "pi", "0"),
+            ("t = taylor(atan(pi^0), pi, 1, 2)", "pi", "1"),
+            ("t = taylor(acos(-1) + pi, pi, 0, 2)", "pi", "0"),
+        ] {
+            ctx.eval(line).unwrap_or_else(|e| panic!("{line}: {} {}", e.name, e.message));
+            // a result free of the variable is a constant: `subs` says the variable is not found
+            // (as at HEAD, whose result is the kernel `arccos(0)`), and its value is t itself
+            let u = match ctx.eval(&format!("u = subs(t, {var}, {at})")) {
+                Ok(_) => value(&ctx, "u"),
+                Err(e) if e.name == "ValueError" && e.message.contains("not found") => {
+                    value(&ctx, "t")
+                }
+                Err(e) => panic!("subs: {} {}", e.name, e.message),
+            };
+            let want = match line {
+                l if l.contains("atan") => std::f64::consts::FRAC_PI_4,
+                l if l.contains("acos(-1)") => std::f64::consts::PI,
+                _ => std::f64::consts::FRAC_PI_2,
+            };
+            let got = u.eval_float().unwrap_or(f64::NAN);
+            assert!((got - want).abs() < 1e-12, "{line}: subs at {at} is {u} = {got}, want {want}");
+        }
+        ctx.eval("t = taylor(acosh(0*i) + i, i, 0, 2)").expect("taylor in i");
+        ctx.eval("u = subs(t, i, 0)").expect("subs");
+        let u = value(&ctx, "u").simplify();
+        assert_ne!(u, Expr::from(0), "acosh(0) + i at i = 0 is acosh(0), not 0");
+    }
+
+    /// The text of K = (2^254+1)^4096 followed by `n` copies of `op` (`/3` or `*3`), the kernel
+    /// sources of review 5 (resources lens).
+    fn s1r5_chain(op: &str, n: usize) -> String {
+        format!("(2^254+1)^4096{}", op.repeat(n))
+    }
+
+    /// Run the REPL session `lines` in a child process of this test binary (the child test
+    /// `s1r5_session_child`), within `secs` seconds: each line's outcome and time, and the child's
+    /// VmHWM in MB. The child is killed at the deadline.
+    fn s1r5_session(lines: &[String], secs: f64) -> (Vec<String>, u64) {
+        let exe = std::env::current_exe().expect("the test binary");
+        let mut child = std::process::Command::new(exe)
+            .args([
+                "--exact",
+                "repl::tests::s1r5_session_child",
+                "--ignored",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env("S1R5_SESSION", lines.join("\n"))
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("run the child");
+        let t0 = std::time::Instant::now();
+        loop {
+            if child.try_wait().expect("wait").is_some() {
+                break;
+            }
+            if t0.elapsed().as_secs_f64() > secs {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("the session did not finish within {secs} s");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+        let out = child.wait_with_output().expect("the child's output");
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        assert!(out.status.success(), "child failed: {stdout}\n{}", String::from_utf8_lossy(&out.stderr));
+        let outcomes: Vec<String> = stdout
+            .lines()
+            .filter_map(|l| l.find("S1R5 LINE ").map(|at| l[at + "S1R5 LINE ".len()..].to_string()))
+            .collect();
+        let at = stdout.find("S1R5 VmHWM ").expect("a measurement");
+        let mb: u64 = stdout[at + "S1R5 VmHWM ".len()..]
+            .split(' ')
+            .next()
+            .and_then(|n| n.parse().ok())
+            .expect("a number of MB");
+        (outcomes, mb)
+    }
+
+    /// The session of `s1r5_session`, run only in its child process: each line on the kernel's
+    /// 64 MiB evaluation thread; prints "S1R5 LINE <Ok|ErrorName> <seconds>" per line and the peak.
+    #[test]
+    #[ignore = "run in a child process by the S1 fix-up round 5 REPL tests"]
+    fn s1r5_session_child() {
+        let Some(text) = std::env::var_os("S1R5_SESSION") else {
+            return;
+        };
+        let lines: Vec<String> = text.to_string_lossy().lines().map(String::from).collect();
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(move || {
+                let mut ctx = ReplContext::new();
+                for line in &lines {
+                    let t = std::time::Instant::now();
+                    let r = ctx.eval(line);
+                    let secs = t.elapsed().as_secs_f64();
+                    match r {
+                        Ok(_) => println!("S1R5 LINE Ok {secs:.3}"),
+                        Err(e) => println!("S1R5 LINE {} {secs:.3}", e.name),
+                    }
+                }
+            })
+            .unwrap()
+            .join()
+            .expect("the session panicked");
+        let st = std::fs::read_to_string("/proc/self/status").unwrap_or_default();
+        let kb: u64 = st
+            .lines()
+            .find(|l| l.starts_with("VmHWM"))
+            .and_then(|l| l.split_whitespace().nth(1))
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        println!("S1R5 VmHWM {} MB", kb / 1024);
+    }
+
+    /// Whether a session's outcomes are a refusal of the `taylor` line (a `ComputationError`, the
+    /// engine's typed refusals) or every line `Ok`.
+    fn s1r5_refused_or_ok(outcomes: &[String]) -> bool {
+        let first = outcomes.first().map(String::as_str).unwrap_or("");
+        first.starts_with("ComputationError") || outcomes.iter().all(|o| o.starts_with("Ok"))
+    }
+
+    /// S1 fix-up round 5 (review 5 resources, B1): review 5's sessions `replB_div3_2535_subs.txt`
+    /// (5 154 bytes) and `replC_div3_2535_diff.txt` (5 135 bytes): the `taylor` line of
+    /// `sin(K/3 x 2535)/(1-x)` at 0, order 10, then `u = subs(t, x, 2)` and `s = simplify(u)`, or
+    /// `d = diff(t, x)`. Before the fix (debug): `t` `Ok` in 0.20 s, then `s = simplify(u)` 207 s
+    /// and `d = diff(t, x)` 225 s. Now each session finishes within 20 s (the deadline is the bar's
+    /// in both profiles), with the `taylor` line refused or every line `Ok`.
+    #[test]
+    fn test_taylor_consumers_of_a_kernel_source_result() {
+        let t = format!("t = taylor(\"sin({})/(1-x)\", x, 0, 10)", s1r5_chain("/3", 2535));
+        for tail in [vec!["u = subs(t, x, 2)", "s = simplify(u)"], vec!["d = diff(t, x)"]] {
+            let mut lines = vec![t.clone()];
+            lines.extend(tail.iter().map(|l| l.to_string()));
+            let (outcomes, mb) = s1r5_session(&lines, 20.0);
+            assert!(s1r5_refused_or_ok(&outcomes), "{tail:?}: {outcomes:?}");
+            assert!(mb < 512, "{tail:?}: the session's peak is {mb} MB");
+        }
+    }
+
+    /// S1 fix-up round 5 (review 5 resources, B2): review 5's session `replA_mul3_6000_diff.txt`
+    /// (12 064 bytes): `t = taylor("sin((2^254+1)^4096*3*...*3)/(1-x)", x, 0, 1)` with 6 000 factors
+    /// 3, then `d = diff(t, x)`. Before the fix (debug): `t` `Ok` in 0.20 s, then `d` 8.6 s with
+    /// VmHWM 839 MB. Now the peak stays under 512 MB, with the `taylor` line refused or both lines
+    /// `Ok`, within 20 s.
+    #[test]
+    fn test_taylor_diff_of_a_chain_result_memory() {
+        let lines = vec![
+            format!("t = taylor(\"sin({})/(1-x)\", x, 0, 1)", s1r5_chain("*3", 6000)),
+            "d = diff(t, x)".to_string(),
+        ];
+        assert_eq!(lines.iter().map(|l| l.len() + 1).sum::<usize>(), 12_064);
+        let (outcomes, mb) = s1r5_session(&lines, 20.0);
+        assert!(s1r5_refused_or_ok(&outcomes), "{outcomes:?}");
+        assert!(mb < 512, "the session's peak is {mb} MB");
     }
 
     // stirling1/stirling2/eulerian: the limit is the table's size in (n, k), not n (fix-up B2).

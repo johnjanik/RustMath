@@ -91,7 +91,7 @@ mod tests {
             (Expr::from(1), Expr::from(2)),
         ]);
 
-        assert!(matches!(pw, Expr::Function(name, _) if name == "piecewise"));
+        assert!(matches!(&pw, Expr::Function(name, _) if name == "piecewise"));
     }
 
     #[test]

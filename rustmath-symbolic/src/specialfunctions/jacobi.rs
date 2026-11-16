@@ -182,35 +182,35 @@ mod tests {
     fn test_jacobi_sn_symbolic() {
         let u = Symbol::new("u");
         let sn = jacobi_sn(&Expr::Symbol(u), &Expr::from(0));
-        assert!(matches!(sn, Expr::Function(name, _) if name == "jacobi_sn"));
+        assert!(matches!(&sn, Expr::Function(name, _) if name == "jacobi_sn"));
     }
 
     #[test]
     fn test_jacobi_cn_symbolic() {
         let u = Symbol::new("u");
         let cn = jacobi_cn(&Expr::Symbol(u), &Expr::from(0));
-        assert!(matches!(cn, Expr::Function(name, _) if name == "jacobi_cn"));
+        assert!(matches!(&cn, Expr::Function(name, _) if name == "jacobi_cn"));
     }
 
     #[test]
     fn test_jacobi_dn_symbolic() {
         let u = Symbol::new("u");
         let dn = jacobi_dn(&Expr::Symbol(u), &Expr::from(0));
-        assert!(matches!(dn, Expr::Function(name, _) if name == "jacobi_dn"));
+        assert!(matches!(&dn, Expr::Function(name, _) if name == "jacobi_dn"));
     }
 
     #[test]
     fn test_jacobi_am_symbolic() {
         let u = Symbol::new("u");
         let am = jacobi_am(&Expr::Symbol(u), &Expr::from(0));
-        assert!(matches!(am, Expr::Function(name, _) if name == "jacobi_am"));
+        assert!(matches!(&am, Expr::Function(name, _) if name == "jacobi_am"));
     }
 
     #[test]
     fn test_inverse_jacobi() {
         let x = Symbol::new("x");
         let inv = inverse_jacobi("sn", &Expr::Symbol(x), &Expr::from(0));
-        assert!(matches!(inv, Expr::Function(name, _) if name == "jacobi_sn_inverse"));
+        assert!(matches!(&inv, Expr::Function(name, _) if name == "jacobi_sn_inverse"));
     }
 
     #[test]

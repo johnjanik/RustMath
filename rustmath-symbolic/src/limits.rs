@@ -425,19 +425,28 @@ impl Expr {
     /// * `var` - The variable approaching the limit
     /// * `point` - The point being approached
     /// * `order` - Order of Taylor expansion (default 5)
+    ///
+    /// The expansion runs under its own budget, `series::LIMIT_SERIES_WORK`, and renders its first
+    /// stored term only (S1 design §2.13). An engine error gives `Unknown`; no stored term, or a
+    /// first exponent above 0, gives `Finite(0)`; a first exponent 0 with a rational coefficient
+    /// gives that rational; anything else (a pole, an undecided leading coefficient, a symbolic
+    /// constant) gives `Unknown`. Correct because the terms below the first stored one are exact
+    /// zeros, a rational stored coefficient is nonzero, and a Laurent expansion of valuation >= 0
+    /// is continuous at the point once the removable singularity is removed. A first exponent
+    /// below 0 is never read as a pole without a decided coefficient.
     pub fn limit_via_series(&self, var: &Symbol, point: &Expr, order: usize) -> LimitResult {
-        // Compute Taylor series expansion
-        let series = self.taylor(var, point, order);
-
-        // Try to evaluate the series at the point
-        // The constant term gives the limit
-        let result = series.substitute(var, point).simplify();
-
-        if result.is_finite_value() {
-            LimitResult::Finite(result)
-        } else {
-            // Series expansion didn't help, return unknown
-            LimitResult::Unknown
+        match crate::series::expansion_first_term(
+            self,
+            var,
+            point,
+            order,
+            crate::series::LIMIT_SERIES_WORK,
+        ) {
+            Err(_) => LimitResult::Unknown,
+            Ok(None) => LimitResult::Finite(Expr::from(0)),
+            Ok(Some((e, _))) if e > 0 => LimitResult::Finite(Expr::from(0)),
+            Ok(Some((0, Some(q)))) => LimitResult::Finite(q),
+            Ok(Some(_)) => LimitResult::Unknown,
         }
     }
 
@@ -525,6 +534,17 @@ impl Expr {
     /// Returns both the limit value and an estimate of the error using Big-O notation.
     /// This is useful for understanding the accuracy of the limit computation.
     ///
+    /// The limit is the one `limit_via_series` gives at order 5, and for a finite limit the
+    /// remainder term is O(h^(series_order + 1)) when the expansion reaches that order (S1 design
+    /// §2.13). Both expansions run under `series::LIMIT_SERIES_WORK`, so the call is bounded by
+    /// that budget (S1 review 1, B2: HEAD's unbudgeted `Expr::limit` aborted or used gigabytes on
+    /// inputs of 6 to 100 KB). As for `limit_via_series`: `Finite` only for a rational limit (a
+    /// rational constant term, or 0), `Unknown` otherwise, with no remainder term. A finite result
+    /// is the limit from either side, so `dir` does not change it. When the expansion to
+    /// `series_order` is refused (its budget, a structural cap, an order past i64) while the one of
+    /// order 5 succeeds, the result is the limit with no remainder term: `sin(x)/x` at 0 with the
+    /// order 10^9 gives `(Finite(1), None)`.
+    ///
     /// # Examples
     ///
     /// ```ignore
@@ -536,23 +556,30 @@ impl Expr {
     /// // Compute lim(x→0) sin(x)/x with error estimate
     /// let (result, error) = expr.limit_with_error(&x, &Expr::from(0), Direction::Both, 5);
     /// // result: LimitResult::Finite(1)
-    /// // error: O(x²) or similar
+    /// // error: O(x^6)
     /// ```
     pub fn limit_with_error(
         &self,
         var: &Symbol,
         point: &Expr,
-        dir: Direction,
+        _dir: Direction,
         series_order: usize,
     ) -> (LimitResult, Option<crate::series::BigO>) {
-        // First compute the limit normally
-        let limit_result = self.limit(var, point, dir);
+        let limit_result = self.limit_via_series(var, point, 5);
 
-        // If we got a finite result, try to estimate error using series expansion
+        // A finite limit: the remainder term when the expansion reaches series_order + 1 under
+        // the same budget (an expansion that renders no term; an engine error gives no remainder
+        // term)
         if let LimitResult::Finite(_) = limit_result {
-            // Expand function as series and determine remainder term
-            let (_, big_o) = self.series_with_big_o(var, point, series_order);
-            return (limit_result, Some(big_o));
+            let big_o = crate::series::expansion_reaches(
+                self,
+                var,
+                point,
+                series_order,
+                crate::series::LIMIT_SERIES_WORK,
+            )
+            .ok();
+            return (limit_result, big_o);
         }
 
         // For non-finite results, no error estimate available

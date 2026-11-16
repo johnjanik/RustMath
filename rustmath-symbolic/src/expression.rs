@@ -66,6 +66,92 @@ pub enum Expr {
     Function(String, Vec<Arc<Expr>>),
 }
 
+thread_local! {
+    /// The highest stack address seen on entry to `Drop for Expr` on this thread.
+    static EXPR_DROP_STACK_TOP: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// The leaf that takes the place of a detached child.
+    static EXPR_DROP_LEAF: Arc<Expr> = Arc::new(Expr::Real(0.0));
+}
+
+/// Whether e has child nodes (a binary or unary node, or a call with arguments).
+fn expr_has_children(e: &Expr) -> bool {
+    match e {
+        Expr::Binary(..) | Expr::Unary(..) => true,
+        Expr::Function(_, args) => !args.is_empty(),
+        _ => false,
+    }
+}
+
+/// Moves every child of e that has children to `list`, a shared leaf taking its place.
+fn expr_detach(e: &mut Expr, list: &mut Vec<Arc<Expr>>) {
+    // the leaf may already be destroyed while the thread's locals are torn down: then a fresh one
+    let leaf = || {
+        EXPR_DROP_LEAF
+            .try_with(Arc::clone)
+            .unwrap_or_else(|_| Arc::new(Expr::Real(0.0)))
+    };
+    let mut take = |a: &mut Arc<Expr>| {
+        if expr_has_children(a) {
+            list.push(std::mem::replace(a, leaf()));
+        }
+    };
+    match e {
+        Expr::Binary(_, l, r) => {
+            take(l);
+            take(r);
+        }
+        Expr::Unary(_, a) => take(a),
+        Expr::Function(_, args) => args.iter_mut().for_each(take),
+        _ => {}
+    }
+}
+
+impl Drop for Expr {
+    /// Teardown with bounded stack use (S1 design §2.14). While the drop runs less than
+    /// `GLUE_STACK_BUDGET` bytes below the shallowest drop seen on this thread, the drop glue
+    /// recurses as before. Deeper, the subtree is torn down iteratively: every child `Arc` that has
+    /// children, shared or not, is moved to a heap list and a shared leaf takes its place, and the
+    /// loop takes each with `Arc::into_inner`: the last owner gets the node and moves its children
+    /// in turn, any other owner only decrements. So the glue below any node drops leaves only.
+    ///
+    /// The bound is relative to the shallowest `Expr` drop seen on the thread, not to the top of
+    /// the thread's stack: a thread whose first `Expr` drop happens deep in its stack treats that
+    /// point as the top, and the glue may use up to `GLUE_STACK_BUDGET` bytes below it before the
+    /// iterative teardown starts. A thread with less than 16 KiB of stack left at its first drop
+    /// can therefore still overflow there. The address of a local is the proxy for the depth (it
+    /// is compared, never dereferenced); on a target whose stack grows upward the difference
+    /// saturates to 0 and the drop is the derived glue.
+    fn drop(&mut self) {
+        const GLUE_STACK_BUDGET: usize = 16 * 1024;
+        if !expr_has_children(self) {
+            return;
+        }
+        let marker = 0u8;
+        let here = std::ptr::from_ref(std::hint::black_box(&marker)) as usize;
+        let used = EXPR_DROP_STACK_TOP
+            .try_with(|top| {
+                if here > top.get() {
+                    top.set(here);
+                }
+                top.get().saturating_sub(here)
+            })
+            // the thread's locals are being destroyed: take the iterative teardown
+            .unwrap_or(usize::MAX);
+        if used < GLUE_STACK_BUDGET {
+            return;
+        }
+        let mut list: Vec<Arc<Expr>> = Vec::new();
+        expr_detach(self, &mut list);
+        while let Some(a) = list.pop() {
+            if let Some(mut e) = Arc::into_inner(a) {
+                // the last owner: its children with children move to the list, so e then drops
+                // with leaf children only
+                expr_detach(&mut e, &mut list);
+            }
+        }
+    }
+}
+
 impl Expr {
     /// Create a symbol expression
     pub fn symbol(name: impl Into<String>) -> Self {
@@ -434,65 +520,160 @@ impl From<f64> for Expr {
     }
 }
 
+/// The text of a unary operator (`-` for the negation, else the function name).
+fn unary_op_name(op: UnaryOp) -> &'static str {
+    match op {
+        UnaryOp::Neg => "-",
+        UnaryOp::Sin => "sin",
+        UnaryOp::Cos => "cos",
+        UnaryOp::Tan => "tan",
+        UnaryOp::Exp => "exp",
+        UnaryOp::Log => "log",
+        UnaryOp::Sqrt => "sqrt",
+        UnaryOp::Abs => "abs",
+        UnaryOp::Sign => "sign",
+        UnaryOp::Sinh => "sinh",
+        UnaryOp::Cosh => "cosh",
+        UnaryOp::Tanh => "tanh",
+        UnaryOp::Arcsin => "arcsin",
+        UnaryOp::Arccos => "arccos",
+        UnaryOp::Arctan => "arctan",
+        UnaryOp::Arcsinh => "arcsinh",
+        UnaryOp::Arccosh => "arccosh",
+        UnaryOp::Arctanh => "arctanh",
+        UnaryOp::Gamma => "gamma",
+        UnaryOp::Factorial => "factorial",
+        UnaryOp::Erf => "erf",
+        UnaryOp::Zeta => "zeta",
+    }
+}
+
+fn binary_op_text(op: BinaryOp) -> &'static str {
+    match op {
+        BinaryOp::Add => " + ",
+        BinaryOp::Sub => " - ",
+        BinaryOp::Mul => " * ",
+        BinaryOp::Div => " / ",
+        BinaryOp::Pow => " ^ ",
+        BinaryOp::Mod => " % ",
+    }
+}
+
+/// A negative literal (an `Integer`, `Rational` or `Real` below 0).
+fn is_negative_literal(e: &Expr) -> bool {
+    match e {
+        Expr::Integer(n) => n.signum() < 0,
+        Expr::Rational(q) => q.numerator().signum() < 0,
+        Expr::Real(f) => *f < 0.0,
+        _ => false,
+    }
+}
+
+/// The number of characters `Display` writes for the float leaf `x`: Rust's `{}` of an f64, which
+/// never uses an exponent, then `.0` for a finite integral value. At most 327 (`-5e-324` is a sign,
+/// `0.` and 324 digits; `-f64::MAX` is 310 characters and `.0`). S1 fix-up round 3 (review 3, B1):
+/// the result caps of the series engine and its bounded messages count a float by this length, not
+/// by a constant (24 undercounted 5e-324 by a factor 14). Counted without allocating.
+pub(crate) fn real_display_len(x: f64) -> u64 {
+    struct Count(u64);
+    impl fmt::Write for Count {
+        fn write_str(&mut self, s: &str) -> fmt::Result {
+            self.0 += s.len() as u64;
+            Ok(())
+        }
+    }
+    let mut c = Count(0);
+    let _ = fmt::Write::write_fmt(&mut c, format_args!("{}", x));
+    if x.is_finite() && x.fract() == 0.0 {
+        c.0 += 2;
+    }
+    c.0
+}
+
+/// A `Rational` with denominator above 1 (its text contains a `/`).
+fn is_fraction_literal(e: &Expr) -> bool {
+    matches!(e, Expr::Rational(q) if !q.denominator().is_one())
+}
+
 impl fmt::Display for Expr {
+    /// Every binary node is written `(l op r)`. The parser reads `a/b` as a division (S1 design
+    /// §2.12), so a fraction literal is put in parentheses when it is an operand of `^` or the
+    /// divisor of `/` (`(x ^ (1/2))`, `(x / (1/2))`); the base of `^` when it is negated or a
+    /// negative literal (`((-2) ^ 2)`, `((-y) ^ (1/2))`); and the operand of a negation when it is
+    /// negated, a negative literal or a fraction (`-(-x)`, `-(-2)`, `-(2/3)`). A finite integral
+    /// float keeps a decimal point (`2.0`), so that the parser reads it back as the same f64 and
+    /// not as an integer of another value. (S1 design §2.11.)
+    ///
+    /// Writes with an explicit work list: the stack use does not depend on the depth of the
+    /// expression (a result can be twice as deep as its input, and a sum built by a loop is as
+    /// deep as it is long). The list holds at most the depth plus the pending arguments of calls.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Expr::Integer(n) => write!(f, "{}", n),
-            Expr::Rational(r) => write!(f, "{}", r),
-            Expr::Real(x) => write!(f, "{}", x),
-            Expr::Symbol(s) => write!(f, "{}", s),
-            Expr::Binary(op, left, right) => {
-                let op_str = match op {
-                    BinaryOp::Add => "+",
-                    BinaryOp::Sub => "-",
-                    BinaryOp::Mul => "*",
-                    BinaryOp::Div => "/",
-                    BinaryOp::Pow => "^",
-                    BinaryOp::Mod => "%",
-                };
-                write!(f, "({} {} {})", left, op_str, right)
-            }
-            Expr::Unary(op, inner) => {
-                let op_str = match op {
-                    UnaryOp::Neg => "-",
-                    UnaryOp::Sin => "sin",
-                    UnaryOp::Cos => "cos",
-                    UnaryOp::Tan => "tan",
-                    UnaryOp::Exp => "exp",
-                    UnaryOp::Log => "log",
-                    UnaryOp::Sqrt => "sqrt",
-                    UnaryOp::Abs => "abs",
-                    UnaryOp::Sign => "sign",
-                    UnaryOp::Sinh => "sinh",
-                    UnaryOp::Cosh => "cosh",
-                    UnaryOp::Tanh => "tanh",
-                    UnaryOp::Arcsin => "arcsin",
-                    UnaryOp::Arccos => "arccos",
-                    UnaryOp::Arctan => "arctan",
-                    UnaryOp::Arcsinh => "arcsinh",
-                    UnaryOp::Arccosh => "arccosh",
-                    UnaryOp::Arctanh => "arctanh",
-                    UnaryOp::Gamma => "gamma",
-                    UnaryOp::Factorial => "factorial",
-                    UnaryOp::Erf => "erf",
-                    UnaryOp::Zeta => "zeta",
-                };
-                match op {
-                    UnaryOp::Neg => write!(f, "-{}", inner),
-                    _ => write!(f, "{}({})", op_str, inner),
-                }
-            }
-            Expr::Function(name, args) => {
-                write!(f, "{}(", name)?;
-                for (i, arg) in args.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
+        enum Item<'a> {
+            // the node, and whether it is written in parentheses (the rules above)
+            Node(&'a Expr, bool),
+            Str(&'static str),
+        }
+        let mut stack: Vec<Item<'_>> = vec![Item::Node(self, false)];
+        while let Some(it) = stack.pop() {
+            match it {
+                Item::Str(t) => f.write_str(t)?,
+                Item::Node(e, paren) => {
+                    if paren {
+                        f.write_str("(")?;
+                        stack.push(Item::Str(")"));
                     }
-                    write!(f, "{}", arg)?;
+                    match e {
+                        Expr::Integer(n) => write!(f, "{}", n)?,
+                        Expr::Rational(r) => write!(f, "{}", r)?,
+                        Expr::Real(x) => {
+                            write!(f, "{}", x)?;
+                            if x.is_finite() && x.fract() == 0.0 {
+                                f.write_str(".0")?;
+                            }
+                        }
+                        Expr::Symbol(s) => write!(f, "{}", s)?,
+                        Expr::Binary(op, l, r) => {
+                            let pl = *op == BinaryOp::Pow
+                                && (is_fraction_literal(l)
+                                    || is_negative_literal(l)
+                                    || matches!(**l, Expr::Unary(UnaryOp::Neg, _)));
+                            let pr = matches!(op, BinaryOp::Pow | BinaryOp::Div)
+                                && is_fraction_literal(r);
+                            f.write_str("(")?;
+                            stack.push(Item::Str(")"));
+                            stack.push(Item::Node(r, pr));
+                            stack.push(Item::Str(binary_op_text(*op)));
+                            stack.push(Item::Node(l, pl));
+                        }
+                        Expr::Unary(UnaryOp::Neg, inner) => {
+                            f.write_str("-")?;
+                            let p = is_negative_literal(inner)
+                                || is_fraction_literal(inner)
+                                || matches!(**inner, Expr::Unary(UnaryOp::Neg, _));
+                            stack.push(Item::Node(inner, p));
+                        }
+                        Expr::Unary(op, inner) => {
+                            f.write_str(unary_op_name(*op))?;
+                            f.write_str("(")?;
+                            stack.push(Item::Str(")"));
+                            stack.push(Item::Node(inner, false));
+                        }
+                        Expr::Function(name, args) => {
+                            f.write_str(name)?;
+                            f.write_str("(")?;
+                            stack.push(Item::Str(")"));
+                            for (k, a) in args.iter().enumerate().rev() {
+                                stack.push(Item::Node(a, false));
+                                if k > 0 {
+                                    stack.push(Item::Str(", "));
+                                }
+                            }
+                        }
+                    }
                 }
-                write!(f, ")")
             }
         }
+        Ok(())
     }
 }
 
@@ -625,5 +806,142 @@ mod tests {
 
         let sign_x = x.clone().sign();
         assert_eq!(format!("{}", sign_x), "sign(x)");
+    }
+
+    /// Runs f on a thread with the bar's debug stack (2 MB).
+    fn on_2mb<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
+        std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(f)
+            .expect("spawn")
+            .join()
+            .expect("the thread panicked or overflowed its stack")
+    }
+
+    fn x() -> Expr {
+        Expr::symbol("x")
+    }
+
+    /// S1 design §4.3 `test_display_work_list` (red team 1, H2): the writer has no recursion, so
+    /// deep trees print on a 2 MB thread (HEAD overflowed from about 3000 terms in debug).
+    #[test]
+    fn test_display_work_list() {
+        on_2mb(|| {
+            let n = 100_000;
+            let mut sum = x();
+            for _ in 1..n {
+                sum = sum + x();
+            }
+            let text = format!("{sum}");
+            assert_eq!(text.len(), 6 * n - 5);
+            assert!(text.starts_with(&"(".repeat(n - 1)));
+            assert!(text[n - 1..].starts_with("x + x) + x) + x)"));
+            let mut tower = x();
+            for _ in 0..n {
+                tower = Expr::Binary(BinaryOp::Pow, Arc::new(x()), Arc::new(tower));
+            }
+            assert!(format!("{tower}").ends_with(&format!("^ x{}", ")".repeat(n))));
+            let mut chain = x();
+            for _ in 0..n {
+                chain = chain.sin();
+            }
+            assert!(format!("{chain}").starts_with("sin(sin("));
+            let mut calls = x();
+            for _ in 0..n {
+                calls = Expr::Function("f".into(), vec![Arc::new(calls)]);
+            }
+            assert!(format!("{calls}").starts_with("f(f("));
+        });
+    }
+
+    /// S1 design §2.11: fractions and negative bases in parentheses, the negated negation, and
+    /// integral floats with a decimal point; every other text is HEAD's.
+    #[test]
+    fn test_display_parenthesis_rules() {
+        let half = Expr::Rational(Rational::new(Integer::from(1), Integer::from(2)).unwrap());
+        let m_half = Expr::Rational(Rational::new(Integer::from(-1), Integer::from(2)).unwrap());
+        let tq = Expr::Rational(Rational::new(Integer::from(3), Integer::from(4)).unwrap());
+        let two_thirds = Expr::Rational(Rational::new(Integer::from(2), Integer::from(3)).unwrap());
+        let pow = |a: Expr, b: Expr| Expr::Binary(BinaryOp::Pow, Arc::new(a), Arc::new(b));
+        assert_eq!(format!("{}", pow(x(), half.clone())), "(x ^ (1/2))");
+        assert_eq!(format!("{}", pow(tq, m_half)), "((3/4) ^ (-1/2))");
+        assert_eq!(format!("{}", x() / half), "(x / (1/2))");
+        assert_eq!(format!("{}", pow(Expr::from(-2), Expr::from(2))), "((-2) ^ 2)");
+        assert_eq!(format!("{}", pow(-Expr::symbol("y"), Expr::from(3))), "((-y) ^ 3)");
+        assert_eq!(format!("{}", pow(Expr::Real(-1.5), Expr::from(2))), "((-1.5) ^ 2)");
+        assert_eq!(format!("{}", -(-x())), "-(-x)");
+        assert_eq!(format!("{}", -Expr::from(-2)), "-(-2)");
+        assert_eq!(format!("{}", -two_thirds.clone()), "-(2/3)");
+        assert_eq!(format!("{}", pow(x(), -two_thirds)), "(x ^ -(2/3))");
+        assert_eq!(format!("{}", pow(x(), Expr::from(-2))), "(x ^ -2)");
+        assert_eq!(format!("{}", Expr::Real(2.0)), "2.0");
+        assert_eq!(format!("{}", Expr::Real(1e23)), "100000000000000000000000.0");
+        assert_eq!(format!("{}", Expr::Real(0.5)), "0.5");
+        assert_eq!(format!("{}", x() + Expr::from(1)), "(x + 1)");
+    }
+
+    /// S1 design §2.14 `drop_left_deep_sum_1e6` and `drop_other_shapes`: deep trees of every
+    /// shape drop on a 2 MB debug thread (HEAD's glue overflowed at about 80 000 levels).
+    #[test]
+    fn drop_deep_shapes() {
+        on_2mb(|| {
+            let n = 1_000_000;
+            let mut sum = x();
+            for _ in 1..n {
+                sum = sum + x();
+            }
+            drop(sum);
+            let mut tower = x();
+            let mut chain = x();
+            let mut calls = x();
+            let mut zig = x();
+            for k in 0..200_000 {
+                tower = Expr::Binary(BinaryOp::Pow, Arc::new(x()), Arc::new(tower));
+                chain = chain.sin();
+                calls = Expr::Function("f".into(), vec![Arc::new(calls), Arc::new(x())]);
+                zig = if k % 2 == 0 { zig + x() } else { x() * zig };
+            }
+            drop((tower, chain, calls, zig));
+        });
+    }
+
+    /// S1 design §2.14 `drop_shared_children`: a node that holds one child twice, and a child
+    /// shared with a sibling's subtree, chained deeply (revision 7rt2 overflowed at 14 500 levels).
+    #[test]
+    fn drop_shared_children() {
+        on_2mb(|| {
+            let mut twin = Arc::new(x());
+            let mut sib = Arc::new(x());
+            for _ in 0..200_000 {
+                twin = Arc::new(Expr::Binary(BinaryOp::Mul, twin.clone(), twin));
+                let inner = Arc::new(Expr::Unary(UnaryOp::Sin, sib.clone()));
+                sib = Arc::new(Expr::Binary(BinaryOp::Add, sib, inner));
+            }
+            // one extra owner of a deep subtree, dropped after the root
+            let keep = match &*twin {
+                Expr::Binary(_, l, _) => l.clone(),
+                _ => unreachable!(),
+            };
+            drop(twin);
+            drop(sib);
+            drop(keep);
+        });
+    }
+
+    /// S1 design §2.14 `drop_during_tls_teardown` (revision 8): a deep `Expr` held in a
+    /// thread-local is dropped by the thread's TLS destructors, possibly after the shared leaf
+    /// was destroyed; the drop must not panic.
+    #[test]
+    fn drop_during_tls_teardown() {
+        thread_local! {
+            static HELD: std::cell::RefCell<Option<Expr>> = const { std::cell::RefCell::new(None) };
+        }
+        on_2mb(|| {
+            let mut sum = x();
+            for _ in 1..300_000 {
+                sum = sum + x();
+            }
+            HELD.with(|h| *h.borrow_mut() = Some(sum));
+        });
     }
 }

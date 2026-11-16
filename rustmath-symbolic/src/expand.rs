@@ -9,6 +9,7 @@ impl Expr {
     ///
     /// Distributes products over sums: (a + b) * c = a*c + b*c
     /// Expands powers of sums using binomial expansion (for small integer exponents)
+    /// Distributes a negation over a sum chain: -(a + b) = -a + -b, -(a - b) = -a + b
     ///
     /// # Examples
     ///
@@ -246,19 +247,14 @@ fn binomial_coefficient(n: u32, k: u32) -> u64 {
     result
 }
 
-/// Distribute negation over addition
+/// Distribute negation over a sum chain: -(a + b) = (-a) + (-b) and -(a - b) = (-a) + b, each
+/// -a again distributed, so every summand of the chain is negated; any other node u gives -u.
+/// (S1 design §2.17: HEAD gave -(a + b) = (-a) - (-b) and -(a - b) = (-b) - (-a), so
+/// `expand(-(x - 1))` was x - 1.)
 fn distribute_negation(expr: &Expr) -> Expr {
     match expr {
-        Expr::Binary(BinaryOp::Add, a, b) => {
-            let neg_a = distribute_negation(a);
-            let neg_b = distribute_negation(b);
-            neg_a - neg_b
-        }
-        Expr::Binary(BinaryOp::Sub, a, b) => {
-            let neg_a = distribute_negation(a);
-            let neg_b = distribute_negation(b);
-            neg_b - neg_a
-        }
+        Expr::Binary(BinaryOp::Add, a, b) => distribute_negation(a) + distribute_negation(b),
+        Expr::Binary(BinaryOp::Sub, a, b) => distribute_negation(a) + (**b).clone(),
         _ => -expr.clone(),
     }
 }
@@ -266,6 +262,8 @@ fn distribute_negation(expr: &Expr) -> Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rustmath_integers::Integer;
+    use rustmath_rationals::Rational;
 
     #[test]
     fn test_expand_multiply() {
@@ -317,17 +315,65 @@ mod tests {
 
     #[test]
     fn test_expand_negation() {
+        // S1 design §4.6; gp: printf 'print(-(3/7-1))\nprint(-(3/7+1))\nprint(-(3/7+2/5+1))\n
+        // print(-(3/7-2/5-1))\nprint(-((3/7-1)*(3/7+1)))\n' | gp -q gives 4/7, -10/7, -64/35,
+        // 34/35, 40/49
+        use crate::symbol::Symbol;
         let x = Expr::symbol("x");
-
-        // -(x + 1) = -x - 1
-        let expr = -(x.clone() + Expr::from(1));
-        let expanded = expr.expand();
-
-        // Should be in expanded form
-        match expanded {
-            Expr::Binary(BinaryOp::Sub, _, _) => {}
-            _ => {}
+        let y = Expr::symbol("y");
+        let one = Expr::from(1);
+        let q = |n: i64, d: i64| Rational::new(Integer::from(n), Integer::from(d)).unwrap();
+        let cases = [
+            (-(x.clone() - one.clone()), q(4, 7)),
+            (-(x.clone() + one.clone()), q(-10, 7)),
+            (-(x.clone() + y.clone() + one.clone()), q(-64, 35)),
+            (-(x.clone() - y.clone() - one.clone()), q(34, 35)),
+            (-((x.clone() - one.clone()) * (x.clone() + one.clone())), q(40, 49)),
+        ];
+        let at_x = Expr::Rational(q(3, 7));
+        let at_y = Expr::Rational(q(2, 5));
+        for (e, want) in cases {
+            let ex = e.expand();
+            let v = ex
+                .substitute(&Symbol::new("x"), &at_x)
+                .substitute(&Symbol::new("y"), &at_y)
+                .simplify();
+            assert_eq!(v.eval_rational(), Some(want), "expand({e}) = {ex}");
+            // no negation of a sum or a difference is left
+            let mut stack = vec![&ex];
+            while let Some(n) = stack.pop() {
+                match n {
+                    Expr::Unary(UnaryOp::Neg, i) => {
+                        assert!(
+                            !matches!(**i, Expr::Binary(BinaryOp::Add | BinaryOp::Sub, _, _)),
+                            "expand({e}) = {ex}"
+                        );
+                        stack.push(i);
+                    }
+                    Expr::Binary(_, l, r) => {
+                        stack.push(l);
+                        stack.push(r);
+                    }
+                    Expr::Unary(_, i) => stack.push(i),
+                    _ => {}
+                }
+            }
         }
+    }
+
+    #[test]
+    fn test_expand_negation_structure() {
+        let x = Expr::symbol("x");
+        let ex = (-(x.clone() - Expr::from(1))).expand();
+        assert_eq!(
+            ex,
+            Expr::Binary(
+                BinaryOp::Add,
+                Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(x))),
+                Arc::new(Expr::from(1))
+            )
+        );
+        assert_eq!(format!("{ex}"), "(-x + 1)");
     }
 
     #[test]

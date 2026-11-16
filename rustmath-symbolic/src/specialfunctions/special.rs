@@ -315,13 +315,13 @@ mod tests {
     fn test_elliptic_e_symbolic() {
         let phi = Symbol::new("phi");
         let e = elliptic_e(&Expr::Symbol(phi), &Expr::from(0));
-        assert!(matches!(e, Expr::Function(name, _) if name == "elliptic_e"));
+        assert!(matches!(&e, Expr::Function(name, _) if name == "elliptic_e"));
     }
 
     #[test]
     fn test_elliptic_ec_symbolic() {
         let e = elliptic_ec(&Expr::from(0));
-        assert!(matches!(e, Expr::Function(name, args)
+        assert!(matches!(&e, Expr::Function(name, args)
             if name == "elliptic_ec" && args.len() == 1));
     }
 
@@ -329,20 +329,20 @@ mod tests {
     fn test_elliptic_eu_symbolic() {
         let u = Symbol::new("u");
         let e = elliptic_eu(&Expr::Symbol(u), &Expr::from(0));
-        assert!(matches!(e, Expr::Function(name, _) if name == "elliptic_eu"));
+        assert!(matches!(&e, Expr::Function(name, _) if name == "elliptic_eu"));
     }
 
     #[test]
     fn test_elliptic_f_symbolic() {
         let phi = Symbol::new("phi");
         let f = elliptic_f(&Expr::Symbol(phi), &Expr::from(0));
-        assert!(matches!(f, Expr::Function(name, _) if name == "elliptic_f"));
+        assert!(matches!(&f, Expr::Function(name, _) if name == "elliptic_f"));
     }
 
     #[test]
     fn test_elliptic_kc_symbolic() {
         let k = elliptic_kc(&Expr::from(0));
-        assert!(matches!(k, Expr::Function(name, args)
+        assert!(matches!(&k, Expr::Function(name, args)
             if name == "elliptic_kc" && args.len() == 1));
     }
 
@@ -350,7 +350,7 @@ mod tests {
     fn test_elliptic_pi_symbolic() {
         let phi = Symbol::new("phi");
         let pi_integral = elliptic_pi(&Expr::from(1), &Expr::Symbol(phi), &Expr::from(0));
-        assert!(matches!(pi_integral, Expr::Function(name, args)
+        assert!(matches!(&pi_integral, Expr::Function(name, args)
             if name == "elliptic_pi" && args.len() == 3));
     }
 
@@ -358,7 +358,7 @@ mod tests {
     fn test_elliptic_j_symbolic() {
         let tau = Symbol::new("tau");
         let j = elliptic_j(&Expr::Symbol(tau));
-        assert!(matches!(j, Expr::Function(name, _) if name == "elliptic_j"));
+        assert!(matches!(&j, Expr::Function(name, _) if name == "elliptic_j"));
     }
 
     #[test]
@@ -367,7 +367,7 @@ mod tests {
         let phi = Symbol::new("phi");
         let y = spherical_harmonic(&Expr::from(0), &Expr::from(1),
                                    &Expr::Symbol(theta), &Expr::Symbol(phi));
-        assert!(matches!(y, Expr::Function(name, args)
+        assert!(matches!(&y, Expr::Function(name, args)
             if name == "spherical_harmonic" && args.len() == 4));
     }
 

@@ -37,6 +37,9 @@ pub mod random_tests;
 pub mod registry;
 pub mod risch;
 pub mod series;
+pub(crate) mod series_ball;
+pub(crate) mod series_const;
+pub(crate) mod series_engine;
 pub mod simplify;
 pub mod solve;
 pub mod specialfunctions;
@@ -96,7 +99,10 @@ pub use random_tests::{
     random_integer_vector, test_symbolic_expression_order, OperationType, ProbList,
     RandomExprConfig,
 };
-pub use series::{BigO, LittleO, Theta, Omega, FourierSeries};
+pub use series::{
+    mentions_symbol, BigO, ExpansionPoint, FourierSeries, LittleO, Omega, SeriesError,
+    SeriesExpansion, Theta,
+};
 pub use solve::{
     Solution, SystemSolution,
     solve_rational_equation, solve_absolute_value,
@@ -294,7 +300,7 @@ mod tests {
         let x = Symbol::new("x");
         // Taylor expansion of exp(x) around 0
         let expr = Expr::Symbol(x.clone()).exp();
-        let taylor = expr.maclaurin(&x, 3);
+        let taylor = expr.maclaurin(&x, 3).unwrap();
         // Should not be constant
         assert!(!taylor.is_constant());
     }
@@ -306,10 +312,12 @@ mod tests {
         let x = Symbol::new("x");
         // For f(x) = x², coefficients should be [0, 0, 1, 0, ...]
         let expr = Expr::Symbol(x.clone()).pow(Expr::from(2));
-        let coeffs = expr.series_coefficients(&x, &Expr::from(0), 3);
+        let coeffs = expr.series_coefficients(&x, &Expr::from(0), 3).unwrap();
         assert_eq!(coeffs.len(), 4);
         assert_eq!(coeffs[0], Expr::from(0));
         assert_eq!(coeffs[1], Expr::from(0));
+        assert_eq!(coeffs[2], Expr::from(1));
+        assert_eq!(coeffs[3], Expr::from(0));
     }
 
     // Differential equations tests
@@ -364,7 +372,7 @@ mod tests {
         assert_eq!(limit, LimitResult::Finite(Expr::from(9)));
 
         // Taylor series of f around x=0
-        let taylor = f.taylor(&x, &Expr::from(0), 5);
+        let taylor = f.taylor(&x, &Expr::from(0), 5).unwrap();
         assert!(!taylor.is_constant());
     }
 
@@ -432,17 +440,17 @@ mod tests {
 
         // Test Taylor series
         let expr8 = Expr::Symbol(x.clone()).exp();
-        let taylor = expr8.taylor(&x, &Expr::from(0), 5);
+        let taylor = expr8.taylor(&x, &Expr::from(0), 5).unwrap();
         assert!(!taylor.is_constant(), "Taylor series");
 
         // Test Maclaurin series
         let expr9 = Expr::Symbol(x.clone()).sin();
-        let maclaurin = expr9.maclaurin(&x, 5);
+        let maclaurin = expr9.maclaurin(&x, 5).unwrap();
         assert!(!maclaurin.is_constant(), "Maclaurin series");
 
         // Test Laurent series
         let expr10 = Expr::from(1) / Expr::Symbol(x.clone());
-        let laurent = expr10.laurent(&x, &Expr::from(0), -1, 2);
+        let laurent = expr10.laurent(&x, &Expr::from(0), -1, 2).unwrap();
         assert!(!laurent.is_constant(), "Laurent series");
 
         // Test Fourier series (NEW in Phase 2!)
@@ -456,12 +464,12 @@ mod tests {
 
         // Test series coefficients extraction
         let expr12 = Expr::Symbol(x.clone()).pow(Expr::from(2));
-        let coeffs = expr12.series_coefficients(&x, &Expr::from(0), 3);
+        let coeffs = expr12.series_coefficients(&x, &Expr::from(0), 3).unwrap();
         assert_eq!(coeffs.len(), 4, "Series coefficients");
 
         // Test asymptotic expansion
         let expr13 = Expr::Symbol(x.clone()).pow(Expr::from(2));
-        let asymptotic = expr13.asymptotic(&x, 3);
+        let asymptotic = expr13.asymptotic(&x, 3).unwrap();
         assert!(!asymptotic.is_constant(), "Asymptotic expansion");
 
         println!("✓ Phase 2: Core Calculus features complete!");
