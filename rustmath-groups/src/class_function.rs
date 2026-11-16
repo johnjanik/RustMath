@@ -57,6 +57,8 @@ pub struct ClassFunction {
     values: HashMap<String, Complex>,
     /// Group order (if known)
     group_order: Option<usize>,
+    /// Class sizes `|C|` for the keys of `values`, if known (T-215).
+    class_sizes: Option<HashMap<String, usize>>,
 }
 
 impl ClassFunction {
@@ -71,6 +73,7 @@ impl ClassFunction {
             degree,
             values,
             group_order: None,
+            class_sizes: None,
         }
     }
 
@@ -84,15 +87,60 @@ impl ClassFunction {
             degree,
             values,
             group_order: Some(group_order),
+            class_sizes: None,
         }
     }
 
-    /// Create from a character
+    /// A class function on conjugacy classes with their sizes; the group order is set to the
+    /// sum of the sizes. `Err` if the keys of `class_sizes` differ from those of `values`, or a
+    /// size is 0.
+    ///
+    /// The keys must be all the classes of the group. Nothing checks this: with only some of
+    /// the classes, the group order is the partial sum of the sizes, and
+    /// [`ClassFunction::inner_product`], [`ClassFunction::norm`] and
+    /// [`ClassFunction::is_irreducible`] give a weighted mean over those classes only.
+    pub fn with_class_sizes(
+        degree: usize,
+        values: HashMap<String, Complex>,
+        class_sizes: HashMap<String, usize>,
+    ) -> Result<Self, String> {
+        if values.len() != class_sizes.len() || values.keys().any(|k| !class_sizes.contains_key(k))
+        {
+            return Err("class sizes and values have different keys".to_string());
+        }
+        if class_sizes.values().any(|&v| v == 0) {
+            return Err("a class of size 0".to_string());
+        }
+        let order = class_sizes.values().sum();
+        Ok(Self {
+            degree,
+            values,
+            group_order: Some(order),
+            class_sizes: Some(class_sizes),
+        })
+    }
+
+    /// The class sizes, if known.
+    pub fn class_sizes(&self) -> Option<&HashMap<String, usize>> {
+        self.class_sizes.as_ref()
+    }
+
+    /// Create from a character (its class sizes are kept)
     pub fn from_character(character: &Character) -> Self {
+        let class_sizes = character.class_sizes().cloned();
         Self {
             degree: character.degree(),
             values: character.values().clone(),
-            group_order: None,
+            group_order: class_sizes.as_ref().map(|s| s.values().sum()),
+            class_sizes,
+        }
+    }
+
+    /// The class sizes of a binary operation: kept only when both sides agree.
+    fn common_sizes(&self, other: &Self) -> Option<HashMap<String, usize>> {
+        match (&self.class_sizes, &other.class_sizes) {
+            (Some(a), Some(b)) if a == b => Some(a.clone()),
+            _ => None,
         }
     }
 
@@ -143,6 +191,7 @@ impl ClassFunction {
             degree: self.degree + other.degree,
             values: new_values,
             group_order: self.group_order,
+            class_sizes: self.common_sizes(other),
         }
     }
 
@@ -158,6 +207,7 @@ impl ClassFunction {
             degree: (self.degree as i32 - other.degree as i32).abs() as usize,
             values: new_values,
             group_order: self.group_order,
+            class_sizes: self.common_sizes(other),
         }
     }
 
@@ -174,6 +224,7 @@ impl ClassFunction {
             degree: self.degree * other.degree,
             values: new_values,
             group_order: self.group_order,
+            class_sizes: self.common_sizes(other),
         }
     }
 
@@ -188,6 +239,7 @@ impl ClassFunction {
             degree: self.degree,
             values: new_values,
             group_order: self.group_order,
+            class_sizes: self.class_sizes.clone(),
         }
     }
 
@@ -202,24 +254,60 @@ impl ClassFunction {
     ///
     /// For class functions, this simplifies to:
     /// ⟨f, g⟩ = (1/|G|) Σ_{C} |C| f(c) g̅(c)
-    /// where the sum is over conjugacy classes C with representative c
+    /// where the sum is over conjugacy classes C with representative c.
+    ///
+    /// T-215: the sizes `|C|` are used. `None` unless the group order is known (and equal on
+    /// both sides when both know it), the two functions have the same classes, and the sizes
+    /// are known (on either side, equal when on both) and sum to the group order. Without
+    /// sizes, the one case that is decided is a number of classes equal to the group order:
+    /// then every class has size 1.
     pub fn inner_product(&self, other: &Self) -> Option<Complex> {
-        if self.group_order.is_none() {
+        let order = self.group_order?;
+        if other.group_order.is_some_and(|o| o != order) {
             return None;
         }
-
-        let order = self.group_order.unwrap() as f64;
-        let mut sum = Complex::zero();
-
-        // For simplicity, assume all conjugacy classes have size 1
-        // (proper implementation would need class sizes)
-        for (key, val) in &self.values {
-            if let Some(other_val) = other.values.get(key) {
-                sum = sum.add(&val.mul(&other_val.conjugate()));
+        if self.values.len() != other.values.len()
+            || self.values.keys().any(|k| !other.values.contains_key(k))
+        {
+            return None;
+        }
+        let sizes: Option<&HashMap<String, usize>> = match (&self.class_sizes, &other.class_sizes) {
+            (Some(a), Some(b)) => {
+                if a != b {
+                    return None;
+                }
+                Some(a)
+            }
+            (Some(a), None) | (None, Some(a)) => Some(a),
+            (None, None) => None,
+        };
+        let size_of = |key: &str| -> Option<usize> {
+            match sizes {
+                Some(m) => m.get(key).copied(),
+                None => Some(1),
+            }
+        };
+        match sizes {
+            Some(m) => {
+                if m.len() != self.values.len() || m.values().sum::<usize>() != order {
+                    return None;
+                }
+            }
+            None => {
+                if self.values.len() != order {
+                    return None;
+                }
             }
         }
 
-        Some(sum.div(&Complex::new(order, 0.0)).unwrap())
+        let mut sum = Complex::zero();
+        for (key, val) in &self.values {
+            let other_val = &other.values[key];
+            let size = size_of(key)? as f64;
+            sum = sum.add(&Complex::new(size, 0.0).mul(&val.mul(&other_val.conjugate())));
+        }
+
+        sum.div(&Complex::new(order as f64, 0.0)).ok()
     }
 
     /// Norm of a class function: ||f|| = √⟨f, f⟩
@@ -234,8 +322,15 @@ impl ClassFunction {
             .unwrap_or(false)
     }
 
-    /// Convert to a character
+    /// Convert to a character (with the class sizes when they are known and fit the values)
     pub fn to_character(&self) -> Character {
+        if let Some(sizes) = &self.class_sizes {
+            if let Ok(c) =
+                Character::with_class_sizes(self.degree, self.values.clone(), sizes.clone())
+            {
+                return c;
+            }
+        }
         Character::new(self.degree, self.values.clone())
     }
 }
@@ -512,6 +607,76 @@ mod tests {
         let norm = cf.norm();
         assert!(norm.is_some());
         assert!((norm.unwrap() - 1.0).abs() < 1e-10);
+    }
+
+    fn s3(values: [f64; 3], sizes: [usize; 3]) -> ClassFunction {
+        let keys = ["e", "(12)", "(123)"];
+        let v = keys
+            .iter()
+            .zip(values)
+            .map(|(k, x)| (k.to_string(), Complex::new(x, 0.0)))
+            .collect();
+        let s = keys
+            .iter()
+            .zip(sizes)
+            .map(|(k, x)| (k.to_string(), x))
+            .collect();
+        ClassFunction::with_class_sizes(values[0] as usize, v, s).unwrap()
+    }
+
+    // T-215: the S3 standard character (2, 0, -1) on classes of sizes 1, 3, 2 has norm 1
+    // (GAP 4.12.1, CharacterTable(SymmetricGroup(3))); the old code, with all sizes 1, gave 5/6.
+    #[test]
+    fn t215_weighted_inner_product_s3() {
+        let standard = s3([2.0, 0.0, -1.0], [1, 3, 2]);
+        assert_eq!(standard.group_order(), Some(6));
+        let ip = standard.inner_product(&standard).unwrap();
+        assert!((ip.real() - 1.0).abs() < 1e-12, "{ip:?}");
+        assert!(standard.is_irreducible());
+        let trivial = s3([1.0, 1.0, 1.0], [1, 3, 2]);
+        let sign = s3([1.0, -1.0, 1.0], [1, 3, 2]);
+        assert!(trivial.inner_product(&sign).unwrap().real().abs() < 1e-12);
+        assert!(trivial.inner_product(&standard).unwrap().real().abs() < 1e-12);
+        // the sizes survive a round trip through Character
+        let c = standard.to_character();
+        assert!(c.class_sizes().is_some());
+        let back = ClassFunction::from_character(&c);
+        assert!((back.inner_product(&back).unwrap().real() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn t215_inner_product_refusals() {
+        let mut standard = s3([2.0, 0.0, -1.0], [1, 3, 2]);
+        // sizes that do not sum to the group order
+        standard.set_group_order(7);
+        assert!(standard.inner_product(&standard).is_none());
+        // two classes, unknown sizes, group order 6: not decided
+        let mut values = HashMap::new();
+        values.insert("e".to_string(), Complex::new(1.0, 0.0));
+        values.insert("g".to_string(), Complex::new(1.0, 0.0));
+        let mut cf = ClassFunction::new(1, values);
+        cf.set_group_order(6);
+        assert!(cf.inner_product(&cf).is_none());
+        // review 2, n3: different class sets
+        let mut other = HashMap::new();
+        other.insert("e".to_string(), Complex::new(1.0, 0.0));
+        other.insert("h".to_string(), Complex::new(1.0, 0.0));
+        let mut cf2 = ClassFunction::new(1, other);
+        cf2.set_group_order(6);
+        cf.set_group_order(2);
+        cf2.set_group_order(2);
+        assert!(cf.inner_product(&cf).is_some());
+        assert!(cf.inner_product(&cf2).is_none());
+        // different size maps
+        let a = s3([2.0, 0.0, -1.0], [1, 3, 2]);
+        let b = s3([2.0, 0.0, -1.0], [2, 2, 2]);
+        assert!(a.inner_product(&b).is_none());
+        // bad size maps are refused
+        let v: HashMap<String, Complex> = [("e".to_string(), Complex::new(1.0, 0.0))].into();
+        let z: HashMap<String, usize> = [("e".to_string(), 0)].into();
+        assert!(ClassFunction::with_class_sizes(1, v.clone(), z).is_err());
+        let w: HashMap<String, usize> = [("f".to_string(), 1)].into();
+        assert!(ClassFunction::with_class_sizes(1, v, w).is_err());
     }
 
     #[test]

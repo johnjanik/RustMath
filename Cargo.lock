@@ -3210,9 +3210,11 @@ dependencies = [
 name = "rustmath-groups"
 version = "0.1.0"
 dependencies = [
+ "rustmath-coding",
  "rustmath-combinatorics",
  "rustmath-complex",
  "rustmath-core",
+ "rustmath-finitefields",
  "rustmath-graphs",
  "rustmath-integers",
  "rustmath-matrix",

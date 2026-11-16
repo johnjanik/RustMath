@@ -17,5 +17,9 @@ rustmath-rationals = { path = "../rustmath-rationals" }
 rustmath-complex = { path = "../rustmath-complex" }
 rustmath-graphs = { path = "../rustmath-graphs" }
 rustmath-polynomials = { path = "../rustmath-polynomials" }
+# The two cyclic Golay codes and their Steiner systems S(4,7,23), used by m23 (WP-P).
+rustmath-coding = { path = "../rustmath-coding" }
 
 [dev-dependencies]
+# GF(2) cross-check of the m23 parabolic cohomology with Matrix<PrimeField> (tests/m23_nielsen.rs).
+rustmath-finitefields = { path = "../rustmath-finitefields" }
