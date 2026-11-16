@@ -1,0 +1,16 @@
+J: p=11 b=[5, 1, 0, 3, 1] c=[2, 4, 8, 0, 6] (ascending in T)
+    D factor [T + 1, T + 5, T + 6, T^2 + 9] mults [1, 2, 1, 2]
+    normalization y^2 = T^2 + 7*T + 6 ; charpoly = 1
+J2: p=11 b=[5, 0, 3, 0, 1] c=[0, 0, 1, 0, 6] (ascending in T)
+    D factor [T^2 + 1, T^2 + 9] mults [1, 3]
+    normalization y^2 = T^4 + 10*T^2 + 9 ; charpoly = x^2 + 4*x + 11
+K1: p=11 b=[5, 0, 3, 0, 1] c=[0, 0, 1, 0, 6] (ascending in T)
+    D factor [T^2 + 1, T^2 + 9] mults [1, 3]
+    normalization y^2 = T^4 + 10*T^2 + 9 ; charpoly = x^2 + 4*x + 11
+K2: p=13 b=[31, -27, 1, -3, 1] c=[12, 6, 1, 12, 7] (ascending in T)
+    D factor [T + 3, T + 7, T + 8, T + 9, T + 12] mults [1, 1, 1, 2, 3]
+    normalization y^2 = T^4 + 30*T^3 + 317*T^2 + 1380*T + 2016 ; charpoly = x^2 + 2*x + 13
+K2 b(1), b(4) mod 13: [3, 3]
+J h(sqrt 2) square in F_121: 0
+J2 h(sqrt 2) square in F_121: 1
+K2 node at 4: h(4) square mod 13: 1

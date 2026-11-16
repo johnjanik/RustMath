@@ -1,0 +1,271 @@
+{
+ "check_53": [
+  45,
+  52,
+  57
+ ],
+ "results": [
+  {
+   "p": 5,
+   "s0": 3,
+   "status": "refused",
+   "reason": "the degree in V drops mod p"
+  },
+  {
+   "p": 7,
+   "s0": 5,
+   "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
+   "counts": [
+    7,
+    45,
+    343,
+    2545
+   ],
+   "P": [
+    1,
+    -1,
+    -2,
+    2,
+    38,
+    14,
+    -98,
+    -343,
+    2401
+   ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
+   "P mod 2": [
+    [
+     "x+1",
+     2
+    ],
+    [
+     "x^3+x+1",
+     1
+    ],
+    [
+     "x^3+x^2+1",
+     1
+    ]
+   ],
+   "Q candidates": [
+    "x^4+x^3+x^2+1",
+    "x^4+x^2+x+1"
+   ],
+   "golay_split": true
+  },
+  {
+   "p": 11,
+   "s0": 2,
+   "status": "refused",
+   "reason": "the discriminant vanishes identically mod p"
+  },
+  {
+   "p": 19,
+   "s0": 3,
+   "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
+   "counts": [
+    15,
+    413,
+    6849,
+    130169
+   ],
+   "P": [
+    1,
+    -5,
+    38,
+    -152,
+    650,
+    -2888,
+    13718,
+    -34295,
+    130321
+   ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
+   "P mod 2": [
+    [
+     "x+1",
+     2
+    ],
+    [
+     "x^3+x+1",
+     1
+    ],
+    [
+     "x^3+x^2+1",
+     1
+    ]
+   ],
+   "Q candidates": [
+    "x^4+x^3+x^2+1",
+    "x^4+x^2+x+1"
+   ],
+   "golay_split": true
+  },
+  {
+   "p": 23,
+   "s0": 5,
+   "status": "refused",
+   "reason": "the characteristic divides the degree in V"
+  },
+  {
+   "p": 23,
+   "s0": 15,
+   "status": "refused",
+   "reason": "the characteristic divides the degree in V"
+  },
+  {
+   "p": 31,
+   "s0": 12,
+   "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 57,
+     "A_3": 1,
+     "ordinary 3-fold": 1
+    },
+    "delta": 62
+   },
+   "counts": [
+    43,
+    1017,
+    30265,
+    923729
+   ],
+   "P": [
+    1,
+    11,
+    88,
+    682,
+    4438,
+    21142,
+    84568,
+    327701,
+    923521
+   ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
+   "P mod 2": [
+    [
+     "x+1",
+     2
+    ],
+    [
+     "x^3+x+1",
+     1
+    ],
+    [
+     "x^3+x^2+1",
+     1
+    ]
+   ],
+   "Q candidates": [
+    "x^4+x^3+x^2+1",
+    "x^4+x^2+x+1"
+   ],
+   "golay_split": true
+  },
+  {
+   "p": 41,
+   "s0": 8,
+   "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
+   "counts": [
+    40,
+    1790,
+    68866,
+    2828954
+   ],
+   "P": [
+    1,
+    -2,
+    56,
+    -128,
+    2402,
+    -5248,
+    94136,
+    -137842,
+    2825761
+   ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
+   "P mod 2": [
+    [
+     "x+1",
+     8
+    ]
+   ],
+   "Q candidates": [
+    "x^4+1"
+   ],
+   "golay_split": true
+  },
+  {
+   "p": 43,
+   "s0": 15,
+   "status": "ok",
+   "certificate": {
+    "singular_points": {
+     "A_1": 62
+    },
+    "delta": 62
+   },
+   "counts": [
+    43,
+    1829,
+    78799,
+    3422769
+   ],
+   "P": [
+    1,
+    -1,
+    -10,
+    -226,
+    1278,
+    -9718,
+    -18490,
+    -79507,
+    3418801
+   ],
+   "P(chi) mod 23": 0,
+   "P(chi p) mod 23": 0,
+   "P mod 2": [
+    [
+     "x+1",
+     2
+    ],
+    [
+     "x^3+x+1",
+     1
+    ],
+    [
+     "x^3+x^2+1",
+     1
+    ]
+   ],
+   "Q candidates": [
+    "x^4+x^3+x^2+1",
+    "x^4+x^2+x+1"
+   ],
+   "golay_split": true
+  }
+ ]
+}

@@ -1,0 +1,27 @@
+node_d3_g1_sq0: p = 13, D = [Y + 5, 1; Y^3 + 2, 2; Y^3 + 8*Y^2 + Y + 11, 1]
+  H = Y^4 + 2*Y^2 + 3*Y + 3, g = 1, hyperellcharpoly(H) = x^2 + x + 13
+  N_1..N_6 = [15, 195, 2160, 28275, 372075, 4829760]
+  place Y^3 + 2: degree 3, ord_S D = 2 (A1), h(y0) square in F_p^3: 0
+node_d3_g1_sq1: p = 13, D = [Y + 5, 1; Y^3 + 2, 2; Y^3 + 8*Y^2 + 4*Y + 9, 1]
+  H = Y^4 + 5*Y^2 + 3*Y + 6, g = 1, hyperellcharpoly(H) = x^2 - x + 13
+  N_1..N_6 = [13, 195, 2236, 28275, 370513, 4829760]
+  place Y^3 + 2: degree 3, ord_S D = 2 (A1), h(y0) square in F_p^3: 1
+A3_d2_g1_sq0: p = 13, D = [Y + 1, 1; Y + 8, 1; Y^2 + 2, 4; Y^2 + 7*Y + 7, 1]
+  H = Y^4 + 3*Y^3 + 2*Y + 4, g = 1, hyperellcharpoly(H) = x^2 + 4*x + 13
+  N_1..N_6 = [18, 180, 2106, 28800, 371538, 4822740]
+  place Y^2 + 2: degree 2, ord_S D = 4 (A3), h(y0) square in F_p^2: 0
+A3_d2_g1_sq1: p = 13, D = [Y + 1, 1; Y^2 + 2, 4; Y^3 + 2*Y^2 + 11*Y + 6, 1]
+  H = Y^4 + 3*Y^3 + 4*Y + 6, g = 1, hyperellcharpoly(H) = x^2 - 5*x + 13
+  N_1..N_6 = [9, 171, 2268, 28899, 372069, 4826304]
+  place Y^2 + 2: degree 2, ord_S D = 4 (A3), h(y0) square in F_p^2: 1
+A15_d1_g0_sq1: p = 13, D = [Y + 12, 16; Y^2 + Y + 2, 1]
+  H = Y^2 + Y + 2, g = 0, hyperellcharpoly(H) = 1
+  N_1..N_6 = [14, 170, 2198, 28562, 371294, 4826810]
+  place Y + 12: degree 1, ord_S D = 16 (A15), h(y0) square in F_p^1: 1
+A15_d1_g0_sq0: p = 13, D = [Y + 6, 1; Y + 9, 1; Y + 12, 16]
+  H = Y^2 + 2*Y + 2, g = 0, hyperellcharpoly(H) = 1
+  N_1..N_6 = [14, 170, 2198, 28562, 371294, 4826810]
+  place Y + 12: degree 1, ord_S D = 16 (A15), h(y0) square in F_p^1: 0
+E6 p = 7: affine points 7, plus (inf, inf): 8 = p + 1: 1
+E6 p = 11: affine points 11, plus (inf, inf): 12 = p + 1: 1
+E6 p = 13: affine points 13, plus (inf, inf): 14 = p + 1: 1

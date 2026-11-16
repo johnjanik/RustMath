@@ -1,0 +1,38 @@
+A smooth genus 3: p=11 a=2*T^4 + T + 3 b=T^3 + 5*T^2 + 1 c=T^4 + 4*T^2 + 7
+    D=3*T^8 + 2*T^6 + 6*T^5 + T^4 + 8*T^3 + 6*T^2 + 5*T + 5  factor degrees/mults [8][1]
+    normalization y^2 = 3*T^8 + 24*T^6 + 6*T^5 + 12*T^4 + 30*T^3 + 6*T^2 + 27*T + 27 ; charpoly = x^6 + 5*x^4 - 6*x^3 + 55*x^2 + 1331
+B node t0=2: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 2*T^3 + 9*T^2
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 9*T^2 + 10*T + 3  factor degrees/mults [1, 1, 2, 3][1, 2, 1, 1]
+    normalization y^2 = T^6 + 10*T^5 + 34*T^4 + 98*T^3 + 237*T^2 + 72*T + 108 ; charpoly = x^4 + 3*x^3 + 14*x^2 + 33*x + 121
+C node t0=4: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 2*T^3 + 9*T^2 + 5*T + 7
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 9*T^2 + T + 8  factor degrees/mults [1, 2, 4][2, 1, 1]
+    normalization y^2 = T^6 + 3*T^5 + 6*T^4 + 13*T^3 + 11*T^2 + 12*T + 6 ; charpoly = x^4 + 2*x^3 + 4*x^2 + 22*x + 121
+C2 node t0=5: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 2*T^3 + 9*T^2 + 5*T + 8
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 9*T^2 + T + 4  factor degrees/mults [1, 3, 3][2, 1, 1]
+    normalization y^2 = T^6 + 5*T^5 + 12*T^4 + 30*T^3 + 58*T^2 + 72*T + 60 ; charpoly = x^4 + 4*x^3 + 13*x^2 + 44*x + 121
+D cusp t0=3: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 2*T^3 + 3*T^2 + 8*T + 1
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 10  factor degrees/mults [1, 1, 2, 2][1, 3, 1, 1]
+    normalization y^2 = T^6 + 23*T^5 + 193*T^4 + 777*T^3 + 1982*T^2 + 3744*T + 1920 ; charpoly = x^4 + 10*x^2 + 121
+E tacnode t0=1: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 6*T^3 + 4*T^2 + 9*T
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 6*T^3 + 7*T^2 + 7*T + 3  factor degrees/mults [1, 1, 3][1, 4, 1]
+    normalization y^2 = T^4 + 10*T^3 + 32*T^2 + 41*T + 36 ; charpoly = x^2 - x + 11
+F tacnode t0=6: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + 7*T^2 + 5*T + 10
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 8*T^3 + 6*T^2 + T + 7  factor degrees/mults [1, 4][4, 1]
+    normalization y^2 = T^4 + 8*T^3 + 7*T^2 + 10*T + 2 ; charpoly = x^2 + 2*x + 11
+F2 tacnode t0=7: p=11 a=1 b=T^4 + 3*T^3 + T + 5 c=6*T^4 + T^3 + 3*T^2 + 1
+    D=T^8 + 6*T^7 + 9*T^6 + 2*T^5 + 3*T^4 + 4*T^3 + 10*T + 10  factor degrees/mults [1, 1, 2][4, 2, 1]
+    normalization y^2 = T^2 + 2*T + 6 ; charpoly = 1
+G node t0=0: p=13 a=1 b=2*T^4 + T^3 + 7*T + 1 c=3*T^4 + 5*T^3 + T^2 + 10*T + 10
+    D=4*T^8 + 4*T^7 + T^6 + 2*T^5 + 6*T^4 + 8*T^3 + 6*T^2  factor degrees/mults [1, 1, 2, 3][2, 1, 1, 1]
+    normalization y^2 = 4*T^6 + 108*T^5 + 1028*T^4 + 4032*T^3 + 6012*T^2 + 5364*T + 2268 ; charpoly = x^4 + x^3 - 8*x^2 + 13*x + 169
+H node t0=1: p=13 a=1 b=2*T^4 + T^3 + 7*T + 1 c=3*T^4 + 5*T^3 + T^2 + 5*T
+    D=4*T^8 + 4*T^7 + T^6 + 2*T^5 + 6*T^4 + 8*T^3 + 6*T^2 + 7*T + 1  factor degrees/mults [1, 1, 5][1, 2, 1]
+    normalization y^2 = 4*T^6 + 64*T^5 + 268*T^4 + 292*T^3 + 140*T^2 + 204*T + 40 ; charpoly = x^4 + 7*x^3 + 29*x^2 + 91*x + 169
+I tacnode t0=2: p=13 a=1 b=2*T^4 + T^3 + 7*T + 1 c=3*T^4 + 12*T^2 + 7
+    D=4*T^8 + 4*T^7 + T^6 + 2*T^5 + 6*T^4 + 2*T^3 + T^2 + T + 12  factor degrees/mults [1, 4][4, 1]
+    normalization y^2 = 4*T^4 + 36*T^3 + 24*T^2 + 4*T + 4 ; charpoly = x^2 - 6*x + 13
+I2 tacnode t0=3: p=13 a=1 b=2*T^4 + T^3 + 7*T + 1 c=3*T^4 + 8*T^3 + 12*T^2 + 10*T
+    D=4*T^8 + 4*T^7 + T^6 + 2*T^5 + 6*T^4 + 9*T^3 + T^2 + 1  factor degrees/mults [1, 1, 3][1, 4, 1]
+    normalization y^2 = 4*T^4 + 52*T^3 + 136*T^2 + 64*T + 48 ; charpoly = x^2 - 5*x + 13
+E1 V^2=T^3+3T+5: ap(7)=1 ap(11)=3 ap(13)=5
+E2 V^3=T^3+2T+3: model [0, 0, 27, 0, -251] ap(7)=-5 ap(13)=7 ap(19)=-8 ap(11)=0
