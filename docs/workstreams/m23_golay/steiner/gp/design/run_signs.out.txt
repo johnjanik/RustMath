@@ -1,0 +1,9 @@
+f1:
+  inert primes < 4000: 40, listed: 40, disagreements: 0
+f2:
+  missing 3191
+  missing 3319
+  missing 3527
+  missing 3677
+  missing 3989
+  inert primes < 4000: 45, listed: 40, disagreements: 5

@@ -13,7 +13,7 @@ Chapters 1-16 (the Magma language and runtime) are listed below but excluded fro
 
 | Rows | Reviewed | verified | done | partial | stub | facade/broken | candidate | missing |
 |--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 13341 | 5189 | 95 | 343 | 1251 | 18 | 152 | 3453 (26%) | 7999 (60%) |
+| 13341 | 5227 | 95 | 343 | 1259 | 18 | 152 | 3441 (26%) | 8003 (60%) |
 
 ## By chapter
 
@@ -24,18 +24,18 @@ automatic `candidate`/`missing` counts.
 |--:|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|---|---|
 | 1 | Statements and Expressions | I | 85 | 0 | 0 | 0 | 0 | 0 | 0 | 28 | 57 |  |  |
 | 2 | Functions, Procedures and Packages | I | 46 | 0 | 0 | 0 | 0 | 0 | 0 | 18 | 28 |  |  |
-| 3 | Input and Output | I | 106 | 0 | 0 | 0 | 0 | 0 | 0 | 29 | 77 |  |  |
+| 3 | Input and Output | I | 106 | 1 | 0 | 0 | 0 | 0 | 0 | 29 | 77 |  |  |
 | 4 | Environment and Options | I | 76 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 72 |  |  |
 | 5 | Magma Semantics | I | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |  |  |
 | 6 | The Magma Profiler | I | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 8 |  |  |
 | 7 | Debugging Magma Code | I | 7 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 2 |  |  |
 | 8 | Introduction to Aggregates | II | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 |  |  |
-| 9 | Sets | II | 100 | 0 | 0 | 0 | 0 | 0 | 0 | 46 | 54 |  |  |
-| 10 | Sequences | II | 71 | 0 | 0 | 0 | 0 | 0 | 0 | 39 | 32 |  |  |
+| 9 | Sets | II | 100 | 1 | 0 | 0 | 0 | 0 | 0 | 46 | 54 |  |  |
+| 10 | Sequences | II | 71 | 1 | 0 | 0 | 0 | 0 | 0 | 39 | 32 |  |  |
 | 11 | Tuples and Cartesian Products | II | 25 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 12 |  |  |
 | 12 | Lists | II | 18 | 0 | 0 | 0 | 0 | 0 | 0 | 11 | 7 |  |  |
 | 13 | Associative Arrays | II | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 3 |  |  |
-| 14 | Coproducts | II | 11 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 7 |  |  |
+| 14 | Coproducts | II | 11 | 1 | 0 | 0 | 0 | 0 | 0 | 4 | 7 |  |  |
 | 15 | Records | II | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 3 |  |  |
 | 16 | Mappings | II | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 17 |  |  |
 | 17 | Introduction to Rings | III | 87 | 87 | 3 | 6 | 55 | 3 | 6 | 0 | 14 | substantial | `rustmath-rings` |
@@ -90,10 +90,10 @@ automatic `candidate`/`missing` counts.
 | 66 | Databases of Groups | IX | 177 | 177 | 0 | 0 | 7 | 0 | 0 | 0 | 170 | stub | `rustmath-groups` |
 | 67 | Automorphism Groups | IX | 34 | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 34 | stub | `rustmath-groups` |
 | 68 | Cohomology and Extensions | IX | 56 | 56 | 0 | 0 | 0 | 0 | 0 | 0 | 56 | none | `rustmath-groupcohomology (new)` |
-| 69 | Abelian Groups | X | 124 | 0 | 0 | 0 | 0 | 0 | 0 | 79 | 45 | substantial | `rustmath-groups` |
-| 70 | Finitely Presented Groups | X | 202 | 0 | 0 | 0 | 0 | 0 | 0 | 90 | 112 | partial | `rustmath-groups` |
-| 71 | Finitely Presented Groups: Advanced | X | 83 | 0 | 0 | 0 | 0 | 0 | 0 | 23 | 60 | none | `rustmath-groups` |
-| 72 | Polycyclic Groups | X | 125 | 0 | 0 | 0 | 0 | 0 | 0 | 70 | 55 | none | `rustmath-groups` |
+| 69 | Abelian Groups | X | 124 | 1 | 0 | 0 | 0 | 0 | 0 | 79 | 45 | substantial | `rustmath-groups` |
+| 70 | Finitely Presented Groups | X | 202 | 1 | 0 | 0 | 0 | 0 | 0 | 90 | 112 | partial | `rustmath-groups` |
+| 71 | Finitely Presented Groups: Advanced | X | 83 | 1 | 0 | 0 | 0 | 0 | 0 | 23 | 60 | none | `rustmath-groups` |
+| 72 | Polycyclic Groups | X | 125 | 1 | 0 | 0 | 0 | 0 | 0 | 70 | 55 | none | `rustmath-groups` |
 | 73 | Braid Groups | X | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 49 | 53 | partial | `rustmath-groups` |
 | 74 | Groups Defined by Rewrite Systems | X | 36 | 0 | 0 | 0 | 0 | 0 | 0 | 29 | 7 | stub | `rustmath-groups` |
 | 75 | Automatic Groups | X | 41 | 0 | 0 | 0 | 0 | 0 | 0 | 28 | 13 | stub | `rustmath-automata` |
@@ -127,26 +127,26 @@ automatic `candidate`/`missing` counts.
 | 103 | Groups of Lie Type | XIII | 145 | 0 | 0 | 0 | 0 | 0 | 0 | 51 | 94 | none | `rustmath-groupsoflietype (new)` |
 | 104 | Representations of Lie Groups and Algebras | XIII | 103 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 70 | partial | `rustmath-liealgebras` |
 | 105 | Gröbner Bases | XIV | 54 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | 29 | substantial | `rustmath-polynomials` |
-| 106 | Polynomial Ring Ideal Operations | XIV | 77 | 0 | 0 | 0 | 0 | 0 | 0 | 37 | 40 | substantial | `rustmath-polynomials` |
+| 106 | Polynomial Ring Ideal Operations | XIV | 77 | 1 | 0 | 0 | 0 | 0 | 0 | 37 | 40 | substantial | `rustmath-polynomials` |
 | 107 | Local Polynomial Rings | XIV | 35 | 0 | 0 | 0 | 0 | 0 | 0 | 24 | 11 | stub | `rustmath-polynomials` |
 | 108 | Affine Algebras | XIV | 36 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 15 | partial | `rustmath-polynomials` |
-| 109 | Modules over Multivariate Rings | XIV | 115 | 0 | 0 | 0 | 0 | 0 | 0 | 65 | 50 | stub | `rustmath-polynomials` |
+| 109 | Modules over Multivariate Rings | XIV | 115 | 1 | 0 | 0 | 0 | 0 | 0 | 65 | 50 | stub | `rustmath-polynomials` |
 | 110 | Invariant Theory | XIV | 66 | 0 | 0 | 0 | 0 | 0 | 0 | 21 | 45 | none | `rustmath-polynomials` |
 | 111 | Differential Rings | XIV | 158 | 0 | 0 | 0 | 0 | 0 | 0 | 72 | 86 | none | `rustmath-polynomials` |
-| 112 | Schemes | XV | 337 | 0 | 0 | 0 | 0 | 0 | 0 | 153 | 184 | partial | `rustmath-schemes + rustmath-affineschemes` |
+| 112 | Schemes | XV | 337 | 1 | 0 | 0 | 0 | 0 | 0 | 153 | 184 | partial | `rustmath-schemes + rustmath-affineschemes` |
 | 113 | Coherent Sheaves | XV | 40 | 0 | 0 | 0 | 0 | 0 | 0 | 18 | 22 | stub | `rustmath-schemes (line_bundle.rs / proj.rs) — needs new rustmath-sheaves crate` |
-| 114 | Algebraic Curves | XV | 314 | 9 | 0 | 0 | 9 | 0 | 0 | 158 | 147 | substantial | `rustmath-curves` |
+| 114 | Algebraic Curves | XV | 314 | 10 | 0 | 0 | 9 | 0 | 0 | 158 | 147 | substantial | `rustmath-curves` |
 | 115 | Resolution Graphs and Splice Diagrams | XV | 58 | 0 | 0 | 0 | 0 | 0 | 0 | 19 | 39 | none | `rustmath-geometry (new module) building on rustmath-graphs` |
 | 116 | Algebraic Surfaces | XV | 78 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 71 | none | `rustmath-schemes` |
-| 117 | Hilbert Series of Polarised Varieties | XV | 121 | 0 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
+| 117 | Hilbert Series of Polarised Varieties | XV | 121 | 5 | 0 | 0 | 0 | 0 | 0 | 31 | 90 | stub | `rustmath-schemes` |
 | 118 | Toric Varieties | XV | 193 | 1 | 0 | 0 | 0 | 0 | 0 | 61 | 132 | partial | `rustmath-geometry` |
-| 119 | Rational Curves and Conics | XVI | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
-| 120 | Elliptic Curves | XVI | 136 | 0 | 0 | 0 | 0 | 0 | 0 | 65 | 71 | partial | `rustmath-ellipticcurves` |
+| 119 | Rational Curves and Conics | XVI | 33 | 1 | 0 | 0 | 0 | 0 | 0 | 15 | 18 | partial | `rustmath-quadraticforms (+ rustmath-curves for parametrization)` |
+| 120 | Elliptic Curves | XVI | 136 | 1 | 0 | 0 | 0 | 0 | 0 | 65 | 71 | partial | `rustmath-ellipticcurves` |
 | 121 | Elliptic Curves over Finite Fields | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 16 | 18 | stub | `rustmath-ellipticcurves` |
 | 122 | Elliptic Curves over Q and Number Fields | XVI | 165 | 0 | 0 | 0 | 0 | 0 | 0 | 33 | 132 | partial | `rustmath-ellipticcurves` |
 | 123 | Elliptic Curves over Function Fields | XVI | 47 | 0 | 0 | 0 | 0 | 0 | 0 | 14 | 33 | none | `rustmath-ellipticcurves` |
 | 124 | Models of Genus One Curves | XVI | 51 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 36 | none | `(new) rustmath-genusone` |
-| 125 | Hyperelliptic Curves | XVI | 218 | 0 | 0 | 0 | 0 | 0 | 0 | 103 | 115 | stub | `(new) rustmath-hyperelliptic` |
+| 125 | Hyperelliptic Curves | XVI | 218 | 2 | 0 | 0 | 0 | 0 | 0 | 103 | 115 | stub | `(new) rustmath-hyperelliptic` |
 | 126 | Hypergeometric Motives | XVI | 34 | 0 | 0 | 0 | 0 | 0 | 0 | 8 | 26 | none | `(new) rustmath-hgm` |
 | 127 | L-functions | XVI | 39 | 0 | 0 | 0 | 0 | 0 | 0 | 11 | 28 | stub | `rustmath-ellipticcurves` |
 | 128 | Modular Curves | XVII | 33 | 0 | 0 | 0 | 0 | 0 | 0 | 10 | 23 | stub | `rustmath-modular` |
@@ -168,16 +168,16 @@ automatic `candidate`/`missing` counts.
 | 144 | Enumerative Combinatorics | XX | 22 | 12 | 12 | 0 | 0 | 0 | 0 | 4 | 6 | substantial | `rustmath-combinatorics` |
 | 145 | Partitions, Words and Young Tableaux | XX | 107 | 2 | 2 | 0 | 0 | 0 | 0 | 48 | 57 | substantial | `rustmath-combinatorics` |
 | 146 | Symmetric Functions | XX | 60 | 0 | 0 | 0 | 0 | 0 | 0 | 25 | 35 | substantial | `rustmath-symmetricfunctions` |
-| 147 | Incidence Structures and Designs | XX | 116 | 0 | 0 | 0 | 0 | 0 | 0 | 63 | 53 | partial | `rustmath-combinatorics` |
+| 147 | Incidence Structures and Designs | XX | 116 | 3 | 0 | 0 | 3 | 0 | 0 | 60 | 53 | partial | `rustmath-combinatorics` |
 | 148 | Hadamard Matrices | XX | 23 | 0 | 0 | 0 | 0 | 0 | 0 | 7 | 16 | stub | `rustmath-combinatorics` |
-| 149 | Graphs | XX | 268 | 0 | 0 | 0 | 0 | 0 | 0 | 140 | 128 | substantial | `rustmath-graphs` |
-| 150 | Multigraphs | XX | 178 | 0 | 0 | 0 | 0 | 0 | 0 | 92 | 86 | stub | `rustmath-graphs` |
+| 149 | Graphs | XX | 268 | 1 | 0 | 0 | 0 | 0 | 0 | 140 | 128 | substantial | `rustmath-graphs` |
+| 150 | Multigraphs | XX | 178 | 1 | 0 | 0 | 0 | 0 | 0 | 92 | 86 | stub | `rustmath-graphs` |
 | 151 | Networks | XX | 16 | 0 | 0 | 0 | 0 | 0 | 0 | 13 | 3 | none | `rustmath-graphs` |
-| 152 | Linear Codes over Finite Fields | XXI | 237 | 0 | 0 | 0 | 0 | 0 | 0 | 70 | 167 | stub | `rustmath-coding` |
+| 152 | Linear Codes over Finite Fields | XXI | 237 | 7 | 0 | 0 | 5 | 0 | 0 | 67 | 165 | stub | `rustmath-coding` |
 | 153 | Algebraic-geometric Codes | XXI | 14 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 12 | none | `rustmath-coding` |
 | 154 | Low Density Parity Check Codes | XXI | 20 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 20 | none | `rustmath-coding` |
-| 155 | Linear Codes over Finite Rings | XXI | 128 | 0 | 0 | 0 | 0 | 0 | 0 | 43 | 85 | none | `rustmath-coding` |
-| 156 | Additive Codes | XXI | 102 | 0 | 0 | 0 | 0 | 0 | 0 | 53 | 49 | none | `rustmath-coding` |
-| 157 | Quantum Codes | XXI | 70 | 0 | 0 | 0 | 0 | 0 | 0 | 11 | 59 | none | `rustmath-coding` |
+| 155 | Linear Codes over Finite Rings | XXI | 128 | 4 | 0 | 0 | 0 | 0 | 0 | 40 | 88 | none | `rustmath-coding` |
+| 156 | Additive Codes | XXI | 102 | 4 | 0 | 0 | 0 | 0 | 0 | 50 | 52 | none | `rustmath-coding` |
+| 157 | Quantum Codes | XXI | 70 | 1 | 0 | 0 | 0 | 0 | 0 | 11 | 59 | none | `rustmath-coding` |
 | 158 | Pseudo-random Bit Sequences | XXII | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 15 | 0 | none | `rustmath-crypto` |
 | 159 | Linear Programming | XXIII | 23 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 21 | stub | `rustmath-numerical` |

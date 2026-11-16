@@ -116,12 +116,12 @@ All three packages:
 - `GF(p^n)`: `FiniteField::new`, `with_modulus` (`rustmath-finitefields/src/finite_field.rs:145`,
   `:183`) [done]. Both prove `p` once with `try_is_prime`. Element operations do not check it again.
   Conway polynomials exist only for small `p` and `n` (`conway.rs:139`). Otherwise `new` takes the
-  first irreducible in base-`p` counter order (`poly_factor.rs:252`). This default may change in a
+  first irreducible in base-`p` counter order (`poly_factor.rs:276`). This default may change in a
   future version: `docs/HANDOFF.md:342` notes that a fix of the search changes default moduli. So use
   `with_modulus` when the field must be reproducible. Frobenius `finite_field.rs:537`, `is_square`
   `:699`, `sqrt` `:725` [done].
-- Factorization over `GF(q)`: squarefree `rustmath-finitefields/src/poly_factor.rs:627`,
-  distinct-degree `:681`, equal-degree `:763`, `factor` `:946`, `roots` `:998` [done]. A second
+- Factorization over `GF(q)`: squarefree `rustmath-finitefields/src/poly_factor.rs:651`,
+  distinct-degree `:705`, equal-degree `:787`, `factor` `:970`, `roots` `:1022` [done]. A second
   stack, `cantor_zassenhaus.rs:622` [done], is generic over `FiniteFieldElement`, with impls for
   `PrimeField` and `Gfpn` (`ff_poly.rs:213`, `:785`). It proves `p` on every public call
   (`ff_poly.rs:196`). `PrimeField` and `Gfpn` also store `Integer`s, so neither stack is a
@@ -155,13 +155,13 @@ WP-F:
   `d = 1`, and 0 when there is no such pair. For example, an irreducible quartic gives `[(4, f)]`.
   One `x^p mod f` per degree step, on `i64` words.
 - Root count of a quartic over `GF(p^k)`: `square_free_factorization`, then
-  `distinct_degree_factorization` on each squarefree factor (`poly_factor.rs:627`, `:681`), on an
+  `distinct_degree_factorization` on each squarefree factor (`poly_factor.rs:651`, `:705`), on an
   `FqPoly` over `FiniteField::new(p, k)`. This DDF returns pairs `(g_d, d)` and also leaves out empty
   blocks, so the root count is the sum of the degrees of the `d = 1` blocks over all
   squarefree factors. Limit: cost. Each degree step computes `x^q mod f`, about
   `k log2 p` squarings of a cubic modulo the quartic. Each `GF(p^k)` product is `k^2` products of
   heap-allocated `Integer`s plus a reduction. Correct, but far too slow for the `p^4` base points of
-  the `k = 4` count near `p = 100`. `roots` (`:998`) also runs equal-degree splitting.
+  the `k = 4` count near `p = 100`. `roots` (`:1022`) also runs equal-degree splitting.
 - Frobenius orbits and the Hessian square test: `FiniteFieldElement::frobenius`, `is_square`
   (`finite_field.rs:537`, `:699`), `PrimeField::is_square` (`prime_field.rs:241`) [done].
 - Sturm sequences over `Q`: `count_real_roots`, `count_real_roots_in`
@@ -196,9 +196,12 @@ WP-P:
 - Binary Golay code `[23,12,7]`: `BinaryGolayCode::new` (`rustmath-coding/src/golay.rs:33`) [done]:
   weight enumerator checked, every error of weight at most 3 corrected. Limits: the coordinates are
   those of the cyclic code of `x^11+x^10+x^6+x^5+x^4+x^2+1`, the reciprocal of the polynomial in
-  4.2. They are not the labelling of the published generators. There is no accessor for the 253
-  heptads, the even subcode `G0` or the automorphism group. The extended code `golay.rs:371`
-  [partial] has its 759 octads checked. Its decoder ignores the parity bit.
+  4.2. They are not the labelling of the published generators. Since the Steiner labelling,
+  `rustmath-coding/src/cyclic_golay.rs` has both cyclic codes, of `g+` and of `g-` (the code
+  above), with their words (`:103`), weight distributions (`:115`), the 253 heptads of each
+  (`:155`, two S(4,7,23), checked exactly) and the 11 shift orbits (`:161`) [done]. There is still
+  no accessor for the even subcode `G0` or the automorphism group. The extended code
+  `golay.rs:371` [partial] has its 759 octads checked. Its decoder ignores the parity bit.
 - Linear algebra over `F_2` for 4.3: `Matrix<PrimeField>` with `p = 2`, as above. The modules have
   dimension at most 22, so cost does not matter.
 - Genus 0 Belyi engine, `rustmath-curves/src/belyi/`. These parts take any passport: permutations
@@ -238,23 +241,38 @@ WP-A:
   (`:63`) [done]. Its precondition is an equidimensional `V(I)`, which a complete intersection is.
   Tested over `Q` only.
 - Galois rings `GR(p^a, d)`: `GaloisRing::new`, `with_modulus`
-  (`rustmath-finitefields/src/galois_ring.rs:77`, `:105`), Teichmueller lift `:203`, `:609`,
-  Teichmueller digits `:627`, Frobenius `:664`, Newton unit inverse `:732`, `xgcd` `:855`, orders
-  `:1156` [done, row `galois_ring.rs:55`]. `p` is proven at construction. This is the ring
-  `(Z/p^N)[x]/(f)`. Newton on a simple root of one polynomial runs on its ring operations and
-  `unit_inverse`, which is what the Steiner labelling exercise of Section 6 needs. Limits: elements
-  are `Integer` vectors. Frobenius recomputes all `a` Teichmueller digits by powers of `p^d`, which
-  costs roughly `a (a/d + 1) d log2 p` ring products per call. The ring is not a field, so `Matrix`
-  has no solve or inverse over it (see Do not call).
+  (`rustmath-finitefields/src/galois_ring.rs:77`, `:112`), Teichmueller lift `:240`, `:658`,
+  Teichmueller digits `:676`, Frobenius `:717`, Newton unit inverse `:785`, `xgcd` `:908`, orders
+  `:1243` [done, row `galois_ring.rs:55`]. `p` is proven at construction. This is the ring
+  `(Z/p^N)[x]/(f)`. Since the Steiner labelling, `with_modulus` makes a `D` with `D[d] = 1` mod `p`
+  monic mod `p^a` (before, such a `D` was stored as given and the arithmetic was wrong), the
+  product reduces lazily (same values), and `defining_polynomial` (`:164`) and `base_ring_value`
+  (`:475`) exist. Limits: elements are `Integer` vectors. `GaloisRingElement::frobenius` still
+  recomputes all `a` Teichmueller digits by powers of `p^d`, roughly `a (a/d + 1) d log2 p` ring
+  products per call; for repeated use take `FrobeniusMatrix` (next item). The ring is not a field,
+  so `Matrix` has no solve or inverse over it (see Do not call).
+- The Frobenius as a matrix, and roots in a Galois ring:
+  `rustmath-finitefields/src/galois_ring_frobenius.rs:114` `FrobeniusMatrix` (Newton lift of
+  `w^p` to `phi(w)`; `apply` `:348` is one matrix-vector product; `orbit` `:354`; `trace` `:373`)
+  and `:460` `orbit_polynomial` (an `Err` when a coefficient is not in `Z/p^a`) [done, checked
+  against the Teichmueller Frobenius and PARI/GP `polsym`]; `:555` `FrobeniusRoots`, the roots
+  `phi^i(x)` of a monic `f` that is irreducible mod `p`, in `GR(p^N, deg f)`, with exact
+  squarefree and inertness checks [done, PARI/GP `polrootspadic`]. This is what the Steiner
+  labelling runs on (Section 6, Status). One polynomial only: the multivariate Newton of A3 is
+  still absent (Do not call).
 - The same ring with a cheap Frobenius: `UnramifiedExtension`
   (`rustmath-rings/src/padics/unramified.rs:138`) [done]. Frobenius uses the precomputed image of the
-  generator (`:243`, `:411`). Norm and trace are cross-certified.
+  generator (`:243`, `:411`). Norm and trace are cross-certified. `FrobeniusMatrix` (above) gives
+  the same cheap Frobenius on `GaloisRing` itself.
 - Rational reconstruction: `rational_reconstruct`, `crt_rational_reconstruct`
   (`rustmath-integers/src/crt.rs:130`, `:212`) [done in the tracker's IGP24 table, item C3];
   `recognize_rational` (`rustmath-numberfields/src/recognize.rs:183`) [done, labelled heuristic].
   `rational_reconstruct` returns the unique `n/d` with `|n|, d <= floor(sqrt((M-1)/2))` that matches,
   or `None` when there is none. A returned fraction is not certified: if the true height is larger,
   it can be wrong. There is no stability loop, so the caller adds primes or raises `N` and compares.
+  The Steiner labelling needed none: its integers have proven bounds and pass `bounded_integer`
+  (`rustmath-galois/src/integrality.rs:110`, `p^N > 2B` or `Err`), and the sign comes from
+  `integrality_dichotomy` (`:170`, Proposition 5.1) [done].
 - Recognition of algebraic numbers: `recognize_algebraic` (from a p-adic residue), and
   `recognize_complex_algebraic` (`recognize.rs:195`, `:259`) [done, labelled heuristic], and its
   high-precision form (`:354`) [no tracker row]. They find a minimal polynomial by LLL. The caller must certify it by
@@ -274,7 +292,7 @@ WP-A:
 - Cycle types mod `p` for 5.2: `frobenius_cycle_types`, `cycle_type_mod_p`
   (`rustmath-galois/src/sieve.rs:103`, `:82`), Dedekind shape
   `rustmath-polynomials/src/padic_factor.rs:72` [done]. `galois_group`
-  (`rustmath-galois/src/lib.rs:165`) is exact up to degree 5 [done]. Above that it decides only `A_n`
+  (`rustmath-galois/src/lib.rs:178`) is exact up to degree 5 [done]. Above that it decides only `A_n`
   and `S_n`, by Jordan's criterion (`sieve.rs:156`, [partial]). For `g8` a Frobenius of type `3 5`
   or `1^3 5` powers to a 5-cycle, so it can decide A8. For `g15` expect `Unresolved`.
 - Exact arithmetic in `Q(T)[V]/(F)` for 5.6: `RationalFunction`
@@ -306,9 +324,10 @@ Facade, broken or missing at `6e03987`:
   `O(|G|^2)`, so they are unusable at `|M23|`. There are no centralizers, normalizers or backtrack
   searches over a BSGS (tracker, absent list), and no public M23 or M24 constructor. The generators
   are in the `bsgs.rs` tests only. `block_systems` `perm_predicates.rs:182` [broken] misses systems.
-- `SteinerSystem::new` (`rustmath-combinatorics/src/designs.rs:226`) checks the design property only
-  for `t <= 2` and `v <= 10` (`:61`), so it does not verify S(4,7,23) or S(5,8,24) [row `:233`,
-  partial].
+- `SteinerSystem::new` (`rustmath-combinatorics/src/designs.rs:228`) checks the design property only
+  for `t <= 2` and `v <= 10` (`:63`), so it does not verify S(4,7,23) or S(5,8,24) [row `:235`,
+  partial]. Use `t_design_index` and `is_steiner_system` (`designs.rs:1058`, `:1154`) instead:
+  exact on a block list, refusal above 10^8 `t`-subsets of blocks [done, Steiner labelling].
 - Cohomology: `rustmath-homology` gives free ranks over `Z` only (`chain_complex.rs:145`,
   `cochain_complex.rs:143`, [facade]). There is no group cohomology and nothing over `F_2`.
 - Multivariate Newton over `GR(p^N, k)`: absent. `newton_lift_bivariate`
@@ -355,13 +374,15 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
   P^1 x P^1; the L-polynomial from counts (Newton's identities, integrality, functional equation);
   the exact Weil test on `[-2 sqrt(p), 2 sqrt(p)]`; the mod 2 and mod 23 checks; readers for
   `polynomial_F.m`, `polynomial_calF.m` and the zeta JSON files.
-- Steiner labelling exercise (end of Section 6, Section 8 step 2): Newton lifting of the 23 roots of
-  `f1` and `f2` in a Galois ring `GR(29^N, k)`; S(4,7,23) on those roots; `T5`, `J5`, `J7` by
-  rational reconstruction with the stability loop; the degree 253 heptad and duad resolvents of
-  `data/golay_resolvents.json`.
+- Steiner labelling exercise (end of Section 6, Section 8 step 2): done (the Status block at the end
+  of Section 6). Built: Newton lifting of the 23 roots of `f1` and `f2` in `GR(29^N, 23)`; the two
+  cyclic S(4,7,23) on those roots; `T5`, `J5`, `J7`; the degree 253 heptad and duad resolvents of
+  `data/golay_resolvents.json`. No stability loop was needed: every value is certified by a
+  proven bound (Proposition 5.1), so no rational reconstruction either.
 - WP-P: element enumeration from a `StabilizerChain`; a public M23 on the published generators;
   class identification with the split classes; `G0`, `P0`, `P0/G0` and S(4,7,23) in the published
-  labelling; the ATLAS table of M23 as data with a correct class-function inner product (T-215), and
+  labelling (the two shift-invariant S(4,7,23) in the cyclic coordinates exist: `cyclic_golay.rs`);
+  the ATLAS table of M23 as data with a correct class-function inner product (T-215), and
   the class structure constants from it; centralizer orders; Nielsen class counts, real points and
   ovals; the swap action on Nielsen classes for the twists of 4.4 item 1; parabolic cohomology over
   `F_2`. For 4.4 item 2: a passport-generic high-precision Newton solve, monodromy check and exact verifier
@@ -377,8 +398,9 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
   the octic of A5 from the spreads of `data/pg32_a8_model.json`; certified complex enclosures for the
   120 planes; local (Puiseux) expansions at the two totally ramified points for the A0 test of the
   vanishing sequence (0,1,2,3); readers for Le Lay's `Fint_coefficients_Z.json` (3.3 item 1) and for
-  `f1`, `f2` (Section 6). Left out on purpose: a direct check of the A1 prediction of one theta characteristic
-  over `F_p`. Its odd part follows from the Frobenius orbits of the 120 planes. The even theta
+  `f1`, `f2` (Section 6; a test-only reader is `read_f` in
+  `rustmath-galois/tests/steiner_labelling.rs:823`). Left out on purpose: a direct check of the A1
+  prediction of one theta characteristic over `F_p`. Its odd part follows from the Frobenius orbits of the 120 planes. The even theta
   characteristic would need divisor classes on X, which no package builds.
 
 ## 3. WP-F: the Frobenius table
@@ -1001,6 +1023,12 @@ coefficients are rational numbers; for the wrong one they are not. This is the s
 with the same kind of proof, as the Steiner labelling of roots (paper, Proposition 5.1):
 reconstruct rationals from `Z/p^N`, increase `N` until stable, and confirm at a second prime
 (79 if the first was 31), where the computation is independent. Then reduce `g15` with polred.
+The Steiner labelling built two pieces for this step: `orbit_polynomial`
+(`rustmath-finitefields/src/galois_ring_frobenius.rs:460`), which forms `prod (z - tau_B)` and
+proves its coefficients lie in `Z/p^N`, and `integrality_dichotomy`
+(`rustmath-galois/src/integrality.rs:170`), whose candidates are coefficient vectors. Integral
+coefficients with a proven bound need nothing more; rational ones need a rationality dichotomy
+with a proven height bound (follow-up SL-6 of the Status block in Section 6).
 
 **A5. The octic.** The roots of `g15` are labelled by the nonzero linear forms on `W`, and the
 `F_2`-structure is visible in the cyclic model: `lambda_j = lambda_0 phi^-j`, so
@@ -1094,6 +1122,103 @@ for the Galois-ring layer, with exact expected output: at p = 29 for `f2`, `T5 =
 rejected candidate for `T5` has more than 40 digits. The degree 253 resolvents in
 `data/golay_resolvents.json` are the larger version of the same test.
 
+### Steiner labelling exercise: Status (2026-11-15)
+
+Done (Section 8, step 2). The change is on the local branch `claude/m23-steiner` (code commit
+`5874caf`, on `claude/m23-wpf` `25c6443`; it was built on `d91f880` and rebased after F-9, with
+the code unchanged).
+
+The design, its review, the implementation report, the code review and the check of the minor
+fixes are in `docs/workstreams/m23_golay/steiner/` (`design/`, `impl/`). The PARI/GP scripts behind
+the test values, with their output, are in `steiner/gp/`.
+
+Code (four crates, as the design planned):
+
+- `rustmath-finitefields/src/galois_ring_frobenius.rs:114` `FrobeniusMatrix` (the Frobenius of
+  `GR(p^a, D)` as a matrix, by a Newton lift of `w^p`), `:460` `orbit_polynomial`, `:555`
+  `FrobeniusRoots` (the roots `phi^i(x)` of `f` in `GR(p^N, deg f)`). In `galois_ring.rs`: a lazy
+  product, `defining_polynomial` (`:164`), `base_ring_value` (`:475`), and a fix in `with_modulus`
+  (`:112`): a `D` with `D[d] = 1` mod `p` but not mod `p^a` was stored unnormalized.
+- `rustmath-combinatorics/src/designs.rs:1058` `t_design_index` and `:1154` `is_steiner_system`:
+  exact on a block list, a refusal above 10^8 `t`-subsets of blocks.
+- `rustmath-coding/src/cyclic_golay.rs`: the two cyclic Golay codes (`g+`, `g-`), their weight
+  distributions (`:115`), heptads (`:155`) and shift orbits (`:161`).
+- `rustmath-galois/src/integrality.rs:110` `bounded_integer`, `:170` `integrality_dichotomy`;
+  `rustmath-galois/src/steiner_labelling.rs:748` `steiner_labelling`, `:287` `RootBound`
+  (Fujiwara, exact), `:921` `golay_invariants`, `:961` `heptad_resolvent`, `:983` and `:658`
+  `duad_resolvent`, `:996` `frobenius_sign`.
+- Tests: `rustmath-galois/tests/steiner_labelling.rs` (13 fast tests, 2 `full_`, 8 `env_`),
+  `rustmath-finitefields/tests/galois_ring_frobenius.rs`,
+  `rustmath-combinatorics/tests/designs_exact.rs`, `rustmath-coding/tests/cyclic_golay.rs`.
+- Data: `rustmath-galois/tests/data/m23/` with a README (sources, licences, sha256): the owner's
+  `golay_resolvents.json` with its `"f"` fields removed, `frobenius_signs.json`, Le Lay's CC0
+  specialization at `T = 2`, and reference values for it. f1 and f2 are read only from
+  `$M23ISGALOIS`. So the opening paragraph's "Nothing from it is vendored" is out of date here too.
+
+How it decides. The roots are lifted in `GR(p^N, f)` at an inert prime (29 for f1 and f2). `T5`
+is computed for both cyclic systems. With `p^N > 2 B5` (`B5` a proven bound), exactly one
+candidate within `B5` is Decided (paper, Proposition 5.1); two are Unresolved; none is
+`NotInM23`, a proof that `Gal(f)` lies in no conjugate of M23. Decided rests on the trusted input
+`Gal(f) = M23`, recorded in every result (as the genus is in WP-F). `J5`, `J7` and the resolvents
+are certified the same way: each value passes its proven bound at `p^N > 2B`, or the call fails.
+There is no stability loop. A recomputation at a higher `N` is only a cross-check
+(`env_stability_cross_check`).
+
+Reproduced from reference (`data/golay_resolvents.json`, `data/frobenius_signs.json` at
+`d05475b`). Every value is Decided, relative to the trusted input.
+
+| Value | f2 | f1 | Test |
+|---|---|---|---|
+| prime, `N` | 29, 30 | 29, 31 | `env_six_integers_and_signs` |
+| sign at 29 | -1 | -1 | same |
+| `T5` | -1059840 | 92747040 | same |
+| `J5` | 61916 | 524492 | same |
+| `J7` | -83030 | -2281968 | same |
+| rejected `T5` | 44 digits | 45 digits | same |
+| `R253_heptad` | equal (`N` = 360) | equal (`N` = 395) | `env_heptad_resolvents` |
+| `R253_duad` | equal (`N` = 267) | equal (`N` = 302) | `env_duad_resolvents` (also by `subset_sum_resolvent`, exact over Q) |
+| second prime | 223: `T5`, `J5`, `J7` and both resolvents again | 73: the same | `env_second_prime` |
+| Frobenius signs | 40 of 40 | 40 of 40 | `env_frobenius_signs` |
+| least precision | `N` = 8 refused, 9 Unresolved, 10 Decided | `N` = 10 Decided | `env_f2_minimal_precision` |
+
+The fast tests need no `$M23ISGALOIS`. They run on the monic associate of Le Lay's certified CC0
+polynomial: Decided -1 at 29 (`N` = 270, and the least rigorous `N` = 250), Decided +1 at 67
+(`N` = 216), `J5` and `J7` (353 and 491 digits) and two Frobenius signs. Each value has two
+references: the owner's `arith.py` with python-flint 0.9.0, and PARI/GP 2.15.4. Small cases: C23
+is Unresolved at every precision; `x^23 - x - 1` (Galois group S23) is `NotInM23` at 23, and at 157
+with the least `N` = 4 it gives a false Decided, which the default margin rejects. That is why the
+hypothesis is recorded in every result.
+
+Commands:
+
+- `cargo test -p rustmath-galois --test steiner_labelling` (fast set, debug, 13 to 16 s of test time
+  in the last two runs);
+- `cargo test -p rustmath-finitefields --test galois_ring_frobenius`,
+  `cargo test -p rustmath-combinatorics --test designs_exact`,
+  `cargo test -p rustmath-coding --test cyclic_golay`;
+- `cargo test --release -p rustmath-galois --test steiner_labelling -- --ignored full_` (about 1.7 s);
+- `M23ISGALOIS=<checkout of shaowuz/m23isgalois> cargo test --release -p rustmath-galois --test steiner_labelling -- --ignored env_`
+  (about 29 s on one test thread, after a release build of 1.5 to 2 minutes). Without
+  `M23ISGALOIS` each `env_` test fails with "set M23ISGALOIS to a checkout of shaowuz/m23isgalois".
+
+Times (release, one thread): `env_six_integers_and_signs` 0.26 s; heptad resolvents 4.6 s (about
+2 s each); duad resolvents 7.2 s (three routes); second prime 6.9 s; the 80 Frobenius signs 5.4 s.
+
+For the later packages: WP-P can use `cyclic_golay::heptads` and `is_steiner_system`; WP-A A4 can
+use `orbit_polynomial` and the vector form of `integrality_dichotomy` (5.3, A4).
+
+Follow-ups (`steiner/impl/SL.md`, Handoffs): SL-1 Tschirnhaus (needs a proven coordinate bound);
+SL-2 the CC0 resolvents (`N` about 12,500, about 10 minutes, not run); SL-3
+`GaloisRingElement::frobenius` through a cached `FrobeniusMatrix`; SL-4 `GaloisCtx` on
+`FrobeniusRoots`; SL-5 tighter bounds; SL-6 a rationality dichotomy for WP-A A4; SL-7
+`BlockDesign::new` and `SteinerSystem::new` through the exact checker; SL-8 other primes; SL-9 a
+refutation screen by Frobenius cycle types (a type outside the 17 of M23 refutes; a clean screen
+proves nothing); SL-10 the shared target directory of the worktrees (give each its own, or rebuild
+after a switch); SL-11 the clippy errors that `rustmath-combinatorics` had before this change. The
+four optional nits of the check of the minor fixes (`steiner/impl/SL.minorscheck1.md`, Section 7)
+are open. For the owner: the vendored `golay_resolvents_no_f.json` still determines f1 and f2
+through `R253_duad` (README of the data).
+
 ## 7. Facts found while checking the sources
 
 These came out of reading Le Lay's paper and Zarhin's two papers against our draft. They matter
@@ -1124,7 +1249,8 @@ for anyone extending the work.
 1. WP-F core (3.1, 3.2): done when both tables and the three derived checks are reproduced in
    Rust tests that read `data/zeta_X.json` and `data/zeta_L.json`.
 2. Steiner labelling exercise (end of Section 6): done when the six integers and one degree 253
-   resolvent are reproduced.
+   resolvent are reproduced. Done (2026-11-15): the six integers and all four degree 253
+   resolvents, at 29 and at the second primes (Status at the end of Section 6).
 3. WP-P table (4.2, 4.3): done when all 57 rows are reproduced and the three dictionaries hold.
 4. WP-F extensions 1 and 2 (the D flags, p = 3 and 5; Section 3, Status): 1 done by the
    delta-sum certificate (no recount on a second model); 2 done for p = 5, and p = 3 moves to
