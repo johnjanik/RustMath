@@ -129,6 +129,17 @@ pub fn parse(input: &str) -> Result<Expr, ParseError> {
             message: format!("Unexpected input remaining: '{}'", remaining),
             // TODO: Add position information: message: format!("at position {}", input.len() - remaining.len())
         }),
+        // S1 fix-up round 3: the refusal of a float literal that underflows names the literal
+        Err(nom::Err::Failure(e)) if e.code == ErrorKind::Float => {
+            // `float` puts the literal's own text in the error
+            let lit: String = e.input.chars().take(64).collect();
+            Err(ParseError {
+                message: format!(
+                    "the float literal {lit} underflows to 0 (its f64 value is 0 but a digit is \
+                     not): write 0.0, or an exact rational such as 10^-400"
+                ),
+            })
+        }
         Err(e) => Err(ParseError {
             message: format!("Failed to parse expression: {}", e),
             // TODO: Convert nom error to more helpful message
@@ -144,39 +155,21 @@ where
     delimited(multispace0, inner, multispace0)
 }
 
-// Parse an integer
-fn integer(input: &str) -> IResult<&str, Integer> {
-    let (input, num_str) = recognize(pair(opt(char('-')), digit1))(input)?;
-    let num = num_str.parse::<i64>().map_err(|_| {
-        nom::Err::Error(Error::new(input, ErrorKind::Digit))
-    })?;
-    Ok((input, Integer::from(num)))
-}
-
-// Parse a rational number (e.g., "1/3" or just "5")
-fn rational(input: &str) -> IResult<&str, Rational> {
-    let (input, numer) = integer(input)?;
-
-    // Try to parse "/denominator"
-    if let Ok((input, _)) = char::<&str, Error<&str>>('/')(input) {
-        let (input, denom) = integer(input)?;
-        // Rational::new returns Result, but division by zero would be caught
-        // We'll handle the error by converting to nom error
-        match Rational::new(numer, denom) {
-            Ok(r) => Ok((input, r)),
-            Err(_) => Err(nom::Err::Error(Error::new(input, ErrorKind::Verify))),
-        }
-    } else {
-        Ok((input, Rational::from_integer(numer)))
+// Unsigned integer literal of any size (S1 design §2.12; the sign is the unary rule's). The
+// literal `a/b` is not a token: `multiplicative` folds a quotient of two signed integer literals.
+fn integer_literal(input: &str) -> IResult<&str, Integer> {
+    let (rest, digits) = digit1(input)?;
+    match Integer::from_decimal_str(digits) {
+        Some(n) => Ok((rest, n)),
+        None => Err(nom::Err::Error(Error::new(input, ErrorKind::Digit))),
     }
 }
 
-// Parse a floating-point number (must have decimal point)
-// Examples: 3.14, 0.7, -1.5, 1.5e-3, 2.0E10
+// Parse a floating-point number (must have decimal point, no sign: the unary rule reads it)
+// Examples: 3.14, 0.7, 1.5e-3, 2.0E10
 fn float(input: &str) -> IResult<&str, f64> {
     // Recognize the full float pattern
     let (input, num_str) = recognize(tuple((
-        opt(char('-')),
         digit1,
         char('.'),
         digit1,
@@ -190,6 +183,16 @@ fn float(input: &str) -> IResult<&str, f64> {
     let num = num_str.parse::<f64>().map_err(|_| {
         nom::Err::Error(Error::new(input, ErrorKind::Float))
     })?;
+    // S1 fix-up round 3 (review 3, semantics m2): a literal with a nonzero digit whose f64 value is
+    // 0 (it underflows, as 1.0e-400 does) is refused, not read as the exact 0 (`x/1.0e-400` was a
+    // division by zero, `1/(x + 1.0e-400)` was 1/x). The series engine refuses an overflow to inf
+    // the same way. A Failure, so no other rule reads the literal's digits.
+    if num == 0.0 {
+        let mantissa = num_str.split(['e', 'E']).next().unwrap_or("");
+        if mantissa.bytes().any(|b| (b'1'..=b'9').contains(&b)) {
+            return Err(nom::Err::Failure(Error::new(num_str, ErrorKind::Float)));
+        }
+    }
     Ok((input, num))
 }
 
@@ -250,52 +253,93 @@ fn function_call(input: &str) -> IResult<&str, Expr> {
     // Convert args to Vec<Arc<Expr>>
     let arc_args: Vec<Arc<Expr>> = args.into_iter().map(Arc::new).collect();
 
-    // Map known function names to UnaryOp
-    let expr = if arc_args.len() == 1 {
-        let arg = arc_args[0].as_ref().clone();
-        match func_name {
-            "sin" => Expr::Unary(UnaryOp::Sin, Arc::new(arg)),
-            "cos" => Expr::Unary(UnaryOp::Cos, Arc::new(arg)),
-            "tan" => Expr::Unary(UnaryOp::Tan, Arc::new(arg)),
-            "sinh" => Expr::Unary(UnaryOp::Sinh, Arc::new(arg)),
-            "cosh" => Expr::Unary(UnaryOp::Cosh, Arc::new(arg)),
-            "tanh" => Expr::Unary(UnaryOp::Tanh, Arc::new(arg)),
-            "arcsin" | "asin" => Expr::Unary(UnaryOp::Arcsin, Arc::new(arg)),
-            "arccos" | "acos" => Expr::Unary(UnaryOp::Arccos, Arc::new(arg)),
-            "arctan" | "atan" => Expr::Unary(UnaryOp::Arctan, Arc::new(arg)),
-            "exp" => Expr::Unary(UnaryOp::Exp, Arc::new(arg)),
-            "log" | "ln" => Expr::Unary(UnaryOp::Log, Arc::new(arg)),
-            "sqrt" => Expr::Unary(UnaryOp::Sqrt, Arc::new(arg)),
-            "abs" => Expr::Unary(UnaryOp::Abs, Arc::new(arg)),
-            "sign" => Expr::Unary(UnaryOp::Sign, Arc::new(arg)),
-            "gamma" => Expr::Unary(UnaryOp::Gamma, Arc::new(arg)),
-            "factorial" => Expr::Unary(UnaryOp::Factorial, Arc::new(arg)),
-            "erf" => Expr::Unary(UnaryOp::Erf, Arc::new(arg)),
-            "zeta" => Expr::Unary(UnaryOp::Zeta, Arc::new(arg)),
-            _ => Expr::Function(func_name.to_string(), arc_args),
-        }
-    } else {
-        // Multi-argument function or zero-argument (use generic Function variant)
-        Expr::Function(func_name.to_string(), arc_args)
-    };
+    // Map known function names to UnaryOp (one construction, out of the recursive frame)
+    let expr = make_call(func_name, arc_args);
 
     Ok((input, expr))
 }
 
-// Parse a number (float, integer, or rational)
-fn number(input: &str) -> IResult<&str, Expr> {
-    // Try to parse as float first (with decimal point)
-    if let Ok((remaining, f)) = float(input) {
-        return Ok((remaining, Expr::Real(f)));
-    }
-    // Fall back to rational (integer or fraction)
-    map(rational, |r| {
-        if r.denominator() == &Integer::from(1) {
-            Expr::Integer(r.numerator().clone())
-        } else {
-            Expr::Rational(r)
+// The unary operation of a one-argument call by its name.
+fn unary_op_by_name(name: &str) -> Option<UnaryOp> {
+    Some(match name {
+        "sin" => UnaryOp::Sin,
+        "cos" => UnaryOp::Cos,
+        "tan" => UnaryOp::Tan,
+        "sinh" => UnaryOp::Sinh,
+        "cosh" => UnaryOp::Cosh,
+        "tanh" => UnaryOp::Tanh,
+        "arcsin" | "asin" => UnaryOp::Arcsin,
+        "arccos" | "acos" => UnaryOp::Arccos,
+        "arctan" | "atan" => UnaryOp::Arctan,
+        "arcsinh" | "asinh" => UnaryOp::Arcsinh,
+        "arccosh" | "acosh" => UnaryOp::Arccosh,
+        "arctanh" | "atanh" => UnaryOp::Arctanh,
+        "exp" => UnaryOp::Exp,
+        "log" | "ln" => UnaryOp::Log,
+        "sqrt" => UnaryOp::Sqrt,
+        "abs" => UnaryOp::Abs,
+        "sign" => UnaryOp::Sign,
+        "gamma" => UnaryOp::Gamma,
+        "factorial" => UnaryOp::Factorial,
+        "erf" => UnaryOp::Erf,
+        "zeta" => UnaryOp::Zeta,
+        _ => return None,
+    })
+}
+
+// A call: a unary operation for a known one-argument name, else a `Function` node (multi-argument
+// or zero-argument calls, and unknown names).
+#[inline(never)]
+fn make_call(name: &str, mut args: Vec<Arc<Expr>>) -> Expr {
+    if args.len() == 1 {
+        if let Some(op) = unary_op_by_name(name) {
+            return Expr::Unary(op, args.pop().expect("one argument"));
         }
-    })(input)
+    }
+    Expr::Function(name.to_string(), args)
+}
+
+// Parse a number: a float, or an unsigned integer literal of any size
+fn number(input: &str) -> IResult<&str, Expr> {
+    // Try to parse as float first (with decimal point); a literal that underflows is a Failure
+    // (S1 fix-up round 3), so its digits are not read again as an integer
+    match float(input) {
+        Ok((remaining, f)) => return Ok((remaining, Expr::Real(f))),
+        Err(e @ nom::Err::Failure(_)) => return Err(e),
+        Err(_) => {}
+    }
+    map(integer_literal, Expr::Integer)(input)
+}
+
+// A run of signs ('-' | '+')*, read by a loop (no recursion per sign, so 100 KB of signs costs
+// no stack): whether the run is negative (an odd number of '-').
+#[inline(never)]
+fn sign_run(input: &str) -> (&str, bool) {
+    let mut neg = false;
+    let mut rest = input;
+    loop {
+        let t = rest.trim_start();
+        if let Some(r) = t.strip_prefix('-') {
+            neg = !neg;
+            rest = r;
+        } else if let Some(r) = t.strip_prefix('+') {
+            rest = r;
+        } else {
+            return (rest, neg);
+        }
+    }
+}
+
+// A signed integer literal as the parser builds it: `Integer(n)` or `Neg(Integer(n))`.
+fn signed_integer_literal(e: &Expr) -> Option<Integer> {
+    match e {
+        Expr::Integer(n) => Some(n.clone()),
+        Expr::Unary(UnaryOp::Neg, i) => match &**i {
+            Expr::Integer(n) => Some(-n.clone()),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 // Parse a parenthesized expression
@@ -307,7 +351,11 @@ fn parens(input: &str) -> IResult<&str, Expr> {
     )(input)
 }
 
-// Parse an atom: number, variable, function call, or parenthesized expression
+// Parse an atom: number, variable, function call, or parenthesized expression.
+// Never inlined: in release `atom` was inlined into the recursive `power`, whose frame then held
+// its locals across the recursion (552 bytes per `^` level against HEAD's 312), so a caret tower
+// that HEAD parses overflowed (S1 review 1, B1; `tests/s1_depth.rs`).
+#[inline(never)]
 fn atom(input: &str) -> IResult<&str, Expr> {
     alt((
         number,
@@ -321,27 +369,68 @@ fn atom(input: &str) -> IResult<&str, Expr> {
 // Example: 2^3^2 = 2^(3^2) = 2^9 = 512
 // Note: Power has HIGHER precedence than unary minus
 // So -x^2 = -(x^2), not (-x)^2
+// The exponent is signed: exponent := ('-' | '+')* power, and a negated integer literal folds to
+// a negative literal (`x^-2` is Pow(x, Integer(-2)); `2^-x` is Pow(2, Neg(x))).
 fn power(input: &str) -> IResult<&str, Expr> {
     let (input, base) = ws(atom)(input)?;
 
     if let Ok((input, _)) = ws(char::<&str, Error<&str>>('^'))(input) {
+        let (input, neg) = sign_run(input);
         let (input, exp) = power(input)?; // Right-associative recursion
-        Ok((input, Expr::Binary(BinaryOp::Pow, Arc::new(base), Arc::new(exp))))
+        Ok((input, make_power(base, neg, exp)))
     } else {
         Ok((input, base))
     }
 }
 
-// Parse a unary expression (handles unary minus and plus)
+// The node of `base ^ (sign) exp`. Out of line (and in `unary` and `multiplicative` likewise),
+// so that the frames of the recursive rules stay as small as HEAD's: the parser's recursion over
+// parentheses and calls is the only one over a text (S1 design §2.12, §2.16).
+#[inline(never)]
+fn make_power(base: Expr, neg: bool, exp: Expr) -> Expr {
+    let exp = match (neg, &exp) {
+        (false, _) => exp,
+        (true, Expr::Integer(n)) => Expr::Integer(-n.clone()),
+        (true, _) => Expr::Unary(UnaryOp::Neg, Arc::new(exp)),
+    };
+    Expr::Binary(BinaryOp::Pow, Arc::new(base), Arc::new(exp))
+}
+
+#[inline(never)]
+fn negate_if(neg: bool, e: Expr) -> Expr {
+    if neg {
+        Expr::Unary(UnaryOp::Neg, Arc::new(e))
+    } else {
+        e
+    }
+}
+
+// One step of a `*` `/` chain. A quotient of two signed integer literals is the exact rational
+// (an Integer when it divides): value-preserving, so `1/3` is still Rational(1/3) and `-2/3`
+// Rational(-2/3). A zero divisor is an error (`None`).
+#[inline(never)]
+fn product_step(op: char, l: Expr, r: Expr) -> Option<Expr> {
+    if op == '/' {
+        if let (Some(a), Some(b)) = (signed_integer_literal(&l), signed_integer_literal(&r)) {
+            let q = Rational::new(a, b).ok()?;
+            return Some(if q.denominator().is_one() {
+                Expr::Integer(q.numerator().clone())
+            } else {
+                Expr::Rational(q)
+            });
+        }
+    }
+    let bin_op = if op == '*' { BinaryOp::Mul } else { BinaryOp::Div };
+    Some(Expr::Binary(bin_op, Arc::new(l), Arc::new(r)))
+}
+
+// Parse a unary expression: a run of signs (an odd number of '-' gives one Neg, an even number
+// none: "--5" is 5, "---x" is Neg(x)), then a power.
 // This comes AFTER power to ensure -x^2 = -(x^2)
 fn unary(input: &str) -> IResult<&str, Expr> {
-    let (input, op) = opt(ws(alt((char('-'), char('+')))))(input)?;
+    let (input, neg) = sign_run(input);
     let (input, expr) = power(input)?;
-
-    match op {
-        Some('-') => Ok((input, Expr::Unary(UnaryOp::Neg, Arc::new(expr)))),
-        _ => Ok((input, expr)),
-    }
+    Ok((input, negate_if(neg, expr)))
 }
 
 // Parse multiplicative expression (*, /)
@@ -364,8 +453,11 @@ fn multiplicative(input: &str) -> IResult<&str, Expr> {
     loop {
         if let Ok((new_input, op)) = ws(alt((char::<&str, Error<&str>>('*'), char('/'))))(input) {
             let (new_input, rhs) = unary(new_input)?;
-            let bin_op = if op == '*' { BinaryOp::Mul } else { BinaryOp::Div };
-            expr = Expr::Binary(bin_op, Arc::new(expr), Arc::new(rhs));
+            expr = match product_step(op, expr, rhs) {
+                Some(e) => e,
+                // "division by zero in a literal"
+                None => return Err(nom::Err::Failure(Error::new(new_input, ErrorKind::Verify))),
+            };
             input = new_input;
         } else {
             break;
@@ -451,7 +543,7 @@ mod tests {
     fn test_parse_float_negative() {
         let expr = parse("-1.5").unwrap();
         // Negative floats are parsed as Unary(Neg, Real(1.5))
-        if let Expr::Unary(UnaryOp::Neg, inner) = expr {
+        if let Expr::Unary(UnaryOp::Neg, inner) = &expr {
             if let Expr::Real(f) = inner.as_ref() {
                 assert!((f - 1.5).abs() < 1e-10);
             } else {
@@ -485,7 +577,7 @@ mod tests {
     #[test]
     fn test_parse_float_in_expression() {
         let expr = parse("0.7 * x").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 if let Expr::Real(f) = left.as_ref() {
                     assert!((f - 0.7).abs() < 1e-10);
@@ -505,7 +597,7 @@ mod tests {
     #[test]
     fn test_parse_float_addition() {
         let expr = parse("3.14 + 2.71").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Add, left, right) => {
                 if let Expr::Real(f) = left.as_ref() {
                     assert!((f - 3.14).abs() < 1e-10);
@@ -525,7 +617,7 @@ mod tests {
     #[test]
     fn test_parse_variable() {
         let expr = parse("x").unwrap();
-        if let Expr::Symbol(sym) = expr {
+        if let Expr::Symbol(sym) = &expr {
             assert_eq!(sym.name(), "x");
         } else {
             panic!("Expected Symbol");
@@ -581,7 +673,7 @@ mod tests {
     fn test_parse_precedence() {
         // x + y * z should be x + (y * z)
         let expr = parse("x + y * z").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Add, left, right) => {
                 // Left should be x
                 if let Expr::Symbol(_) = left.as_ref() {
@@ -602,7 +694,7 @@ mod tests {
     fn test_parse_power_precedence() {
         // x * y ^ 2 should be x * (y ^ 2)
         let expr = parse("x * y ^ 2").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 // Left should be x
                 if let Expr::Symbol(_) = left.as_ref() {
@@ -623,7 +715,7 @@ mod tests {
     fn test_parse_power_right_associative() {
         // 2 ^ 3 ^ 2 should be 2 ^ (3 ^ 2)
         let expr = parse("2 ^ 3 ^ 2").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Pow, left, right) => {
                 // Left should be 2
                 if let Expr::Integer(_) = left.as_ref() {
@@ -643,7 +735,7 @@ mod tests {
     #[test]
     fn test_parse_parentheses() {
         let expr = parse("(x + y) * z").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 // Left should be x + y
                 if let Expr::Binary(BinaryOp::Add, _, _) = left.as_ref() {
@@ -708,7 +800,7 @@ mod tests {
     #[test]
     fn test_parse_nested_functions() {
         let expr = parse("sin(exp(x))").unwrap();
-        match expr {
+        match &expr {
             Expr::Unary(UnaryOp::Sin, inner) => {
                 if let Expr::Unary(UnaryOp::Exp, _) = inner.as_ref() {
                 } else {
@@ -732,7 +824,7 @@ mod tests {
     #[test]
     fn test_parse_complex_expression_2() {
         let expr = parse("sin(x) * exp(-x)").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 // Left should be sin(x)
                 if let Expr::Unary(UnaryOp::Sin, _) = left.as_ref() {
@@ -768,7 +860,7 @@ mod tests {
     #[test]
     fn test_parse_multi_arg_function() {
         let expr = parse("bessel_j(n, x)").unwrap();
-        match expr {
+        match &expr {
             Expr::Function(name, args) => {
                 assert_eq!(name, "bessel_j");
                 assert_eq!(args.len(), 2);
@@ -781,7 +873,7 @@ mod tests {
     fn test_parse_unary_minus_precedence() {
         // -x^2 should be -(x^2), not (-x)^2
         let expr = parse("-x^2").unwrap();
-        match expr {
+        match &expr {
             Expr::Unary(UnaryOp::Neg, inner) => {
                 if let Expr::Binary(BinaryOp::Pow, _, _) = inner.as_ref() {
                 } else {
@@ -867,7 +959,7 @@ mod tests {
     #[test]
     fn test_parse_constant_pi() {
         let expr = parse("pi").unwrap();
-        if let Expr::Symbol(sym) = expr {
+        if let Expr::Symbol(sym) = &expr {
             assert_eq!(sym.name(), "pi");
         } else {
             panic!("Expected Symbol for pi");
@@ -877,7 +969,7 @@ mod tests {
     #[test]
     fn test_parse_constant_e() {
         let expr = parse("e").unwrap();
-        if let Expr::Symbol(sym) = expr {
+        if let Expr::Symbol(sym) = &expr {
             assert_eq!(sym.name(), "e");
         } else {
             panic!("Expected Symbol for e");
@@ -887,7 +979,7 @@ mod tests {
     #[test]
     fn test_parse_constant_I() {
         let expr = parse("I").unwrap();
-        if let Expr::Symbol(sym) = expr {
+        if let Expr::Symbol(sym) = &expr {
             assert_eq!(sym.name(), "I");
         } else {
             panic!("Expected Symbol for I");
@@ -897,7 +989,7 @@ mod tests {
     #[test]
     fn test_parse_constant_infinity() {
         let expr = parse("oo").unwrap();
-        if let Expr::Symbol(sym) = expr {
+        if let Expr::Symbol(sym) = &expr {
             assert_eq!(sym.name(), "oo");
         } else {
             panic!("Expected Symbol for oo");
@@ -905,7 +997,7 @@ mod tests {
 
         // Test alternative names
         let expr2 = parse("infinity").unwrap();
-        if let Expr::Symbol(sym) = expr2 {
+        if let Expr::Symbol(sym) = &expr2 {
             assert_eq!(sym.name(), "oo");
         } else {
             panic!("Expected Symbol for infinity");
@@ -916,7 +1008,7 @@ mod tests {
     fn test_parse_expression_with_pi() {
         // 2*pi
         let expr = parse("2 * pi").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Mul, left, right) => {
                 assert!(matches!(left.as_ref(), Expr::Integer(_)));
                 if let Expr::Symbol(sym) = right.as_ref() {
@@ -933,7 +1025,7 @@ mod tests {
     fn test_parse_expression_with_e() {
         // e^x
         let expr = parse("e ^ x").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Pow, left, right) => {
                 if let Expr::Symbol(sym) = left.as_ref() {
                     assert_eq!(sym.name(), "e");
@@ -950,7 +1042,7 @@ mod tests {
     fn test_parse_complex_expression_with_I() {
         // 3 + 2*I
         let expr = parse("3 + 2 * I").unwrap();
-        match expr {
+        match &expr {
             Expr::Binary(BinaryOp::Add, _, right) => {
                 if let Expr::Binary(BinaryOp::Mul, _, i_part) = right.as_ref() {
                     if let Expr::Symbol(sym) = i_part.as_ref() {
@@ -970,7 +1062,7 @@ mod tests {
     fn test_parse_trig_with_pi() {
         // sin(pi/2)
         let expr = parse("sin(pi / 2)").unwrap();
-        match expr {
+        match &expr {
             Expr::Unary(UnaryOp::Sin, arg) => {
                 if let Expr::Binary(BinaryOp::Div, _, _) = arg.as_ref() {
                 } else {
@@ -978,6 +1070,175 @@ mod tests {
                 }
             }
             _ => panic!("Expected Sin operation"),
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // S1 design §2.12 and §4.3: bignum literals, `a/b` as an operator (with the value-preserving
+    // fold of two signed integer literals), signed exponents, sign runs, inverse hyperbolic names
+    // ---------------------------------------------------------------------------------------
+
+    fn int(s: &str) -> Expr {
+        Expr::Integer(Integer::from_decimal_str(s).unwrap())
+    }
+
+    fn rat(n: i64, d: i64) -> Expr {
+        Expr::Rational(Rational::new(Integer::from(n), Integer::from(d)).unwrap())
+    }
+
+    fn on_2mb<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
+        std::thread::Builder::new()
+            .stack_size(2 * 1024 * 1024)
+            .spawn(f)
+            .expect("spawn")
+            .join()
+            .expect("the thread panicked or overflowed its stack")
+    }
+
+    #[test]
+    fn test_parse_big_integer() {
+        match &parse("x + 18446744073709551616").unwrap() {
+            Expr::Binary(BinaryOp::Add, _, r) => assert_eq!(**r, int("18446744073709551616")),
+            other => panic!("expected a sum, got {other}"),
+        }
+        assert_eq!(
+            parse("-9223372036854775808").unwrap(),
+            Expr::Unary(UnaryOp::Neg, Arc::new(int("9223372036854775808")))
+        );
+        assert_eq!(
+            parse("123456789012345678901234567890").unwrap(),
+            int("123456789012345678901234567890")
+        );
+    }
+
+    #[test]
+    fn test_parse_division_by_non_literal() {
+        for s in ["1/x", "1/sin(x)", "exp(1/x)", "1/(y+x)"] {
+            let e = parse(s).unwrap_or_else(|e| panic!("{s}: {e}"));
+            let div = match &e {
+                Expr::Unary(UnaryOp::Exp, a) => (**a).clone(),
+                other => other.clone(),
+            };
+            match &div {
+                Expr::Binary(BinaryOp::Div, l, _) => assert_eq!(**l, Expr::from(1), "{s}"),
+                other => panic!("{s}: expected a quotient, got {other}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_rational_precedence() {
+        // gp: 2^3/4 = 2, 2/3^2 = 2/9, 3/4^2 = 3/16, 2^-1/3 = 1/6
+        let x = Expr::symbol("x");
+        assert_eq!(
+            parse("x^2/4").unwrap(),
+            Expr::Binary(
+                BinaryOp::Div,
+                Arc::new(Expr::Binary(BinaryOp::Pow, Arc::new(x.clone()), Arc::new(Expr::from(2)))),
+                Arc::new(Expr::from(4))
+            )
+        );
+        assert_eq!(parse("2^3/4").unwrap().simplify(), Expr::from(2));
+        assert_eq!(parse("2/3^2").unwrap().simplify(), rat(2, 9));
+        assert_eq!(parse("3/4^2").unwrap().simplify(), rat(3, 16));
+        assert_eq!(parse("2^-1/3").unwrap().simplify(), rat(1, 6));
+        let at = Expr::Rational(Rational::new(Integer::from(5), Integer::from(7)).unwrap());
+        let xs = crate::symbol::Symbol::new("x");
+        let val = |s: &str| parse(s).unwrap().substitute(&xs, &at).eval_rational().unwrap();
+        // x*2/3^2 = 2x/9 and x/2/3 = x/6 at x = 5/7
+        assert_eq!(val("x*2/3^2"), Rational::new(Integer::from(10), Integer::from(63)).unwrap());
+        assert_eq!(val("x/2/3"), Rational::new(Integer::from(5), Integer::from(42)).unwrap());
+    }
+
+    #[test]
+    fn test_parse_signed_exponent() {
+        let pow = |a: Expr, b: Expr| Expr::Binary(BinaryOp::Pow, Arc::new(a), Arc::new(b));
+        let x = Expr::symbol("x");
+        assert_eq!(parse("2^-1").unwrap(), pow(Expr::from(2), Expr::from(-1)));
+        assert_eq!(parse("x^-2").unwrap(), pow(x.clone(), Expr::from(-2)));
+        assert_eq!(
+            parse("2^-x").unwrap(),
+            pow(Expr::from(2), Expr::Unary(UnaryOp::Neg, Arc::new(x)))
+        );
+    }
+
+    #[test]
+    fn test_parse_literal_fold() {
+        assert_eq!(parse("1/3").unwrap(), rat(1, 3));
+        assert_eq!(parse("6/4").unwrap(), rat(3, 2));
+        assert_eq!(parse("1/-3").unwrap(), rat(-1, 3));
+        assert_eq!(parse("-2/3").unwrap(), rat(-2, 3));
+        assert_eq!(parse("4/2").unwrap(), Expr::from(2));
+        assert!(parse("1/0").is_err());
+    }
+
+    #[test]
+    fn test_parse_inverse_hyperbolic() {
+        let x = || Arc::new(Expr::symbol("x"));
+        assert_eq!(parse("asinh(x)").unwrap(), Expr::Unary(UnaryOp::Arcsinh, x()));
+        assert_eq!(parse("arcsinh(x)").unwrap(), Expr::Unary(UnaryOp::Arcsinh, x()));
+        assert_eq!(parse("arccosh(x)").unwrap(), Expr::Unary(UnaryOp::Arccosh, x()));
+        assert_eq!(parse("acosh(x)").unwrap(), Expr::Unary(UnaryOp::Arccosh, x()));
+        assert_eq!(parse("atanh(x)").unwrap(), Expr::Unary(UnaryOp::Arctanh, x()));
+        assert_eq!(parse("arctanh(x)").unwrap(), Expr::Unary(UnaryOp::Arctanh, x()));
+    }
+
+    #[test]
+    fn test_parse_sign_runs() {
+        let x = Expr::symbol("x");
+        assert_eq!(parse("--5").unwrap(), Expr::from(5));
+        assert_eq!(parse("---x").unwrap(), Expr::Unary(UnaryOp::Neg, Arc::new(x.clone())));
+        assert_eq!(
+            parse("x^--2").unwrap(),
+            Expr::Binary(BinaryOp::Pow, Arc::new(x.clone()), Arc::new(Expr::from(2)))
+        );
+        assert_eq!(parse("+-+x").unwrap(), Expr::Unary(UnaryOp::Neg, Arc::new(x)));
+        // 100 000 signs on a 2 MB thread: an even run, so x
+        on_2mb(|| {
+            let s = format!("{}x", "-".repeat(100_000));
+            assert_eq!(parse(&s).unwrap(), Expr::symbol("x"));
+        });
+    }
+
+    #[test]
+    fn test_parse_depth_not_below_head() {
+        on_2mb(|| {
+            let s = format!("{}x{}", "sin(".repeat(160), ")".repeat(160));
+            assert!(parse(&s).is_ok());
+            let s = format!("{}x{}", "(".repeat(200), ")".repeat(200));
+            assert!(parse(&s).is_ok());
+        });
+    }
+
+    #[test]
+    fn test_display_parse_round_trip() {
+        // S1 design §4.3: the Display of §2.11 reads back as the same tree, up to the parser's
+        // own folds (simplify folds Neg(Integer(2)) and Real(-1.5), which the parser rebuilds as
+        // negations)
+        let x = || Arc::new(Expr::symbol("x"));
+        let pow = |a: Expr, b: Expr| Expr::Binary(BinaryOp::Pow, Arc::new(a), Arc::new(b));
+        let cases = vec![
+            pow(Expr::symbol("x"), rat(1, 2)),
+            pow(rat(3, 4), rat(-1, 2)),
+            Expr::Binary(BinaryOp::Div, x(), Arc::new(rat(1, 2))),
+            pow(Expr::from(-2), Expr::from(2)),
+            pow(Expr::Unary(UnaryOp::Neg, Arc::new(Expr::symbol("y"))), rat(1, 2)),
+            pow(Expr::Real(-1.5), Expr::from(2)),
+            Expr::Unary(UnaryOp::Neg, Arc::new(Expr::Unary(UnaryOp::Neg, x()))),
+            pow(Expr::symbol("pi"), Expr::Unary(UnaryOp::Neg, Arc::new(rat(2, 3)))),
+            Expr::Binary(BinaryOp::Div, Arc::new(Expr::from(3)), Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(rat(1, 2))))),
+            Expr::Real(1e23),
+            Expr::Unary(UnaryOp::Arctanh, x()),
+        ];
+        for e in cases {
+            let text = format!("{e}");
+            let back = parse(&text).unwrap_or_else(|err| panic!("{text}: {err}"));
+            if matches!(text.as_str(), "((-1.5) ^ 2)") {
+                // simplify keeps Neg(Real(1.5)) and Real(-1.5) apart: compare the values
+                assert_eq!(back.eval_float(), e.eval_float(), "{text}");
+            } else {
+                assert_eq!(back.simplify(), e.simplify(), "{text}");
+            }
         }
     }
 }

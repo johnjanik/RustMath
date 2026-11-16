@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn test_min_empty() {
         let result = min_symbolic(&[]);
-        assert!(matches!(result, Expr::Function(name, args) if name == "min" && args.is_empty()));
+        assert!(matches!(&result, Expr::Function(name, args) if name == "min" && args.is_empty()));
     }
 
     #[test]
@@ -269,11 +269,11 @@ mod tests {
         let y = Symbol::new("y");
 
         let result = min_symbolic(&[Expr::Symbol(x.clone()), Expr::Symbol(y.clone())]);
-        assert!(matches!(result, Expr::Function(name, _) if name == "min"));
+        assert!(matches!(&result, Expr::Function(name, _) if name == "min"));
 
         // Mixed numeric and symbolic
         let result2 = min_symbolic(&[Expr::from(5), Expr::Symbol(x)]);
-        assert!(matches!(result2, Expr::Function(name, _) if name == "min"));
+        assert!(matches!(&result2, Expr::Function(name, _) if name == "min"));
     }
 
     #[test]
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn test_max_empty() {
         let result = max_symbolic(&[]);
-        assert!(matches!(result, Expr::Function(name, args) if name == "max" && args.is_empty()));
+        assert!(matches!(&result, Expr::Function(name, args) if name == "max" && args.is_empty()));
     }
 
     #[test]
@@ -316,11 +316,11 @@ mod tests {
         let y = Symbol::new("y");
 
         let result = max_symbolic(&[Expr::Symbol(x.clone()), Expr::Symbol(y.clone())]);
-        assert!(matches!(result, Expr::Function(name, _) if name == "max"));
+        assert!(matches!(&result, Expr::Function(name, _) if name == "max"));
 
         // Mixed numeric and symbolic
         let result2 = max_symbolic(&[Expr::from(5), Expr::Symbol(x)]);
-        assert!(matches!(result2, Expr::Function(name, _) if name == "max"));
+        assert!(matches!(&result2, Expr::Function(name, _) if name == "max"));
     }
 
     #[test]

@@ -229,7 +229,7 @@ mod tests {
         let result = symbolic_sum(&i, "i", &Expr::from(1), &n, None, true).unwrap();
 
         // Check it's a function call
-        if let Expr::Function(name, _args) = result {
+        if let Expr::Function(name, _args) = &result {
             assert_eq!(name, "sum");
         } else {
             panic!("Expected function");

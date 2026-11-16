@@ -297,13 +297,13 @@ mod tests {
         let x = Symbol::new("x");
         let ai = airy_ai(&Expr::Symbol(x));
 
-        assert!(matches!(ai, Expr::Function(name, _) if name == "airy_ai"));
+        assert!(matches!(&ai, Expr::Function(name, _) if name == "airy_ai"));
     }
 
     #[test]
     fn test_airy_ai_zero() {
         let ai_0 = airy_ai(&Expr::from(0));
-        assert!(matches!(ai_0, Expr::Function(name, args)
+        assert!(matches!(&ai_0, Expr::Function(name, args)
             if name == "airy_ai" && args.len() == 1));
     }
 
@@ -312,13 +312,13 @@ mod tests {
         let x = Symbol::new("x");
         let bi = airy_bi(&Expr::Symbol(x));
 
-        assert!(matches!(bi, Expr::Function(name, _) if name == "airy_bi"));
+        assert!(matches!(&bi, Expr::Function(name, _) if name == "airy_bi"));
     }
 
     #[test]
     fn test_airy_bi_zero() {
         let bi_0 = airy_bi(&Expr::from(0));
-        assert!(matches!(bi_0, Expr::Function(name, args)
+        assert!(matches!(&bi_0, Expr::Function(name, args)
             if name == "airy_bi" && args.len() == 1));
     }
 
@@ -327,7 +327,7 @@ mod tests {
         let x = Symbol::new("x");
         let ai_prime = airy_ai_prime(&Expr::Symbol(x));
 
-        assert!(matches!(ai_prime, Expr::Function(name, _) if name == "airy_ai_prime"));
+        assert!(matches!(&ai_prime, Expr::Function(name, _) if name == "airy_ai_prime"));
     }
 
     #[test]
@@ -335,7 +335,7 @@ mod tests {
         let x = Symbol::new("x");
         let bi_prime = airy_bi_prime(&Expr::Symbol(x));
 
-        assert!(matches!(bi_prime, Expr::Function(name, _) if name == "airy_bi_prime"));
+        assert!(matches!(&bi_prime, Expr::Function(name, _) if name == "airy_bi_prime"));
     }
 
     #[test]
@@ -391,7 +391,7 @@ mod tests {
         let expr = Expr::Symbol(x.clone()) * Expr::from(2);
 
         let ai = airy_ai(&expr);
-        assert!(matches!(ai, Expr::Function(name, args)
+        assert!(matches!(&ai, Expr::Function(name, args)
             if name == "airy_ai" && args.len() == 1));
     }
 }

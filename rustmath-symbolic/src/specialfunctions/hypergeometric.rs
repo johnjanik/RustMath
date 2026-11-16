@@ -293,7 +293,7 @@ mod tests {
             &Expr::Symbol(x),
         );
 
-        assert!(matches!(hyp, Expr::Function(name, _) if name == "hypergeometric"));
+        assert!(matches!(&hyp, Expr::Function(name, _) if name == "hypergeometric"));
     }
 
     #[test]
@@ -301,7 +301,7 @@ mod tests {
         let z = Symbol::new("z");
         let m = hypergeometric_m(&Expr::from(1), &Expr::from(2), &Expr::Symbol(z));
 
-        assert!(matches!(m, Expr::Function(name, args)
+        assert!(matches!(&m, Expr::Function(name, args)
             if name == "hypergeometric_m" && args.len() == 3));
     }
 
@@ -310,7 +310,7 @@ mod tests {
         let z = Symbol::new("z");
         let u = hypergeometric_u(&Expr::from(1), &Expr::from(2), &Expr::Symbol(z));
 
-        assert!(matches!(u, Expr::Function(name, args)
+        assert!(matches!(&u, Expr::Function(name, args)
             if name == "hypergeometric_u" && args.len() == 3));
     }
 

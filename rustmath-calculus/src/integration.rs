@@ -424,9 +424,9 @@ mod tests {
         let expr = x.sin();
         let result = integrate(&expr, "x").unwrap();
         // Result should be -cos(x)
-        match result {
+        match &result {
             Expr::Unary(UnaryOp::Neg, inner) => {
-                assert!(matches!(*inner, Expr::Unary(UnaryOp::Cos, _)));
+                assert!(matches!(**inner, Expr::Unary(UnaryOp::Cos, _)));
             }
             _ => panic!("Expected -cos(x)"),
         }

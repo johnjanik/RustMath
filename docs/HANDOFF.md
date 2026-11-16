@@ -4,7 +4,7 @@ Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the pro
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
 the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). In the
 open follow-ups round **12 of 13 units are done** (2026-11-15; the last one committed is MF1, `f29c492`),
-and S1 is in a further design round: see "Open follow-ups round" below and
+and S1 is parked: its design was not approved after nine reviews and four red-team rounds. See "Open follow-ups round" below and
 `docs/workstreams/handoff-followups/README.md`, which has the designs and the steps to resume. After that
 come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
@@ -18,7 +18,7 @@ come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
   were deleted; their tips are tags `archive/<branch>` (`docs/BRANCHES.md`). Work on a new branch
   off `main`; cloud sessions can push only their own branch (no tags, no other branches).
 - **Build and tests:** the whole workspace compiles, and `cargo test --workspace` is green:
-  14,386 passed, 0 failed, 333 ignored, 194 targets at `922024b` (`docs/TEST_BASELINE.md`). First build
+  14,791 passed, 0 failed, 328 ignored, 203 targets at `f29c492` (`docs/TEST_BASELINE.md`). First build
   compiles GMP/MPFR for `rug` (minutes).
 - **Disk:** the session's disk allowance is about 39 GB. With incremental compilation on, `target/`
   grew past 20 GB and filled it mid-session. This session set `[build] incremental = false` in
@@ -310,8 +310,12 @@ the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pus
   PARI/GP 2.15 and Sage values.
 
 Still to do in this round: S1 (symbolic: `Expr::taylor`, the literal parser). Its design was not approved after
-seven design reviews (reviews 1 to 7 in `docs/workstreams/handoff-followups/design/`); a further design round with a red team is
-running, and its items below stay open. The trackers follow all twelve commits: `PROJECT_TRACKER.md` (Change Log
+nine design reviews and four red-team rounds (all in `docs/workstreams/handoff-followups/design/`; run 4 is summarized in
+that folder's README). Review 9's two blockers are narrow (a decided `DivisionByZero` for arcsin, arccos, arccosh and
+arcsinh of an exact-constant argument at +-1 or +-I, and for arctanh of a non-constant argument whose constant term is
++-1), but every revision so far has opened new holes over the fixed bar. S1 is parked for an owner decision: fix the
+two blockers and implement with the random-input harness of review 9 as acceptance, or narrow the scope. Its items
+below stay open. The trackers follow all twelve commits: `PROJECT_TRACKER.md` (Change Log
 "Open follow-ups round, part 1", "part 2" and "part 3"), `docs/magma/status_overrides.csv` (part 2: 102 rows of the
 reviewed chapters re-rated, 57 of them with a new status, seven pilot rows, 18 rows added for chapters 83, 144 and
 145, and 384 path-only refreshes tagged `path refreshed 36c2170`; part 3: no row cites the code that `f29c492`
@@ -506,7 +510,7 @@ fixed; its last three bullets name each fixed item with its commit.
   - Half-gcd is not implemented (Lehmer since `80130e7`; estimated crossover 10^5 to 10^6 bits), and
     `Integer::nth_root(n)` (MAGMA `Iroot`) is slow for a large n on a large input (num-bigint's Newton start; a
     start from the leading bits would fix it).
-- Unit S1 (design in a further review round with a red team; the X2 split-outs it takes):
+- Unit S1 (parked after nine design reviews; the X2 split-outs it takes):
   - S1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
     exponentially with the order (x^2 at order 9 needs more than 3 GB) and a debug build overflows the stack at
     order 20000 (`TAYLOR_ORDER`); no REPL bound prevents it. The i64-only literal parser

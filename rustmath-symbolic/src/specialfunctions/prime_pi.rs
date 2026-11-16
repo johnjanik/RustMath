@@ -268,7 +268,7 @@ mod tests {
     fn test_prime_pi_symbolic() {
         let x = Symbol::new("x");
         let pi_x = prime_pi(&Expr::Symbol(x));
-        assert!(matches!(pi_x, Expr::Function(name, _) if name == "prime_pi"));
+        assert!(matches!(&pi_x, Expr::Function(name, _) if name == "prime_pi"));
     }
 
     #[test]
@@ -296,7 +296,7 @@ mod tests {
         let x = Symbol::new("x");
         let a = Symbol::new("a");
         let phi = legendre_phi(&Expr::Symbol(x), &Expr::Symbol(a));
-        assert!(matches!(phi, Expr::Function(name, _) if name == "legendre_phi"));
+        assert!(matches!(&phi, Expr::Function(name, _) if name == "legendre_phi"));
     }
 
     #[test]

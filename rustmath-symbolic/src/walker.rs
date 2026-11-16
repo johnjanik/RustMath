@@ -682,7 +682,7 @@ mod tests {
         let result = substituter.mutate(&expr);
 
         // Should be f(10)
-        if let Expr::Function(name, args) = result {
+        if let Expr::Function(name, args) = &result {
             assert_eq!(name, "f");
             assert_eq!(args.len(), 1);
             assert!(matches!(*args[0], Expr::Integer(_)));

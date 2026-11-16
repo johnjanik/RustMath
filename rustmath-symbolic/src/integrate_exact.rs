@@ -93,8 +93,8 @@ fn is_lit_one(e: &Expr) -> bool {
 }
 
 fn neg_clean(e: Expr) -> Expr {
-    match e {
-        Expr::Unary(UnaryOp::Neg, inner) => (*inner).clone(),
+    match &e {
+        Expr::Unary(UnaryOp::Neg, inner) => (**inner).clone(),
         _ if is_lit_zero(&e) => Expr::from(0),
         _ => -e,
     }
@@ -145,33 +145,32 @@ fn split_rational_const(e: &Expr) -> (Rational, Expr) {
     let mut c = Rational::one();
     let mut cur = e.clone();
     loop {
-        match cur {
+        let next = match &cur {
             Expr::Unary(UnaryOp::Neg, inner) => {
                 c = -c;
-                cur = (*inner).clone();
+                (**inner).clone()
             }
             Expr::Binary(BinaryOp::Mul, l, r) => {
-                if let Some(k) = as_exact_rational(&l) {
+                if let Some(k) = as_exact_rational(l) {
                     c = c * k;
-                    cur = (*r).clone();
-                } else if let Some(k) = as_exact_rational(&r) {
+                    (**r).clone()
+                } else if let Some(k) = as_exact_rational(r) {
                     c = c * k;
-                    cur = (*l).clone();
+                    (**l).clone()
                 } else {
-                    return (c, Expr::Binary(BinaryOp::Mul, l, r));
+                    return (c, cur);
                 }
             }
-            Expr::Binary(BinaryOp::Div, l, r) => {
-                match as_exact_rational(&r) {
-                    Some(k) if !k.is_zero() => {
-                        c = c * k.reciprocal().expect("nonzero");
-                        cur = (*l).clone();
-                    }
-                    _ => return (c, Expr::Binary(BinaryOp::Div, l, r)),
+            Expr::Binary(BinaryOp::Div, l, r) => match as_exact_rational(r) {
+                Some(k) if !k.is_zero() => {
+                    c = c * k.reciprocal().expect("nonzero");
+                    (**l).clone()
                 }
-            }
-            other => return (c, other),
-        }
+                _ => return (c, cur),
+            },
+            _ => return (c, cur),
+        };
+        cur = next;
     }
 }
 

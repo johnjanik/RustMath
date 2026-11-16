@@ -316,9 +316,9 @@ mod tests {
         let expr = Expr::from(8).sqrt();
         let canonical = expr.canonicalize_radical();
 
-        match canonical {
+        match &canonical {
             Expr::Binary(BinaryOp::Mul, left, right) => {
-                assert_eq!(*left, Expr::from(2));
+                assert_eq!(**left, Expr::from(2));
                 assert!(matches!(right.as_ref(), Expr::Unary(UnaryOp::Sqrt, _)));
             }
             _ => panic!("Expected product"),
@@ -336,9 +336,9 @@ mod tests {
         let canonical = expr.canonicalize_radical();
 
         // Should be sqrt(6)
-        match canonical {
+        match &canonical {
             Expr::Unary(UnaryOp::Sqrt, inner) => {
-                assert_eq!(*inner, Expr::from(6));
+                assert_eq!(**inner, Expr::from(6));
             }
             _ => {} // Could also be in other forms due to simplification
         }
@@ -365,9 +365,9 @@ mod tests {
         let canonical = expr.canonicalize_radical();
 
         // Should have 2 in denominator, not sqrt(2)
-        match canonical {
+        match &canonical {
             Expr::Binary(BinaryOp::Div, _, den) => {
-                assert_eq!(*den, Expr::from(2));
+                assert_eq!(**den, Expr::from(2));
             }
             _ => {}
         }

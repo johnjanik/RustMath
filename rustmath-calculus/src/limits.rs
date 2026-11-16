@@ -306,10 +306,10 @@ mod tests {
         let expr = x.clone() + y.clone();
         let result = substitute(&expr, "x", &Expr::from(3));
         // Result should be (3 + y)
-        match result {
+        match &result {
             Expr::Binary(BinaryOp::Add, left, right) => {
-                assert_eq!(*left, Expr::from(3));
-                assert!(matches!(*right, Expr::Symbol(_)));
+                assert_eq!(**left, Expr::from(3));
+                assert!(matches!(**right, Expr::Symbol(_)));
             }
             _ => panic!("Expected binary add"),
         }

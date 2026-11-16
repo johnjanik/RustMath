@@ -654,7 +654,7 @@ mod tests {
     fn test_chebyshev_t_symbolic() {
         let x = Symbol::new("x");
         let t = chebyshev_t(&Expr::from(10), &Expr::Symbol(x));
-        assert!(matches!(t, Expr::Function(name, _) if name == "chebyshev_t"));
+        assert!(matches!(&t, Expr::Function(name, _) if name == "chebyshev_t"));
     }
 
     #[test]
@@ -687,42 +687,42 @@ mod tests {
     fn test_gen_laguerre_symbolic() {
         let x = Symbol::new("x");
         let l = gen_laguerre(&Expr::from(5), &Expr::from(2), &Expr::Symbol(x));
-        assert!(matches!(l, Expr::Function(name, _) if name == "gen_laguerre"));
+        assert!(matches!(&l, Expr::Function(name, _) if name == "gen_laguerre"));
     }
 
     #[test]
     fn test_jacobi_p_symbolic() {
         let x = Symbol::new("x");
         let j = jacobi_p(&Expr::from(5), &Expr::from(1), &Expr::from(2), &Expr::Symbol(x));
-        assert!(matches!(j, Expr::Function(name, _) if name == "jacobi_p"));
+        assert!(matches!(&j, Expr::Function(name, _) if name == "jacobi_p"));
     }
 
     #[test]
     fn test_ultraspherical_symbolic() {
         let x = Symbol::new("x");
         let u = ultraspherical(&Expr::from(5), &Expr::from(1), &Expr::Symbol(x));
-        assert!(matches!(u, Expr::Function(name, _) if name == "ultraspherical"));
+        assert!(matches!(&u, Expr::Function(name, _) if name == "ultraspherical"));
     }
 
     #[test]
     fn test_legendre_q_symbolic() {
         let x = Symbol::new("x");
         let q = legendre_q(&Expr::from(5), &Expr::Symbol(x));
-        assert!(matches!(q, Expr::Function(name, _) if name == "legendre_q"));
+        assert!(matches!(&q, Expr::Function(name, _) if name == "legendre_q"));
     }
 
     #[test]
     fn test_assoc_legendre_p() {
         let x = Symbol::new("x");
         let p = assoc_legendre_p(&Expr::from(2), &Expr::from(1), &Expr::Symbol(x));
-        assert!(matches!(p, Expr::Function(name, _) if name == "assoc_legendre_p"));
+        assert!(matches!(&p, Expr::Function(name, _) if name == "assoc_legendre_p"));
     }
 
     #[test]
     fn test_assoc_legendre_q() {
         let x = Symbol::new("x");
         let q = assoc_legendre_q(&Expr::from(2), &Expr::from(1), &Expr::Symbol(x));
-        assert!(matches!(q, Expr::Function(name, _) if name == "assoc_legendre_q"));
+        assert!(matches!(&q, Expr::Function(name, _) if name == "assoc_legendre_q"));
     }
 
     #[test]
@@ -735,7 +735,7 @@ mod tests {
             &Expr::from(1),
             &Expr::from(5),
         );
-        assert!(matches!(h, Expr::Function(name, _) if name == "hahn"));
+        assert!(matches!(&h, Expr::Function(name, _) if name == "hahn"));
     }
 
     #[test]
@@ -747,7 +747,7 @@ mod tests {
             &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap()),
             &Expr::from(5),
         );
-        assert!(matches!(k, Expr::Function(name, _) if name == "krawtchouk"));
+        assert!(matches!(&k, Expr::Function(name, _) if name == "krawtchouk"));
     }
 
     #[test]
@@ -759,6 +759,6 @@ mod tests {
             &Expr::from(2),
             &Expr::Rational(rustmath_rationals::Rational::new(1, 2).unwrap()),
         );
-        assert!(matches!(m, Expr::Function(name, _) if name == "meixner"));
+        assert!(matches!(&m, Expr::Function(name, _) if name == "meixner"));
     }
 }

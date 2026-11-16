@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn test_spike_function() {
         let spike = spike_function(&Expr::from(0), &Expr::from(2), &Expr::from(1));
-        assert!(matches!(spike, Expr::Function(name, args)
+        assert!(matches!(&spike, Expr::Function(name, args)
             if name == "spike_function" && args.len() == 3));
     }
 

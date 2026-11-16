@@ -1,4 +1,44 @@
-# Test baseline (2026-11-14, open follow-ups round part 1)
+# Test baseline (2026-11-15, open follow-ups round part 2)
+
+`cargo test --workspace --no-fail-fast` at commit `f29c492`, rustc 1.97.0, 4-core cloud container,
+atlas data present, incremental compilation disabled.
+
+**Result: 14,791 passed, 0 failed, 328 ignored, across 203 test targets.**
+
+Compared with the 2026-11-14 baseline below (14,386 / 0 / 333, 194 targets), the difference is eight
+more units of the open follow-ups round (commits `4b7f034`..`36c2170` and `f29c492`; see
+`docs/workstreams/handoff-followups/`). They added 405 tests and nine test targets:
+
+| Target | Before | After | Change |
+|---|--:|--:|---|
+| `rustmath-finitefields` lib | 164 | 202 | proven characteristic, `Gfpn::try_new`, group orders, field square roots (`4b7f034`) |
+| `rustmath-finitefields --test field_sqrt` | (new) | 9 | `IsSquare` and `SquareRoot` in GF(q) against gp |
+| `rustmath-finitefields --test unit_group_orders` | (new) | 6 | orders and `FactoredOrder` against gp `znorder` and `fforder` |
+| `rustmath-finitefields --test unit_group_orders_capped` | (new) | 1 | the capped Ring hook |
+| `rustmath-finitefields --test unbound_constants` | (new) | 10 | unbound constants in polynomial containers |
+| `rustmath-finitefields --test galois_ring_sentinel` | 16 | 17 | |
+| `rustmath-finitefields --test sentinel_eq` | 7 | 9 | |
+| `rustmath-finitefields --test matrix_forms_gfp` | 17 | 27 | peeled rational form, primary forms, Jordan form over GF(p) (`d3a133b`, `dc367a2`) |
+| `rustmath-rings` lib | 1726 | 1787 | exact p-adic sentinels, field certificates, ring predicates (`fd081fa`) |
+| `rustmath-category` lib | 152 | 160 | ring predicates of concrete parents |
+| `rustmath-powerseries --test ring_predicates` | (new) | 6 | power series ring hooks |
+| `rustmath-schemes` lib | 238 (+13 ignored) | 245 (+7 ignored) | six elliptic-curve p-adic tests un-ignored, one new (`fd081fa`) |
+| `rustmath-matrix` lib | 254 | 289 | vector peeling, primary forms, multi-RHS solve (`d3a133b`, `dc367a2`) |
+| `rustmath-combinatorics` lib | 1485 | 1509 | checked machine-word counting, factorials, HRR partition numbers (`2e000c9`) |
+| `rustmath-combinatorics --test ch144_counting` | (new) | 14 | PARI fixtures for the counting functions |
+| `rustmath-combinatorics --test ch145_number_of_partitions` | (new) | 6 | 71 PARI rows of p(n) and standard tableaux |
+| `rustmath-combinatorics --test machine_word_counts` | (new) | 53 | overflow refusals and exact values |
+| `rustmath-jupyter` lib | 64 | 109 (+1 ignored) | parser, conversions, growth guards, display budget, interrupt (`bd03278`, `36c2170`) |
+| `rustmath-jupyter --test kernel_protocol` | (new) | 4 | the kernel's interrupt and limit replies |
+| `rustmath-manifolds` lib | 258 | 308 | exact d, wedge, interior product, Lie derivative, zero test, checked counts (`f29c492`) |
+| others | | +15 | doctests: combinatorics +2, finitefields +1, manifolds +2, matrix +1; polynomials lib +4, finitefields `ring_predicates` +1, algebras +1, core +1, numberfields +1, rationals +1 |
+
+One `#[ignore]` test was added: `test_sqrt_mod_refusal_release` in rustmath-jupyter, a timing check
+for release builds that its debug counterpart covers. Six ignore markers were removed in
+rustmath-schemes (the elliptic-curve p-adic tests that panicked in the old static p-adic `one()`).
+No existing assertion was weakened (each unit was reviewed for that before its commit).
+
+## Previous baseline (2026-11-14, open follow-ups round part 1)
 
 `cargo test --workspace --no-fail-fast` at commit `922024b`, rustc 1.97.0, 4-core cloud container,
 atlas data present, incremental compilation disabled.

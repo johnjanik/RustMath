@@ -489,7 +489,7 @@ fn is_zero_expr(expr: &Expr) -> bool {
     // Try to simplify first
     let simplified = simplify(expr);
 
-    match simplified {
+    match &simplified {
         Expr::Integer(n) => n.is_zero(),
         Expr::Rational(r) => r.is_zero(),
         Expr::Real(f) => f.abs() < 1e-10,

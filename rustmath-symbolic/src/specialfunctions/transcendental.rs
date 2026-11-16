@@ -312,7 +312,7 @@ mod tests {
     fn test_zeta_symbolic() {
         let s = Symbol::new("s");
         let z = zeta(&Expr::Symbol(s));
-        assert!(matches!(z, Expr::Function(name, _) if name == "zeta"));
+        assert!(matches!(&z, Expr::Function(name, _) if name == "zeta"));
     }
 
     #[test]
@@ -325,7 +325,7 @@ mod tests {
     fn test_zeta_deriv_symbolic() {
         let s = Symbol::new("s");
         let zd = zeta_deriv(&Expr::from(1), &Expr::Symbol(s));
-        assert!(matches!(zd, Expr::Function(name, args)
+        assert!(matches!(&zd, Expr::Function(name, args)
             if name == "zeta_deriv" && args.len() == 2));
     }
 
@@ -333,21 +333,21 @@ mod tests {
     fn test_hurwitz_zeta_symbolic() {
         let s = Symbol::new("s");
         let hz = hurwitz_zeta(&Expr::Symbol(s), &Expr::from(1));
-        assert!(matches!(hz, Expr::Function(name, args)
+        assert!(matches!(&hz, Expr::Function(name, args)
             if name == "hurwitz_zeta" && args.len() == 2));
     }
 
     #[test]
     fn test_stieltjes_symbolic() {
         let gamma = stieltjes(&Expr::from(0));
-        assert!(matches!(gamma, Expr::Function(name, _) if name == "stieltjes"));
+        assert!(matches!(&gamma, Expr::Function(name, _) if name == "stieltjes"));
     }
 
     #[test]
     fn test_zeta_symmetric_symbolic() {
         let s = Symbol::new("s");
         let xi = zeta_symmetric(&Expr::Symbol(s));
-        assert!(matches!(xi, Expr::Function(name, _) if name == "zeta_symmetric"));
+        assert!(matches!(&xi, Expr::Function(name, _) if name == "zeta_symmetric"));
     }
 
     #[test]
@@ -362,7 +362,7 @@ mod tests {
     fn test_dickman_rho_symbolic() {
         let u = Symbol::new("u");
         let rho = dickman_rho(&Expr::Symbol(u));
-        assert!(matches!(rho, Expr::Function(name, _) if name == "dickman_rho"));
+        assert!(matches!(&rho, Expr::Function(name, _) if name == "dickman_rho"));
     }
 
     #[test]

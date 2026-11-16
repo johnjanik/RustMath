@@ -465,7 +465,7 @@ mod tests {
     fn test_abs_symbolic() {
         let x = Symbol::new("x");
         let abs_x = abs_symbolic(&Expr::Symbol(x));
-        assert!(matches!(abs_x, Expr::Function(name, _) if name == "abs"));
+        assert!(matches!(&abs_x, Expr::Function(name, _) if name == "abs"));
     }
 
     #[test]
@@ -531,9 +531,9 @@ mod tests {
         // 10/5 = 2, which is an integer, so frac should be 0
         let result = frac(&Expr::Rational(Rational::new(10, 5).unwrap()));
         // The result could be either Rational(0/1) or Integer(0)
-        match result {
-            Expr::Integer(i) => assert_eq!(i, Integer::zero()),
-            Expr::Rational(r) => assert_eq!(r, Rational::new(0, 1).unwrap()),
+        match &result {
+            Expr::Integer(i) => assert_eq!(*i, Integer::zero()),
+            Expr::Rational(r) => assert_eq!(*r, Rational::new(0, 1).unwrap()),
             _ => panic!("Expected integer or rational zero"),
         }
     }
@@ -557,7 +557,7 @@ mod tests {
     fn test_factorial_symbolic() {
         let x = Symbol::new("x");
         let fact_x = factorial(&Expr::Symbol(x));
-        assert!(matches!(fact_x, Expr::Function(name, _) if name == "factorial"));
+        assert!(matches!(&fact_x, Expr::Function(name, _) if name == "factorial"));
     }
 
     #[test]
@@ -618,7 +618,7 @@ mod tests {
     fn test_real_nth_root() {
         let x = Symbol::new("x");
         let root = real_nth_root(&Expr::Symbol(x), &Expr::from(3));
-        assert!(matches!(root, Expr::Function(name, _) if name == "real_nth_root"));
+        assert!(matches!(&root, Expr::Function(name, _) if name == "real_nth_root"));
     }
 
     #[test]
@@ -633,20 +633,20 @@ mod tests {
     fn test_limit_symbolic() {
         let x = Symbol::new("x");
         let lim = limit(&Expr::Symbol(x.clone()), &x, &Expr::from(0));
-        assert!(matches!(lim, Expr::Function(name, _) if name == "limit"));
+        assert!(matches!(&lim, Expr::Function(name, _) if name == "limit"));
     }
 
     #[test]
     fn test_sum_symbolic() {
         let i = Symbol::new("i");
         let s = sum(&Expr::Symbol(i.clone()), &i, &Expr::from(1), &Expr::from(10));
-        assert!(matches!(s, Expr::Function(name, _) if name == "sum"));
+        assert!(matches!(&s, Expr::Function(name, _) if name == "sum"));
     }
 
     #[test]
     fn test_product_symbolic() {
         let i = Symbol::new("i");
         let p = product(&Expr::Symbol(i.clone()), &i, &Expr::from(1), &Expr::from(5));
-        assert!(matches!(p, Expr::Function(name, _) if name == "product"));
+        assert!(matches!(&p, Expr::Function(name, _) if name == "product"));
     }
 }
