@@ -46,6 +46,14 @@
 //! - [`deg24`], [`descent24`]: degree-24 narrowing over the transitive atlas
 //!   (`rustmath_groups::transitive24`), used by `rustmath-igp24 --galois-short`.
 //!
+//! ## The Steiner labelling of M23 polynomials
+//!
+//! - [`integrality`]: bounded integrality from a residue (MAGMA `IsInt`) and the integrality
+//!   dichotomy between labelled candidates.
+//! - [`steiner_labelling`]: the certified Steiner labelling of the Frobenius-ordered roots of an
+//!   M23 polynomial, `T5`, `J5`, `J7`, the degree 253 heptad and duad resolvents, Frobenius
+//!   signs (paper `golay_m23.tex` of the M23 repository, Section 5).
+//!
 //! ## Honesty contract
 //!
 //! [`GaloisGroupResult`] separates `Decided` (with a complete certificate
@@ -84,6 +92,11 @@ pub mod relative_invariant;
 pub mod resolvent_eval;
 pub mod short_coset;
 pub mod subgroups;
+
+// The M23 Golay workstream: bounded integrality (ch. 38 IsInt) and the certified Steiner
+// labelling of the roots of an M23 polynomial (docs/workstreams/m23_golay/HANDOFF.md, Section 6).
+pub mod integrality;
+pub mod steiner_labelling;
 
 pub use types::{Candidates, CycleType, Evidence, GaloisGroupResult, GroupId};
 pub use descent::{

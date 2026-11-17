@@ -7,6 +7,8 @@
 //! - Difference sets
 //! - Hadamard matrices
 //! - Design automorphisms
+//! - An exact t-design test ([`t_design_index`], [`is_steiner_system`]; MAGMA ch. 147 `IsDesign`,
+//!   `IsSteiner`, digest `rustmath-lava/docs/Chapter_147_Incidence_Structures_and_Designs.md`)
 //!
 //! Counts that index the array sizes (v^t rows, the replication number) are checked: a value
 //! above usize::MAX is refused (None) or a documented panic, never a wrapped value (design C1
@@ -954,6 +956,215 @@ pub fn mutually_orthogonal_latin_squares(n: usize) -> Option<(Vec<Vec<usize>>, V
         )),
         _ => None,
     }
+}
+
+// ===========================================================================
+// Exact t-design test (MAGMA ch. 147 `IsDesign`, `IsSteiner`)
+// ===========================================================================
+
+/// Why an exact design check ([`t_design_index`], [`is_steiner_system`]) refused its input.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DesignCheckError {
+    /// Block number `block` contains a point `>= v`.
+    PointOutOfRange {
+        /// Index of the block in the input.
+        block: usize,
+    },
+    /// Block number `block` contains a point twice.
+    RepeatedPoint {
+        /// Index of the block in the input.
+        block: usize,
+    },
+    /// `t > v`: there is no `t`-subset, so no index `lambda` is determined.
+    TExceedsPoints {
+        /// The given `t`.
+        t: usize,
+        /// The number of points.
+        v: usize,
+    },
+    /// The count `sum_B C(|B|, t)` of `t`-subsets to enumerate exceeds the limit.
+    TooLarge {
+        /// The number of `t`-subsets of blocks (saturated at `u128::MAX`).
+        subsets: u128,
+        /// The limit ([`DESIGN_CHECK_LIMIT`]).
+        limit: u64,
+    },
+}
+
+impl std::fmt::Display for DesignCheckError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PointOutOfRange { block } => write!(f, "block {block} has a point out of range"),
+            Self::RepeatedPoint { block } => write!(f, "block {block} repeats a point"),
+            Self::TExceedsPoints { t, v } => write!(f, "t = {t} exceeds the number of points {v}"),
+            Self::TooLarge { subsets, limit } => write!(
+                f,
+                "{subsets} t-subsets of blocks to enumerate, above the limit {limit}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for DesignCheckError {}
+
+/// The largest number of `t`-subsets of blocks that [`t_design_index`] enumerates (`10^8`). It
+/// also bounds its counter array (`C(v, t) <= 10^8` counters of 4 bytes, at most 400 MB).
+pub const DESIGN_CHECK_LIMIT: u64 = 100_000_000;
+
+/// `C(n, k)` in `u128`, saturated at `u128::MAX`.
+fn binomial_u128_saturating(n: usize, k: usize) -> u128 {
+    if k > n {
+        return 0;
+    }
+    let k = k.min(n - k);
+    let mut acc: u128 = 1;
+    for i in 0..k {
+        // acc * (n - i) / (i + 1) is exact at every step (acc = C(n, i)).
+        match acc.checked_mul((n - i) as u128) {
+            Some(x) => acc = x / (i as u128 + 1),
+            None => return u128::MAX,
+        }
+    }
+    acc
+}
+
+/// MAGMA `IsDesign(D, t)` (ch. 147, `"NoOrbits"`): `Ok(Some(lambda))` when every `t`-subset of
+/// `{0, ..., v-1}` lies in exactly `lambda` of the blocks, `Ok(None)` when two `t`-subsets lie in
+/// different numbers of blocks.
+///
+/// Exact: it enumerates the `t`-subsets of every block and counts each in a dense array indexed
+/// by its colex rank `sum_i C(c_i, i + 1)` (`c_0 < ... < c_{t-1}`; the combinatorial number
+/// system, a bijection onto `[0, C(v, t))`). A block with fewer than `t` points contains no
+/// `t`-subset. Repeated blocks count with multiplicity. The block sizes may differ (a `t`-wise
+/// balanced design passes). When `S = sum_B C(|B|, t)` is below `C(v, t)`, some `t`-subset lies
+/// in no block, so the answer is `None` (or `Some(0)` for `S = 0`) with no enumeration.
+///
+/// Cost: `S` steps of `O(t)`, and one table of `t (|B| - t + 1)` binomials per block. Memory
+/// beyond the input: 4 bytes per `t`-subset of the points (`C(v, t) <= S <= DESIGN_CHECK_LIMIT`,
+/// so at most 400 MB, for every `t`), plus a sorted copy of one block and its table
+/// (`t (|B| - t + 1)` entries of 4 bytes) at a time. Measured in release: S(4,7,23) 0.1 ms; one
+/// block of 120 points, `t = 4` (8,214,570 counters): 0.16 s, 35 MB peak; one block of 1000
+/// points, `t = 998`: 0.45 s, 4.5 MB; at the limit, one block of `10^8` points, `t = 1`: 2.8 s,
+/// 2.3 GB peak including the 800 MB input. The first version counted in a hash map of subsets:
+/// about 140 bytes per subset at `t = 4` (6.1 s and 1.13 GB for the 120 points; review 1 of SL,
+/// m2), and `8t` bytes more per subset for larger `t`.
+///
+/// Unlike [`BlockDesign::new`], which verifies only `t <= 2` and `v <= 10`, this check has no
+/// size cut-off below [`DESIGN_CHECK_LIMIT`] and refuses (never guesses) above it.
+///
+/// # Errors
+///
+/// `PointOutOfRange`, `RepeatedPoint`, `TExceedsPoints` (`t > v`), `TooLarge`.
+pub fn t_design_index(
+    v: usize,
+    t: usize,
+    blocks: &[Vec<usize>],
+) -> Result<Option<u64>, DesignCheckError> {
+    for (i, b) in blocks.iter().enumerate() {
+        if b.iter().any(|&x| x >= v) {
+            return Err(DesignCheckError::PointOutOfRange { block: i });
+        }
+        let mut sorted = b.clone();
+        sorted.sort_unstable();
+        if sorted.windows(2).any(|w| w[0] == w[1]) {
+            return Err(DesignCheckError::RepeatedPoint { block: i });
+        }
+    }
+    if t > v {
+        return Err(DesignCheckError::TExceedsPoints { t, v });
+    }
+    let subsets = blocks.iter().fold(0u128, |acc, b| {
+        acc.saturating_add(binomial_u128_saturating(b.len(), t))
+    });
+    if subsets > DESIGN_CHECK_LIMIT as u128 {
+        return Err(DesignCheckError::TooLarge {
+            subsets,
+            limit: DESIGN_CHECK_LIMIT,
+        });
+    }
+    let all = binomial_u128_saturating(v, t);
+    if subsets == 0 {
+        // No block meets a t-subset: every t-subset lies in 0 blocks (all > 0 here, t <= v).
+        return Ok(Some(0));
+    }
+    if subsets < all {
+        // At most `subsets` distinct t-subsets are met, fewer than C(v, t): one lies in no
+        // block, another in at least one.
+        return Ok(None);
+    }
+    // Now C(v, t) <= subsets <= DESIGN_CHECK_LIMIT < 2^32: every rank and every count (at most
+    // the number of blocks with t points) fits in u32.
+    let mut counts = vec![0u32; all as usize];
+    for b in blocks {
+        let n = b.len();
+        if n < t {
+            continue;
+        }
+        let mut pts = b.clone();
+        pts.sort_unstable();
+        // table[i * width + d] = C(pts[i + d], i + 1): the term of position i of the rank, for
+        // the `width` points that position can take in a t-subset of pts. Each such term is a
+        // term of the rank of some t-subset, so it is below C(v, t) < 2^27 (and its binomial
+        // takes at most 26 steps, since C(c, k) >= 2^min(k, c - k)).
+        let width = n - t + 1;
+        let mut table: Vec<u32> = Vec::with_capacity(t * width);
+        for i in 0..t {
+            for d in 0..width {
+                table.push(binomial_u128_saturating(pts[i + d], i + 1) as u32);
+            }
+        }
+        // Lexicographic enumeration of the t-subsets of pts by index vectors.
+        let mut idx: Vec<usize> = (0..t).collect();
+        loop {
+            let rank: usize = idx
+                .iter()
+                .enumerate()
+                .map(|(i, &j)| table[i * width + j - i] as usize)
+                .sum();
+            counts[rank] += 1;
+            // The rightmost position that can still advance.
+            let mut i = t;
+            while i > 0 && idx[i - 1] == n - t + i - 1 {
+                i -= 1;
+            }
+            if i == 0 {
+                break;
+            }
+            idx[i - 1] += 1;
+            for l in i..t {
+                idx[l] = idx[l - 1] + 1;
+            }
+        }
+    }
+    let first = counts[0];
+    if counts.iter().all(|&c| c == first) {
+        Ok(Some(u64::from(first)))
+    } else {
+        Ok(None)
+    }
+}
+
+/// MAGMA `IsSteiner(D, t)` (ch. 147): whether the blocks form a Steiner system `S(t, k, v)`, that
+/// is, all blocks have one size `k >= t` and every `t`-subset of `{0, ..., v-1}` lies in exactly
+/// one block ([`t_design_index`] `== Some(1)`). `false` for an empty block list.
+///
+/// # Errors
+///
+/// As [`t_design_index`].
+pub fn is_steiner_system(
+    v: usize,
+    t: usize,
+    blocks: &[Vec<usize>],
+) -> Result<bool, DesignCheckError> {
+    let index = t_design_index(v, t, blocks)?;
+    let k = match blocks.first() {
+        None => return Ok(false),
+        Some(b) => b.len(),
+    };
+    if k < t || blocks.iter().any(|b| b.len() != k) {
+        return Ok(false);
+    }
+    Ok(index == Some(1))
 }
 
 #[cfg(test)]

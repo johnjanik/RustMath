@@ -232,6 +232,30 @@ pub(crate) fn is_irreducible_fp_unchecked(f: &[Integer], p: &Integer) -> bool {
     fp_sub(&xpk, &x, p).is_empty()
 }
 
+/// Whether `f` (little-endian over `Z`, read mod `p`) is squarefree over `F_p`: `f mod p != 0`,
+/// and `deg (f mod p) <= 0` or (`f' != 0` and `gcd(f, f') = 1`). Exact over the perfect field
+/// `F_p`, where `f' = 0` means `f = g(x^p) = g^p`. Precondition: `p` is prime (the caller has
+/// proven it). Used by `galois_ring_frobenius` above the word-size bound of `fp_factor`.
+pub(crate) fn is_squarefree_fp_unchecked(f: &[Integer], p: &Integer) -> bool {
+    let f = fp_trim(f.iter().map(|c| redp(c.clone(), p)).collect());
+    let n = match fp_deg(&f) {
+        None => return false,
+        Some(n) => n,
+    };
+    if n == 0 {
+        return true;
+    }
+    let df = fp_trim(
+        (1..=n)
+            .map(|i| redp(f[i].clone() * Integer::from(i as u64), p))
+            .collect(),
+    );
+    if df.is_empty() {
+        return false;
+    }
+    fp_deg(&fp_gcd(&f, &df, p)) == Some(0)
+}
+
 /// Find a monic irreducible polynomial of degree `n` over `F_p`, returned as a
 /// little-endian `Vec<Integer>` of length `n + 1`. Systematic lexicographic
 /// search over monic candidates (one is guaranteed to exist).

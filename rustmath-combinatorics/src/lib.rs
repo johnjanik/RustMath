@@ -159,8 +159,9 @@ pub use composition_tableau::{
     count_tableaux_with_descent_set, standard_composition_tableaux, CompositionTableau,
 };
 pub use designs::{
-    are_latin_squares_orthogonal, mutually_orthogonal_latin_squares, BlockDesign,
-    DesignAutomorphism, DifferenceSet, HadamardMatrix, OrthogonalArray, SteinerSystem,
+    are_latin_squares_orthogonal, is_steiner_system, mutually_orthogonal_latin_squares,
+    t_design_index, BlockDesign, DesignAutomorphism, DesignCheckError, DifferenceSet,
+    HadamardMatrix, OrthogonalArray, SteinerSystem, DESIGN_CHECK_LIMIT,
 };
 pub use dlx::DancingLinks;
 pub use dyck_word::{dyck_words, nu_dyck_words, BounceStats, DyckWord, NuDyckWord};

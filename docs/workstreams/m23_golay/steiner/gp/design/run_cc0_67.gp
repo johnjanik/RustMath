@@ -1,0 +1,11 @@
+default(parisizemax, 4000000000);
+read("steiner.gp"); read("cc0_poly.gp");
+a = pollead(F0); n = poldegree(F0); f = a^(n-1) * subst(F0, x, x/a);
+T5 = eval(readstr("cc0_t5.txt")[1]);
+Hp = heptads(1); Hm = heptads(-1);
+p = 67; N = 216; q = p^N; r = frob_roots(f, p, N);
+u = t5(r, Hp, q); v = t5(r, Hm, q);
+print("p=67 N=216: T5+ == T5(29): ", u == T5, ", |T5-| digits: ", #Str(abs(v)));
+N = 280; q = p^N; r = frob_roots(f, p, N);
+J = readstr("cc0_j.txt"); print("J5+ == J5(29): ", jk(r, Hp, 5, q) == eval(J[1]), ", J7+ == J7(29): ", jk(r, Hp, 7, q) == eval(J[2]));
+quit;

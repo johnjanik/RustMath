@@ -15,7 +15,14 @@ rustmath-polynomials = { path = "../rustmath-polynomials" }
 rustmath-groups = { path = "../rustmath-groups" }
 rustmath-numberfields = { path = "../rustmath-numberfields" }
 rustmath-finitefields = { path = "../rustmath-finitefields" }
+# The cyclic Golay systems and the exact S(4,7,23) check of the Steiner labelling.
+rustmath-coding = { path = "../rustmath-coding" }
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
 num-traits = { workspace = true }
+
+[dev-dependencies]
+# The vendored reference data of tests/steiner_labelling.rs (already in the lockfile).
+serde_json = "1"
 
 [features]
 default = []
