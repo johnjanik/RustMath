@@ -1,0 +1,11 @@
+table automorphisms: order 16, generators 
+[ (16,17), (14,15), (10,11), ( 7, 8)(12,13) ]
+maximal subgroups (order, transitive on 23 points):
+  443520 false M22
+  40320 false PSL(3,4):2
+  40320 false 2^4:A7
+  20160 false A8
+  7920 false M11
+  5760 false 2^4:(A5:S3)
+  253 true 23:11
+|<g1,g2>| = 10200960, g1*g2*g3 = ()

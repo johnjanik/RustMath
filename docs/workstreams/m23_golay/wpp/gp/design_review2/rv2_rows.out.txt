@@ -1,0 +1,12 @@
+order 10200960 product true simple M(23)
+maximal: [ 443520, 40320, 40320, 20160, 7920, 5760, 253 ] transitive: [ false, false, false, false, false, false, true ]
+conjugate_pair R=2 D=7: |C(b)|=14 survivors=301 n=43/2 size=0 real=0 (549 ms)
+conjugate_pair R=2 D=23: |C(b)|=23 survivors=161 n=7 size=7 real=3 (407 ms)
+conjugate_pair R=2 D=14: |C(b)|=14 survivors=301 n=43/2 size=17 real=3 (741 ms)
+conjugate_pair R=2 D=11: |C(b)|=11 survivors=341 n=31 size=22 real=4 (680 ms)
+conjugate_pair R=2 D=15: |C(b)|=15 survivors=405 n=27 size=24 real=2 (825 ms)
+conjugate_pair R=3 D=23: |C(b)|=23 survivors=3082 n=134 size=134 real=16 (7925 ms)
+rational (2,8,8) b in 8: |C(b)|=8 survivors=491 n=491/8 size=28 real=0 transitive<>generating: 0 (640 ms)
+rational (3,6,5) b in 6: |C(b)|=12 survivors=3452 n=863/3 size=70 real=4 transitive<>generating: 0 (4642 ms)
+rational (3,6,6) b in 6: |C(b)|=12 survivors=5271 n=1757/4 size=120 real=16 transitive<>generating: 0 (6623 ms)
+rational (4,5,4) b in 5: |C(b)|=15 survivors=13635 n=909 size=104 real=2 transitive<>generating: 0 (15458 ms)

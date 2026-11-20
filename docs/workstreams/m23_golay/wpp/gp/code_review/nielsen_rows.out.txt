@@ -1,0 +1,24 @@
+ROW conjugate_pair a=2A b=23A ab=23A |C(b)|=23 survivors=161 generating=
+161 size=7 real=3 (374 ms)
+ROW conjugate_pair a=2A b=14A ab=14A |C(b)|=14 survivors=301 generating=
+238 size=17 real=3 (639 ms)
+ROW conjugate_pair a=2A b=11A ab=11A |C(b)|=11 survivors=341 generating=
+242 size=22 real=4 (684 ms)
+ROW conjugate_pair a=2A b=15A ab=15A |C(b)|=15 survivors=405 generating=
+360 size=24 real=2 (749 ms)
+ROW conjugate_pair a=2A b=7A ab=7A |C(b)|=14 survivors=301 generating=0 size=
+0 real=0 (670 ms)
+ROW conjugate_pair a=3A b=23A ab=23A |C(b)|=23 survivors=3082 generating=
+3082 size=134 real=16 (5783 ms)
+ROW conjugate_pair a=3A b=11A ab=11A |C(b)|=11 survivors=5126 generating=
+3784 size=344 real=18 (10567 ms)
+ROW rational a=2A b=8A ab=8A |C(b)|=8 survivors=491 generating=224 size=
+28 real=0 (823 ms)
+ROW rational a=3A b=5A ab=6A |C(b)|=15 survivors=4315 generating=1050 size=
+70 real=4 (6139 ms)
+ROW rational a=3A b=4A ab=8A |C(b)|=32 survivors=7056 generating=1728 size=
+54 real=0 (8613 ms)
+ROW rational a=4A b=5A ab=4A |C(b)|=15 survivors=13635 generating=1560 size=
+104 real=2 (15836 ms)
+ROW rational a=3A b=6A ab=6A |C(b)|=12 survivors=5271 generating=1440 size=
+120 real=16 (6942 ms)

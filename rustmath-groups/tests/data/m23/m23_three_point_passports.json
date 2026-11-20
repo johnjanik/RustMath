@@ -1,0 +1,663 @@
+{
+"group": "M23",
+"source": "GAP CTblLib character table",
+"rational_classes": [
+"2a",
+"3a",
+"4a",
+"5a",
+"6a",
+"8a"
+],
+"irrational_pairs": [
+[
+"7a",
+"7b"
+],
+[
+"11a",
+"11b"
+],
+[
+"14a",
+"14b"
+],
+[
+"15a",
+"15b"
+],
+[
+"23a",
+"23b"
+]
+],
+"passports": [
+{
+"type": "rational",
+"classes": [
+"2a",
+"8a",
+"8a"
+],
+"structure_constant": "491/8",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"4a",
+"8a"
+],
+"structure_constant": "441/2",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"5a",
+"5a"
+],
+"structure_constant": "1310/3",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"5a",
+"6a"
+],
+"structure_constant": "863/3",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"5a",
+"8a"
+],
+"structure_constant": "476",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"6a",
+"6a"
+],
+"structure_constant": "1757/4",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"6a",
+"8a"
+],
+"structure_constant": "634",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"3a",
+"8a",
+"8a"
+],
+"structure_constant": "889",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"4a",
+"5a"
+],
+"structure_constant": "909",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"4a",
+"6a"
+],
+"structure_constant": "1713/2",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"4a",
+"8a"
+],
+"structure_constant": "1170",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"5a",
+"5a"
+],
+"structure_constant": "1936",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"5a",
+"6a"
+],
+"structure_constant": "1757",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"5a",
+"8a"
+],
+"structure_constant": "2712",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"6a",
+"6a"
+],
+"structure_constant": "8691/4",
+"genus23": 1,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"6a",
+"8a"
+],
+"structure_constant": "6615/2",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"4a",
+"8a",
+"8a"
+],
+"structure_constant": "10305/2",
+"genus23": 3,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"5a",
+"5a"
+],
+"structure_constant": "61058/15",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"5a",
+"6a"
+],
+"structure_constant": "3836",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"5a",
+"8a"
+],
+"structure_constant": "5504",
+"genus23": 3,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"6a",
+"6a"
+],
+"structure_constant": "14417/3",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"6a",
+"8a"
+],
+"structure_constant": "7140",
+"genus23": 3,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"5a",
+"8a",
+"8a"
+],
+"structure_constant": "10680",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"6a",
+"6a",
+"6a"
+],
+"structure_constant": "69737/12",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"6a",
+"6a",
+"8a"
+],
+"structure_constant": "8590",
+"genus23": 3,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"6a",
+"8a",
+"8a"
+],
+"structure_constant": "13335",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "rational",
+"classes": [
+"8a",
+"8a",
+"8a"
+],
+"structure_constant": "18720",
+"genus23": 5,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2a",
+"7a",
+"7b"
+],
+"structure_constant": "43/2",
+"genus23": 0,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2a",
+"11a",
+"11b"
+],
+"structure_constant": "31",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2a",
+"14a",
+"14b"
+],
+"structure_constant": "43/2",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2a",
+"15a",
+"15b"
+],
+"structure_constant": "27",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2a",
+"23a",
+"23b"
+],
+"structure_constant": "7",
+"genus23": 4,
+"exact_nielsen_count": true
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3a",
+"7a",
+"7b"
+],
+"structure_constant": "349",
+"genus23": 2,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3a",
+"11a",
+"11b"
+],
+"structure_constant": "466",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3a",
+"14a",
+"14b"
+],
+"structure_constant": "349",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3a",
+"15a",
+"15b"
+],
+"structure_constant": "830/3",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3a",
+"23a",
+"23b"
+],
+"structure_constant": "134",
+"genus23": 6,
+"exact_nielsen_count": true
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4a",
+"7a",
+"7b"
+],
+"structure_constant": "1951",
+"genus23": 3,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4a",
+"11a",
+"11b"
+],
+"structure_constant": "2772",
+"genus23": 5,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4a",
+"14a",
+"14b"
+],
+"structure_constant": "1951",
+"genus23": 5,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4a",
+"15a",
+"15b"
+],
+"structure_constant": "1496",
+"genus23": 5,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4a",
+"23a",
+"23b"
+],
+"structure_constant": "660",
+"genus23": 7,
+"exact_nielsen_count": true
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5a",
+"7a",
+"7b"
+],
+"structure_constant": "3756",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5a",
+"11a",
+"11b"
+],
+"structure_constant": "5658",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5a",
+"14a",
+"14b"
+],
+"structure_constant": "3756",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5a",
+"15a",
+"15b"
+],
+"structure_constant": "16982/5",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5a",
+"23a",
+"23b"
+],
+"structure_constant": "1422",
+"genus23": 8,
+"exact_nielsen_count": true
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6a",
+"7a",
+"7b"
+],
+"structure_constant": "4371",
+"genus23": 4,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6a",
+"11a",
+"11b"
+],
+"structure_constant": "7056",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6a",
+"14a",
+"14b"
+],
+"structure_constant": "4371",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6a",
+"15a",
+"15b"
+],
+"structure_constant": "11668/3",
+"genus23": 6,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6a",
+"23a",
+"23b"
+],
+"structure_constant": "1632",
+"genus23": 8,
+"exact_nielsen_count": true
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8a",
+"7a",
+"7b"
+],
+"structure_constant": "5908",
+"genus23": 5,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8a",
+"11a",
+"11b"
+],
+"structure_constant": "10080",
+"genus23": 7,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8a",
+"14a",
+"14b"
+],
+"structure_constant": "5908",
+"genus23": 7,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8a",
+"15a",
+"15b"
+],
+"structure_constant": "5424",
+"genus23": 7,
+"exact_nielsen_count": false
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8a",
+"23a",
+"23b"
+],
+"structure_constant": "2272",
+"genus23": 9,
+"exact_nielsen_count": true
+}
+]
+}

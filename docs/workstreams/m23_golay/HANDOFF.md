@@ -179,12 +179,32 @@ WP-F:
 
 WP-P:
 
-- Schreier-Sims: `StabilizerChain::new` (`rustmath-groups/src/bsgs.rs:138`), order `:278`,
-  membership by sifting `:289` [no row; blocker B-02 records it as resolved in `5ff8749`].
-  Deterministic. Tests: `mathieu_m23_order` (`:480`), `m23_membership_respects_point_stabilizer`
-  (`:510`, M23 on 23 points), `mathieu_m24_order_and_membership` (`:487`). Limits: products are read
-  right to left (`compose(a, b)[i] = a[b[i]]`, `bsgs.rs:43`), the opposite of Section 1. The chain
-  keeps its transversals private, so there is no element iterator.
+- Schreier-Sims: `StabilizerChain::new` (`rustmath-groups/src/bsgs.rs:142`), order `:282`,
+  membership by sifting `:293` [no row; blocker B-02 records it as resolved in `5ff8749`].
+  Deterministic. Tests: `mathieu_m23_order` (`:570`), `m23_membership_respects_point_stabilizer`
+  (`:600`, M23 on 23 points), `mathieu_m24_order_and_membership` (`:577`). Since WP-P the chain
+  lists its elements: `for_each_element` (`:354`) [done], with the accessors `num_levels` `:318`,
+  `orbit` `:324` (a basic orbit) and `transversal_element` `:330`. Limits: products are read
+  right to left (`compose(a, b)[i] = a[b[i]]`, `bsgs.rs:47`), the opposite of Section 1.
+  `for_each_element` takes a callback; it is not an iterator.
+- M23, since WP-P (Section 4, Status). `M23::published` (`rustmath-groups/src/m23/group.rs:330`)
+  [done] builds M23 on the published generators, with left-to-right products (`rmul` `:108`), the
+  253 heptads and `G0` in the published labelling (`heptads` `:446`, `even_golay_basis` `:452`).
+  `ClassIdentifier` (`m23/classes.rs:364`) [done] gives the class of any element of M23, the
+  split classes included (`class_of_member` `:638`), and exact centralizer orders (`:675`). The
+  ATLAS table of M23 is exact data with the class structure constants (`m23/atlas.rs:272`, `:436`)
+  [done]. Also done: the counts of 4.2 steps 4 to 6 (`m23/three_point.rs:450`), the Nielsen
+  classes `(C, 23A, 23B)` with real structures and ovals (`m23/nielsen.rs:131`) and the parabolic
+  cohomology of 4.3 (`m23/cohomology.rs:340`). Limits: M23 on these generators only;
+  centralizer orders, not centralizers; Nielsen classes with the second entry in 23A; the
+  cohomology for triples and subquotients of `F_2^23` only.
+- Inner products of characters and class functions (T-215, fixed by WP-P):
+  `Character::try_inner_product` (`rustmath-groups/src/representation.rs:291`),
+  `CharacterTable::inner_product` (`:473`) and `ClassFunction::inner_product`
+  (`class_function.rs:264`) [done]. They weight by the class sizes and return `Err` or `None`
+  when they cannot decide. Limits: f64 values; with class sizes the keys must be all the classes.
+  `ClassFunction::norm` (`class_function.rs:314`) returns `<f, f>`, not the square root its doc
+  names.
 - Orbits, transitivity, primitivity: `rustmath-groups/src/perm_predicates.rs:41`, `:63`, `:80`,
   `:202` [done]. Transitivity is the generation test of 4.2 step 5.
 - Cycle types on 23 points: `transitive23::cycle_type` (`transitive23.rs:74`) on `[u8; 23]` [done,
@@ -192,18 +212,23 @@ WP-P:
 - The whole group by closure: `transitive23::group_closure` (`transitive23.rs:99`) [no row of its
   own]. Limit: closure into an unordered `HashSet`, tested only on the solvable groups of degree 23
   (order at most 506). For M23 it needs several hundred MB (estimate, not measured). It is not the
-  ordered stabilizer-chain enumeration of 4.2.
+  ordered stabilizer-chain enumeration of 4.2; that is `StabilizerChain::for_each_element`
+  (above).
 - Binary Golay code `[23,12,7]`: `BinaryGolayCode::new` (`rustmath-coding/src/golay.rs:33`) [done]:
   weight enumerator checked, every error of weight at most 3 corrected. Limits: the coordinates are
   those of the cyclic code of `x^11+x^10+x^6+x^5+x^4+x^2+1`, the reciprocal of the polynomial in
   4.2. They are not the labelling of the published generators. Since the Steiner labelling,
   `rustmath-coding/src/cyclic_golay.rs` has both cyclic codes, of `g+` and of `g-` (the code
   above), with their words (`:103`), weight distributions (`:115`), the 253 heptads of each
-  (`:155`, two S(4,7,23), checked exactly) and the 11 shift orbits (`:161`) [done]. There is still
-  no accessor for the even subcode `G0` or the automorphism group. The extended code
+  (`:155`, two S(4,7,23), checked exactly) and the 11 shift orbits (`:161`) [done].
+  `rustmath-coding` still has no accessor for the even subcode `G0` or the automorphism group;
+  `M23::even_golay_basis` (`rustmath-groups/src/m23/group.rs:452`) gives `G0` in the published
+  labelling (WP-P). The extended code
   `golay.rs:371` [partial] has its 759 octads checked. Its decoder ignores the parity bit.
 - Linear algebra over `F_2` for 4.3: `Matrix<PrimeField>` with `p = 2`, as above. The modules have
-  dimension at most 22, so cost does not matter.
+  dimension at most 22, so cost does not matter for one triple. For the 6,127 triples of 4.3 it
+  is too slow (12 ms per kernel), so WP-P works on bit masks (`m23/cohomology.rs`) and keeps
+  `Matrix<PrimeField>` as a cross-check in its tests.
 - Genus 0 Belyi engine, `rustmath-curves/src/belyi/`. These parts take any passport: permutations
   and the Riemann-Hurwitz genus (`monodromy.rs:41`), triangle groups and coset graphs
   (`triangle_group.rs:113`), the ansatz encoder (`encode.rs:178`) [all done], and the KMSV fit of a
@@ -317,19 +342,23 @@ Facade, broken or missing at `6e03987`:
   zeta function `function_field_rational.rs:339` [all facade].
 - Point counts, zeta functions and L-polynomials of curves of genus >= 2: absent. The only point
   count is the genus 1 routine `EllipticCurve::compute_a_p` (`rustmath-ellipticcurves/src/curve.rs:328`).
-- Character tables (T-215): inner product `rustmath-groups/src/representation.rs:148` [broken],
-  class functions `class_function.rs:211` [facade]. Tables exist only for `C_n` and `S_3`
-  (`representation.rs:267`, [partial]). There is no ATLAS table of M23 and no Dixon-Schneider.
+- Character tables: tables exist only for `C_n` and `S_3` (`rustmath-groups/src/representation.rs:494`,
+  [partial]) and for M23 as data (`m23/atlas.rs:272`, Usable as is). There is no Dixon-Schneider.
+  The inner products of T-215 are fixed (Usable as is).
 - Conjugacy classes `conjugacy_classes.rs:161` [partial]: they need the full element list and cost
-  `O(|G|^2)`, so they are unusable at `|M23|`. There are no centralizers, normalizers or backtrack
-  searches over a BSGS (tracker, absent list), and no public M23 or M24 constructor. The generators
-  are in the `bsgs.rs` tests only. `block_systems` `perm_predicates.rs:182` [broken] misses systems.
+  `O(|G|^2)`, so they are unusable at `|M23|`; for M23 use `ClassIdentifier` (Usable as is).
+  There are no general centralizers, normalizers or backtrack searches over a BSGS (tracker,
+  absent list); the centralizer orders of WP-P are for M23 only. There is no public M22 or M24
+  constructor; the M24 generators are in the `bsgs.rs` tests only. `block_systems`
+  `perm_predicates.rs:182` [broken] misses systems.
 - `SteinerSystem::new` (`rustmath-combinatorics/src/designs.rs:228`) checks the design property only
   for `t <= 2` and `v <= 10` (`:63`), so it does not verify S(4,7,23) or S(5,8,24) [row `:235`,
   partial]. Use `t_design_index` and `is_steiner_system` (`designs.rs:1058`, `:1154`) instead:
   exact on a block list, refusal above 10^8 `t`-subsets of blocks [done, Steiner labelling].
 - Cohomology: `rustmath-homology` gives free ranks over `Z` only (`chain_complex.rs:145`,
-  `cochain_complex.rs:143`, [facade]). There is no group cohomology and nothing over `F_2`.
+  `cochain_complex.rs:143`, [facade]). There is no general group cohomology. Over `F_2` there is
+  only the parabolic and orbifold `H^1` of WP-P for triples of M23
+  (`rustmath-groups/src/m23/cohomology.rs:340`, Usable as is).
 - Multivariate Newton over `GR(p^N, k)`: absent. `newton_lift_bivariate`
   (`rustmath-rings/src/padics/newton_lift.rs:398`) [no row; IGP24 table item C1 done] lifts a square
   system over `Z_p` from a seed in `F_p` only. `PolySystem::jacobian_mod`
@@ -379,17 +408,18 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
   cyclic S(4,7,23) on those roots; `T5`, `J5`, `J7`; the degree 253 heptad and duad resolvents of
   `data/golay_resolvents.json`. No stability loop was needed: every value is certified by a
   proven bound (Proposition 5.1), so no rational reconstruction either.
-- WP-P: element enumeration from a `StabilizerChain`; a public M23 on the published generators;
-  class identification with the split classes; `G0`, `P0`, `P0/G0` and S(4,7,23) in the published
-  labelling (the two shift-invariant S(4,7,23) in the cyclic coordinates exist: `cyclic_golay.rs`);
-  the ATLAS table of M23 as data with a correct class-function inner product (T-215), and
-  the class structure constants from it; centralizer orders; Nielsen class counts, real points and
-  ovals; the swap action on Nielsen classes for the twists of 4.4 item 1; parabolic cohomology over
-  `F_2`. For 4.4 item 2: a passport-generic high-precision Newton solve, monodromy check and exact verifier
-  for the genus 0 rows of degree 23; factorization over a quadratic field for the etale algebra of the
-  genus 2 rows; branch cycles by certified continuation; Belyi maps of genus >= 1 for
-  the genus 2 rows. Left out: 4.4 item 3 (four branch points). Also needed: readers for the WP-P JSON
-  files.
+- WP-P: the table of 4.1 to 4.3 is done (the Status block of Section 4). Built: element
+  enumeration from a `StabilizerChain`; a public M23 on the published generators; class
+  identification with the split classes; `G0`, `P0`, `P0/G0` and S(4,7,23) in the published
+  labelling; the ATLAS table of M23 as data with a correct inner product (T-215) and the class
+  structure constants; centralizer orders; Nielsen class counts, real points and ovals; parabolic
+  cohomology over `F_2`; test-only readers for the WP-P JSON files
+  (`rustmath-groups/tests/m23_common/mod.rs`). Still to build: the swap action on Nielsen classes
+  for the twists of 4.4 item 1 (WPP-1; the counting of `three_point.rs` applies). For 4.4 item 2:
+  a passport-generic high-precision Newton solve, monodromy check and exact verifier for the
+  genus 0 rows of degree 23; factorization over a quadratic field for the etale algebra of the
+  genus 2 rows; branch cycles by certified continuation; Belyi maps of genus >= 1 for the genus 2
+  rows. Left out: 4.4 item 3 (four branch points).
 - WP-A: adjoints and the canonical model of the nodal curve; point counts on the model in P^3; the
   rulings of the canonical quadric over `F_p` or `F_{p^2}` and the bidegree (3,3) equation
   `G(s, u)` of A1; the tritangency system; zero-dimensional solving over `F_p` that is known to
@@ -673,6 +703,139 @@ Acceptance: exact equality with every row of the two tables, the three derived c
 value 45, 52, 57 at 53.
 
 ## 4. WP-P: three-point class vectors of M23
+
+### Status (2026-11-16)
+
+The WP-P table is done (Section 8, step 3): all 57 rows of 4.1, the Golay data per cover of 4.3,
+and the three dictionaries of 4.2. The change is in one crate, `rustmath-groups`, on the local
+branch `claude/m23-wpp`, based on `main` `28c4b69` (not yet committed when this block was
+written).
+
+The records are in `docs/workstreams/m23_golay/wpp/` (its README lists them): the design and its
+two reviews in `design/`, the implementation report, the code review and the check of the minor
+fixes in `impl/`, and the GAP scripts behind the test values, with their output, in `wpp/gp/`.
+
+Code (paths under `rustmath-groups/src/`):
+
+- `bsgs.rs:354` `StabilizerChain::for_each_element`: every element of a group from its stabilizer
+  chain, an odometer over the transversals in `O(k n)` memory. Accessors `num_levels` `:318`,
+  `orbit` `:324`, `transversal_element` `:330`.
+- `m23/group.rs:330` `M23::published`: M23 on the published generators. It checks
+  `g1 g2 g3 = 1`, the order 10,200,960, the 253 heptads as an exact S(4,7,23)
+  (`is_steiner_system`) and `dim G0 = 11`. The base orbit lengths 23, 22, 21, 20, 3, 16
+  (`base_orbit_lengths` `:422`) are checked by the test `m23_published_order_and_base`
+  (`tests/m23_classes.rs:52`), not by the constructor. Products are read left to right (`rmul`
+  `:108`). Also `for_each_element` `:435`, `heptads` `:446`, `even_golay_basis` `:452`.
+- `m23/classes.rs:364` `ClassIdentifier`: the 17 classes in ATLAS order. The split pairs are
+  told apart by the trace on `G0` (`golay_trace` `:484`), the heptad family on the 11-cycles
+  (`:534`) and the cyclic Steiner sign (`:624`). `class_of_member` `:638`, `class_of_checked`
+  `:658`; centralizer orders `:675`, exact (sifting `C_Sym(23)(x)` within 10^6 elements, `:705`,
+  else the conjugation orbit within 10^5, `:809`); `census` `:853`; `ClassLists` `:906`.
+- `m23/atlas.rs:272` `AtlasTable::m23`: the ATLAS character table as data, in exact arithmetic.
+  The file `rustmath-groups/data/m23/m23_atlas_table.json` is written by our GAP script
+  `data/m23/m23_atlas_table.g` from CTblLib, byte for byte reproducible. `check_orthogonality`
+  `:457`; `check_against` `:512` (orders, centralizers, the permutation character and 7 power
+  maps against RustMath's classes); `structure_constant` `:436`.
+- `m23/three_point.rs:450` `count_class_vector`; `:203` `enumerate_class_vectors`; `:437`
+  `structure_count`; `:253` `genus23`.
+- `m23/nielsen.rs:131` `NielsenClass23`, the classes `(C, 23A, 23B)`; complex conjugation `:215`;
+  real structures `:226`; ovals `:261` (`real_components`).
+- `m23/cohomology.rs:340` `TripleCohomology`: parabolic and orbifold `H^1` over `F_2` of `G0`,
+  `P0/G0` and `P0` (`standard_modules` `:313`) for a triple; the fixed space of conjugation
+  `:440`.
+- T-215, fixed: `representation.rs:291` `Character::try_inner_product` (with `inner_product`
+  `:350` and `CharacterTable::inner_product` `:473`) and `class_function.rs:264`
+  `ClassFunction::inner_product` weight by the class sizes and refuse what they cannot decide.
+- Tests: `rustmath-groups/tests/m23_classes.rs`, `m23_atlas.rs`, `m23_three_point.rs`,
+  `m23_nielsen.rs` (18 fast tests, 4 `full_` release runs, 2 `env_` tests), new unit tests in
+  `bsgs.rs`, `representation.rs` and `class_function.rs`, and the example
+  `rustmath-groups/examples/m23_class_vectors.rs`.
+- Data: `rustmath-groups/tests/data/m23/` with a README (sources, licences, sha256): the owner's
+  `m23_three_point_nielsen.json`, `m23_three_point_passports.json`, `group_facts.json` and
+  `passports_C_23A_23B.json` from his main `2d11038`, and Janik's table, extracted from his
+  `m23golay/nielsen.py`. Nothing of HJLPPZ or of Le Lay is vendored. Le Lay's seven
+  representatives are not in his CC0 `data/`; they are in his CC BY-NC-SA certificate, which the
+  test reads at run time.
+
+Reproduced (against the owner's main `2d11038`; every count is `Decided`):
+
+- All 57 rows of `data/m23_three_point_nielsen.json`: `structure_constant`, `size`, `real` and
+  `genus23` exactly. `#survivors = n |C(b)|` holds on every row, with `|C(b)|` computed by
+  RustMath (`full_57_rows`; the example with `--check` prints "57 reproduced, 0 mismatches").
+  The 57 structure constants equal `data/m23_three_point_passports.json`
+  (`atlas_orthogonality_and_57_constants`). The class sizes and centralizer orders equal GAP's
+  (`centralizers_match_gap`, `full_census`).
+- The six `(C, 23A, 23B)`, entry by entry against `data/passports_C_23A_23B.json`: sizes 7, 134,
+  660, 1422, 1632, 2272 and real classes 3, 16, 42, 32, 72, 0 (`full_c_23a_23b`).
+- 4.3, on all 6,127 triples: `dim H^1_par(G0) = dim H^1_par(P0/G0) = g` and
+  `dim H^1_par(P0) = 2g`. On every real cover `dim Jac(X)(R)[2] = g + r - 1`. The fixed
+  dimensions of conjugation and the numbers of ovals equal the owner's files (`full_c_23a_23b`;
+  for `(2A, 23A, 23B)` also `nielsen_2a_23a_23b_and_janik`). `Matrix<PrimeField>` ranks over
+  GF(2) give the same dimensions (`cohomology_cross_check_matrix_gf2`).
+
+The three dictionaries. Each is bijective onto the seven classes of `(2A, 23A, 23B)` and equal
+to `data/group_facts.json`, key `nielsen`:
+
+| Source | How it is read | Result | Test |
+|---|---|---|---|
+| HJLPPZ `seven_nielsen_class_representatives.m` | at run time from `$M23ISGALOIS`; the file's `g2` is the published `g3`, so the triple is (file `g1`, file `g3`, file `g2`) | rows 1..7 -> `[5, 4, 0, 2, 1, 3, 6]` | `env_hjlppz_dictionary` |
+| Janik's Table 1 (vendored `janik_table.json`) | `g1 g2 g3 = 1` with the published `g1` | rows 0..6 -> `[3, 5, 1, 6, 2, 4, 0]` | `nielsen_2a_23a_23b_and_janik` |
+| Le Lay's `verification/certify_geometric_reflection_obstruction.g` | at run time from `$LELAY_M23`; his `y` is the published `g3`, the braid is `(x, y z y^-1, y)` | `x_1..x_7` -> `[0, 1, 2, 4, 6, 5, 3]`; his real classes 3, 6, 7 are our 2, 5, 3 | `env_lelay_dictionary` |
+
+Without its variable each `env_` test fails with "set M23ISGALOIS to a checkout of
+shaowuz/m23isgalois" or "set LELAY_M23 to a checkout of
+research-reflexivity/frontier-math-m23-cover-investigation".
+
+Statuses. Every count is `Decided`, and lists the results it rests on besides exact enumeration
+(`TrustedResult`, `three_point.rs:279`). These are the ATLAS list of maximal subgroups (all but
+23:11 are intransitive, checked with GAP), the action of complex conjugation on `(R, D, D^-1)`
+(HJLPPZ 3.1) and, for the 27 rational rows, its action with three real branch points. The last
+is derived in the header of `three_point.rs`. Its classical sources (Fried 1977, Krull and
+Neukirch 1971, Debes and Fried 1994) are not yet checked (WPP-7). A vector whose classes all have
+order 1, 11 or 23 is refused (`GenerationCriterionNotApplicable`), never counted. The character
+table is trusted data from GAP's CTblLib. It is checked against RustMath's own classes and by the
+counting identity on all 57 rows, and the code review recomputed it from the group in GAP on
+RustMath's classes.
+
+Commands:
+
+- `cargo test -p rustmath-groups --test m23_classes --test m23_atlas --test m23_three_point --test m23_nielsen`
+  (fast set, debug, about 6 s of test time on one thread);
+- `cargo test --release -p rustmath-groups --test m23_three_point -- --ignored --exact full_57_rows`,
+  and in the same way `full_census` and `full_family_11` (`--test m23_classes`) and
+  `full_c_23a_23b` (`--test m23_nielsen`);
+- `M23ISGALOIS=<checkout of shaowuz/m23isgalois> LELAY_M23=<checkout of research-reflexivity/frontier-math-m23-cover-investigation> cargo test -p rustmath-groups --test m23_nielsen -- --ignored env_`;
+- `cargo run --release -p rustmath-groups --example m23_class_vectors -- --check rustmath-groups/tests/data/m23`;
+- `gap -q rustmath-groups/data/m23/m23_atlas_table.g < /dev/null` writes the table again
+  (3,471 bytes, sha256 `f9503e80...0f5196eb`).
+
+Times (this machine, shared with another job): the fast set about 6 s in debug, at most 13 MB
+per test binary. Release: `full_57_rows` 3.2 s and `full_c_23a_23b` 1.8 to 2.1 s (78 MB each),
+`full_census` 10 to 12 s and `full_family_11` 38 to 41 s (a few MB), the example 3.1 s. The two
+`env_` tests take about 20 ms each in debug. A release build of the crate and its dependencies
+takes 1.3 to 1.8 min (`-j 2`).
+
+Follow-ups (`wpp/impl/WPP.md`, Section 11): WPP-1 the swap action on Nielsen classes for the
+twists of 4.4 item 1; WPP-2 4.4 items 2 and 3; WPP-3 the rest of T-215; WPP-4 centralizers and
+conjugacy over a BSGS (Leon's backtrack); WPP-6 a character-table algorithm (Dixon-Schneider);
+WPP-7 the rational real criterion against the classical sources; WPP-8 the clippy deny error
+`derived_hash_with_manual_eq` at `indexed_free_group.rs:181`, older than WP-P, which stops
+`cargo clippy -p rustmath-groups --tests`; WPP-9 `tests/galois_narrowing.rs` fails in a fresh
+worktree, because the gitignored degree-24 data is absent; WPP-10 `cargo check` of the eight
+crates that depend on `rustmath-groups`, after the merge (not run, for disk; no public signature
+changed). WPP-5 was closed in the design. For the owner: WPP-Q1 the licence footing of the
+generated table (CTblLib is GPL-3.0-or-later; `tests/data/m23/README.md`); WPP-Q2 whether to
+vendor his transcription `LELAY_X` of Le Lay's representatives instead of the run-time read (not
+done). Two optional nits of the check of the minor fixes are open (`wpp/impl/WPP.minorscheck1.md`):
+`AtlasTable::to_float_table` panics on a table that `parse` accepts and `check_orthogonality`
+refuses, and the `Display` text of `F2Error::NotInModule` does not name its second meaning.
+Found while writing these docs: `ClassFunction::norm` returns `<f, f>`, which is MAGMA's `Norm`,
+but its doc says `sqrt<f, f>` (older than WP-P).
+
+One older line is now out of date. 4.2 step 1 says 235 MB: RustMath enumerates the elements
+through a callback in a few MB; 235 MB is the bound of `ClassLists` for all 17 classes, and the
+counting stores only the six rational classes (73 MB; `full_57_rows` peaks at 78 MB). Section 2
+is updated for this change.
 
 ### 4.1 What "Phase 6" asked for and what now exists
 
@@ -1252,6 +1415,8 @@ for anyone extending the work.
    resolvent are reproduced. Done (2026-11-15): the six integers and all four degree 253
    resolvents, at 29 and at the second primes (Status at the end of Section 6).
 3. WP-P table (4.2, 4.3): done when all 57 rows are reproduced and the three dictionaries hold.
+   Done (2026-11-16): all 57 rows, the six `(C, 23A, 23B)` and the Golay data of 4.3 on all
+   6,127 triples, and the three dictionaries (Status block of Section 4).
 4. WP-F extensions 1 and 2 (the D flags, p = 3 and 5; Section 3, Status): 1 done by the
    delta-sum certificate (no recount on a second model); 2 done for p = 5, and p = 3 moves to
    WP-A A0 (follow-up F-1).

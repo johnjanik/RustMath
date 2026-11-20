@@ -1,0 +1,11 @@
+Print(GAPInfo.Version, "\n");
+Print(InstalledPackageVersion("ctbllib"), "\n");
+t := CharacterTable("M23");;
+Print(Identifier(t), "\n");
+Print(ClassNames(t), "\n");
+Print(OrdersClassRepresentatives(t), "\n");
+Print(SizesCentralizers(t), "\n");
+Print(SizesConjugacyClasses(t), "\n");
+Print(PowerMap(t,2), "\n", PowerMap(t,3), "\n", PowerMap(t,-1), "\n");
+for x in Irr(t) do Print(List(x, v -> v), "\n"); od;
+Display(t);
