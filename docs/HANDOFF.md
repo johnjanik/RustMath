@@ -589,7 +589,13 @@ fixed item with its commit.
     at q i pi (`exp(I*pi)` stays a kernel) and log(-c) = log(c) + i pi, so that `I*(log(-2) - log(2))` and
     `exp(I*pi)` are decided real for the cut rule; Gaussian inverses for constants with parameters or more than 16
     terms; cache each kernel's enclosure in `KData` (the class of a `log(2 + sin(...))` chain is quadratic, charged);
-    a float exponent with an integral value is undecided (`x^2.0` at 0, the design's rule of no float folding).
+    the enclosure of a product's constant (`Tail::scaled_enclosed`) is paid only under a record that checks a cut,
+    but there by every product, also when the constant term is off the cut: `log(2 + S)`, S a 100 KB sum of 2,660
+    products of one complex constant, is `BudgetExceeded` at order 3 under the REPL budget (2.57e8 units; the C-1
+    code before its minor items needed 5.5e7, and HEAD-before-S1 printed 5.9 MB in 4.8 s), so read the class in
+    `cut_check` only when the constant term is not decided off the cut, or cache the enclosed class per constant
+    (`impl/S1-symbolic.closeout1-resources.md`, r1); a float exponent with an integral value is undecided (`x^2.0`
+    at 0, the design's rule of no float folding).
   - Branch cuts (C-1): a finer rule for an argument that leaves the cut to the same side for both signs of x (the
     eight rows of choice 2 in `tests/data/s1_cuts.tsv` are its first tests); a refused branch subexpression that cancels
     or is multiplied by 0 refuses the input (`log(-1 + I*x) - log(-1 + I*x)`, `x + 0*sqrt(-1 + I*x)`); two owner

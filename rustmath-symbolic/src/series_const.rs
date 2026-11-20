@@ -2694,8 +2694,15 @@ impl Konst {
     /// nonconstant rational function of a nonconstant analytic function is nonconstant). A sum of
     /// two such kernels is not accepted: `sin(y)^2 + cos(y)^2` is constant. `full`: a coefficient
     /// is decided nonzero by the zero test (`zero_status`, which may read enclosures); otherwise
-    /// by its structural part only (`struct_nonzero`, for the flag of a new kernel). Charged as
-    /// `indet_groups` (two copies of the terms and the sort).
+    /// by its structural part only (`struct_nonzero`, for the flag of a new kernel). The cost: a
+    /// polynomial in the parameters is grouped by `indet_groups` (charged there before its walk).
+    /// Otherwise the walk that finds the one kernel runs first and is not charged: it reads each
+    /// factor of each term once and allocates nothing, so it is linear in the size of the constant
+    /// (a constant term whose construction was charged, or a new kernel's argument, whose key
+    /// was), and it returns false without a charge at a parameter factor or a second kernel with
+    /// a parameter. The grouping by the kernel's exponent after it is charged as `indet_groups`
+    /// (two copies of the terms and the sort's comparisons) before it runs (S1 C-1 minors check,
+    /// m2: the doc said that the whole test was charged so).
     pub fn generic_nonconstant(&self, full: bool) -> bool {
         if !self.t.sz.any_indet {
             return false;

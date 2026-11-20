@@ -1221,7 +1221,10 @@ impl Tail {
     /// S1 C-1 minor items (semantics review m3): `scaled`, with the class of a constant whose
     /// structure shows none decided by one complex enclosure at 64 bits (real when its imaginary
     /// part is an exact 0, which only exact arithmetic gives: `log(-1)^2`), for a constant of at
-    /// most `SCALE_ENCLOSE_TREE` nodes (charged as `cdecide`; a larger one keeps `scaled`)
+    /// most `SCALE_ENCLOSE_TREE` nodes (charged as `cdecide`; a larger one keeps `scaled`). S1 C-1
+    /// minors check (m1): `finish_product` calls it only for a product whose class a cut check
+    /// may read (a record below it on the work stack checks a cut), so the enclosure is paid
+    /// where the class can decide a cut, not for every product
     pub fn scaled_enclosed(self, c: &Konst) -> Tail {
         if !(self.re || self.im) || c.struct_real() || c.struct_imag() {
             return self.scaled(c);
@@ -2166,6 +2169,10 @@ struct EProd<'a> {
     acc: Option<Ser>,
     reg: bool,
     tail: Tail,
+    /// S1 C-1 minors check (m1): a record below this one on the work stack checks a branch cut
+    /// (`EFrame::checks_a_cut`), so a cut check may read the class of this product (set when the
+    /// record is pushed; the records below it do not change while it is on the stack)
+    class_read: bool,
 }
 /// where a tower is: waiting for nothing (just pushed), for the series of a base to raise to a
 /// constant exponent, for the series of the top exponent, or for the series of a base to raise
@@ -2282,6 +2289,24 @@ impl<'a> ETower<'a> {
 }
 
 impl<'a> EFrame<'a> {
+    /// S1 C-1 minors check (m1): whether this record's own step checks a branch cut against a
+    /// class read from its operands: log, sqrt and the inverse functions other than erf
+    /// (`cut_check` through `log`, `pow_const` and `atan_like`), and every tower (`pow_const` for a
+    /// non-integer constant exponent, `log` of the base for a series exponent; a tower with an
+    /// integer exponent is counted too, which only computes a class that no check may read).
+    /// The class of a value flows only into the classes of the records above it, and only a cut
+    /// check reads one, so a product with no such record below it on the stack is not enclosed.
+    fn checks_a_cut(&self) -> bool {
+        use UnaryOp::*;
+        match self {
+            EFrame::Unary(op, _) => matches!(
+                op,
+                Log | Sqrt | Arctan | Arcsin | Arccos | Arcsinh | Arccosh | Arctanh
+            ),
+            EFrame::Tower(_) => true,
+            EFrame::Sum(_) | EFrame::Prod(_) => false,
+        }
+    }
     fn resume(&mut self, v: Option<SV>, cx: &mut Ctx) -> Result<EStep<'a>, SErr> {
         match self {
             EFrame::Sum(s) => {
@@ -2335,8 +2360,13 @@ impl<'a> EFrame<'a> {
                         k
                     });
                 }
-                let (v, tv) =
-                    finish_product(s.acc.take(), std::mem::take(&mut s.consts), s.tail, cx)?;
+                let (v, tv) = finish_product(
+                    s.acc.take(),
+                    std::mem::take(&mut s.consts),
+                    s.tail,
+                    s.class_read,
+                    cx,
+                )?;
                 let reg = finish_flag(s.node, &v, s.reg && regular_val(&v))?;
                 Ok(EStep::Done((v, reg, tv)))
             }
@@ -2472,6 +2502,7 @@ fn expand_visit<'a>(e: &'a Expr, cx: &mut Ctx) -> Result<Result<SV, EFrame<'a>>,
                 acc: None,
                 reg: true,
                 tail: Tail::CONST,
+                class_read: false,
             })))
         }
         // revision 7rt1 (red team 1, H1): a power tower is read along its right spine
@@ -2495,13 +2526,21 @@ fn expand_visit<'a>(e: &'a Expr, cx: &mut Ctx) -> Result<Result<SV, EFrame<'a>>,
 /// the series of e (no recursion over e: an explicit work stack)
 pub fn expand(e: &Expr, cx: &mut Ctx) -> Result<Ser, SErr> {
     let mut stack: Vec<EFrame> = Vec::new();
+    // S1 C-1 minors check (m1): the records on the stack whose step checks a branch cut
+    let mut cut_records: usize = 0;
     let mut visit: Option<&Expr> = Some(e);
     loop {
         let mut val: Option<SV> = None;
         if let Some(x) = visit.take() {
             match expand_visit(x, cx)? {
                 Ok(s) => val = Some(s),
-                Err(frame) => {
+                Err(mut frame) => {
+                    if let EFrame::Prod(p) = &mut frame {
+                        p.class_read = cut_records > 0;
+                    }
+                    if frame.checks_a_cut() {
+                        cut_records += 1;
+                    }
                     // a unary record reads its operand next; the others say what they read
                     if let (EFrame::Unary(..), Expr::Unary(_, i)) = (&frame, x) {
                         stack.push(frame);
@@ -2523,7 +2562,9 @@ pub fn expand(e: &Expr, cx: &mut Ctx) -> Result<Ser, SErr> {
                     break;
                 }
                 EStep::Done(s) => {
-                    stack.pop();
+                    if stack.pop().is_some_and(|f| f.checks_a_cut()) {
+                        cut_records -= 1;
+                    }
                     val = Some(s);
                 }
             }
@@ -2556,12 +2597,18 @@ fn chain_step(acc: Option<Ser>, b: Ser, div: bool, cx: &mut Ctx) -> Result<Ser, 
 }
 
 /// S1 request C-1: `tail` is the class of the series factors' product; the result's class is that
-/// of c times it
+/// of c times it. S1 C-1 minors check (m1): read from an enclosure of c (`Tail::scaled_enclosed`)
+/// only when a cut check may read it (`class_read`, a record below the product checks a branch
+/// cut); otherwise from c's structure (`Tail::scaled`), and the class is read by nothing. The
+/// minors step enclosed the constant of every product: `flip_text(485)` of `tests/s1_cuts.rs`
+/// (99.8 KB, a sum of 485 products of a complex constant and a sine, no branch function) needed a
+/// budget of 1.03e8 units, against 6.2e7 for the approved C-1 code and the REPL's 1e8.
 #[inline(never)]
 fn finish_product(
     acc: Option<Ser>,
     consts: Vec<Konst>,
     tail: Tail,
+    class_read: bool,
     _cx: &mut Ctx,
 ) -> Result<(Ser, Tail), SErr> {
     let c = Konst::product_many(consts);
@@ -2573,7 +2620,12 @@ fn finish_product(
     if c.as_rational().map(|q| q.is_one()).unwrap_or(false) {
         return Ok((a, tail));
     }
-    Ok((scale(&a, &c)?, tail.scaled_enclosed(&c)))
+    let cls = if class_read {
+        tail.scaled_enclosed(&c)
+    } else {
+        tail.scaled(&c)
+    };
+    Ok((scale(&a, &c)?, cls))
 }
 
 /// the series quotient

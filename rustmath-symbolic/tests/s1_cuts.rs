@@ -162,6 +162,45 @@ fn classes_decided_by_structure_or_enclosure() {
     check_all(r, DIGITS, STACK);
 }
 
+/// S1 C-1 minors check (m1): the cut decisions that the enclosure of a product's constant makes
+/// (`Tail::scaled_enclosed`). Rows `enc:1` to `enc:10`: a product scaled by a constant that only
+/// its enclosure shows real (log(-1)^2 = -pi^2) or imaginary (I*log(-1)^2), some levels below the
+/// branch function whose cut check reads its class: under exp, cos, erf, a negation and another
+/// product, as the base of a constant and of a variable power, as the exponent of a constant
+/// base, and on the cuts of the imaginary axis. All lie on a cut, so each is a value only when the
+/// class is read (gp's series, which the two-sided oracle checks on both sides). Rows `enc:11`
+/// (a constant complex by its enclosure, log(1 + I)) and `enc:12` (a real class on a cut of the
+/// imaginary axis) leave the cut: `NotLaurent`. With `cls:1` and `cls:2` (semantics review m3),
+/// where the enclosure is computed may change, these decisions may not.
+#[test]
+fn cut_decisions_on_products_scaled_by_an_enclosure_are_kept() {
+    let mut r = rows("cls:");
+    r.extend(rows("enc:"));
+    assert_eq!(r.len(), 14, "the rows");
+    check_all(r, DIGITS, STACK);
+    on_stack(STACK, || {
+        for t in [
+            "log(-1 + log(1 + I)*sin(x))",
+            "arctan(2*I + log(-1)^2*sin(x))",
+        ] {
+            match se(
+                &parse(t),
+                &x(),
+                &ExpansionPoint::At(parse("0")),
+                3,
+                Some(REPL_TAYLOR_WORK),
+            ) {
+                Err(e) if kind(&e) == Kind::NotLaurent => {
+                    let m = e.to_string();
+                    assert!(m.contains("leaves a branch cut at the point"), "{t}: {m}");
+                }
+                Err(e) => panic!("{t}: Err({e:?})"),
+                Ok(s) => panic!("{t}: Ok({})", s.to_expr()),
+            }
+        }
+    });
+}
+
 /// The limit path: before C-1 the formal series made `(log(-1 - I*x^2) - log(-1 + I*x^2))/(I*pi)`
 /// at 0 the series 2/pi x^2 + ..., and the limit path read `Finite(0)`; the true limit is -2
 /// (gp: `(log(-1 - I*10^-9) - log(-1 + I*10^-9))/(I*Pi)` is -1.99999999936...). The limit with
@@ -565,4 +604,128 @@ fn cut_rule_within_the_bar_release() {
         println!("{head}... order {order}: {secs:.3} s, {r1:?}, {r2:?}");
         assert!(secs < 20.0, "{head}...: {secs} s");
     }
+}
+
+/// The constant of the minors check's `res/scflip.txt`: log(1 + I) + log(2 + I) + ... +
+/// log(20 + I), complex, so `Tail::scaled_enclosed` reads its class from an enclosure.
+fn flip_constant() -> String {
+    let logs: Vec<String> = (1..=20).map(|j| format!("log({j}+I)")).collect();
+    format!("({})", logs.join("+"))
+}
+
+/// The sum over k = 1..n of the constant times sin(k*x): `res/scflip.txt` is n = 485.
+fn flip_text(n: usize) -> String {
+    let c = flip_constant();
+    let items: Vec<String> = (1..=n).map(|k| format!("{c}*sin({k}*x)")).collect();
+    items.join(" + ")
+}
+
+/// The coefficients of `flip_text(n)` at 0 below `order` against their closed form: the
+/// coefficient of x^j is C (-1)^m (1^j + 2^j + ... + n^j)/j! for j = 2m + 1, and 0 for an even j.
+fn flip_value_mismatches(s: &SeriesExpansion, n: usize, order: i64) -> Vec<String> {
+    use rustmath_integers::Integer;
+    use rustmath_rationals::Rational;
+    use s1_common::eval::{close, eval, from_rational, show};
+    let c = eval(&parse(&flip_constant())).expect("the constant");
+    let mut fails = Vec::new();
+    let mut fact = Integer::from(1);
+    for j in 0..order {
+        if j > 0 {
+            fact = fact * Integer::from(j);
+        }
+        let q = if j % 2 == 0 {
+            Rational::from(0)
+        } else {
+            let mut sum = Integer::from(0);
+            for k in 1..=n {
+                sum = sum + Integer::from(k as i64).pow(j as u32);
+            }
+            if (j - 1) % 4 == 2 {
+                sum = Integer::from(0) - sum;
+            }
+            Rational::new(sum, fact.clone()).expect("nonzero factorial")
+        };
+        let want = c.clone() * from_rational(&q);
+        match s.coefficient(j) {
+            None => fails.push(format!("x^{j}: beyond the precision")),
+            Some(e) => match eval(&e) {
+                Ok(g) if close(&g, &want, 50) => {}
+                Ok(g) => fails.push(format!("x^{j}: {} != {}", show(&g), show(&want))),
+                Err(err) => fails.push(format!("x^{j}: {err}")),
+            },
+        }
+    }
+    fails
+}
+
+/// S1 C-1 minors check (m1): a product whose constant is complex (`flip_constant`) and whose class
+/// no cut check reads is not enclosed. The minors step enclosed the constant of every product
+/// (about 1.1e5 units for this one each time), so `flip_text(120)` at 0, order 3, cost about
+/// 1.37e7 units, where the approved C-1 code took about 3.6e6 (`c1mcheck/drv/mb.rs`, release;
+/// the units do not depend on the build). Budget 7e6, about twice each: the value, as the C-1
+/// code gave it (the closed form of `flip_value_mismatches`). At the REPL budget the same
+/// difference turned the 99.8 KB input `flip_text(485)` at order 30 into `BudgetExceeded`
+/// (`scaled_products_keep_their_value_at_the_repl_budget_release`).
+#[test]
+fn products_whose_class_no_cut_check_reads_are_not_enclosed() {
+    on_stack(STACK, || {
+        let f = parse(&flip_text(120));
+        match se(
+            &f,
+            &x(),
+            &ExpansionPoint::At(parse("0")),
+            3,
+            Some(7_000_000),
+        ) {
+            Ok(s) => {
+                let fails = flip_value_mismatches(&s, 120, 4);
+                assert!(fails.is_empty(), "{}", fails.join("\n"));
+            }
+            Err(e) => panic!("flip_text(120): Err({e})"),
+        }
+    });
+}
+
+/// S1 C-1 minors check (m1): `res/scflip.txt` of the minors check (`flip_text(485)`, 99 799 bytes)
+/// at 0, order 30, with the REPL budget, on an 8 MB thread in release: `taylor_with_budget` and
+/// `series_expansion` are `Ok`, with the value of the approved C-1 code (the closed form of
+/// `flip_value_mismatches`, to 50 digits), and `limit_with_error` is `Finite(0)` with its error
+/// bound, as the approved C-1 code gave (least budget 6.2e7). The minors step gave
+/// `BudgetExceeded` from both entry points (least budget 1.03e8) and `Finite(0)` without a bound.
+/// `cargo test --release -p rustmath-symbolic --test s1_cuts -- --ignored --test-threads=1`
+#[test]
+#[ignore = "release budget test: run with --release -- --ignored --test-threads=1"]
+fn scaled_products_keep_their_value_at_the_repl_budget_release() {
+    let text = flip_text(485);
+    // the file holds the text and a final newline
+    assert_eq!(text.len(), 99_799);
+    let secs = on_stack(8 << 20, move || {
+        let f = parse(&text);
+        let a = parse("0");
+        let t = std::time::Instant::now();
+        let r1 = tw(&f, &x(), &a, 30, REPL_TAYLOR_WORK);
+        assert!(r1.is_ok(), "taylor_with_budget: {:?}", r1.err());
+        match se(
+            &f,
+            &x(),
+            &ExpansionPoint::At(a.clone()),
+            30,
+            Some(REPL_TAYLOR_WORK),
+        ) {
+            Ok(s) => {
+                let fails = flip_value_mismatches(&s, 485, 30);
+                assert!(fails.is_empty(), "{}", fails.join("\n"));
+            }
+            Err(e) => panic!("series_expansion: Err({e})"),
+        }
+        let (l, b) = lwe(&f, &x(), &a, 30);
+        assert!(
+            matches!(&l, LimitResult::Finite(z) if z.to_string() == "0"),
+            "{l:?}"
+        );
+        assert!(b.is_some(), "limit_with_error: no error bound");
+        t.elapsed().as_secs_f64()
+    });
+    println!("flip_text(485) at 0, order 30: {secs:.3} s");
+    assert!(secs < 20.0, "{secs} s");
 }

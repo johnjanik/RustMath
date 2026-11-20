@@ -2641,3 +2641,154 @@ scratch were deleted. `rustmath-misc/output.txt` is unchanged (md5
   `run_rel_ign.sh`, `rel_exes.txt`, `abs_check.py`, `param.gp` (the gp values at a = 3/7),
   `drv/` (the reviewer's `p.rs` and `ep.rs`, `build.sh`), `probe/` (outputs, `all.changed`,
   `ok50.gp`, `sem/`), `res/` (the chain inputs and logs).
+
+## C-1 minors check items
+
+The two minor items of the independent check of the C-1 minor items (`S1.c1minorscheck.md`, m1 and
+m2), under the narrowed bar. Branch `claude/gracious-gates-e6b6l7`, HEAD 226a7ec (clean at the
+start; its Rust code is that of a4f7791), plus the uncommitted changes of this run. "The C-1 code"
+is the approved C-1 state, a4f7791 with `c1mcheck/c1minors_delta.patch` reversed (`c1mcheck/pm/`).
+Scratch: `fu2/s1impl/closeout/`. Nothing committed, pushed, stashed or reset; `docs/` and
+`PROJECT_TRACKER.md` not edited.
+
+### 1. Tests written first
+
+In `rustmath-symbolic/tests/s1_cuts.rs` and its data (`tests/data/gen_s1_cuts.py` appends rows
+`enc:1` to `enc:12` to `tests/data/s1_cuts.tsv`; the 90 rows before them and the header are
+unchanged, byte for byte):
+
+| test | item | on HEAD |
+|---|---|---|
+| `cut_decisions_on_products_scaled_by_an_enclosure_are_kept` (`:176`): rows `cls:1`, `cls:2` (semantics review m3) and `enc:1` to `enc:10` (gp's series; a product scaled by log(-1)^2 or I*log(-1)^2 under exp, cos, erf, a negation and another product, as the base of a constant and of a variable power, as the exponent of a constant base, and on the cuts of the imaginary axis), `enc:11` and `enc:12` (`NotLaurent`, "leaves a branch cut at the point": log(1 + I) is complex by its enclosure; a real class on a cut of the imaginary axis) | m1 guard | passes (a guard). On the C-1 code 11 of the 12 value rows refuse ("cannot decide"); `enc:8` (exact argument) is a value there too, from its coefficients |
+| `products_whose_class_no_cut_check_reads_are_not_enclosed` (`:670`, debug): `flip_text(120)` (the shape of `res/scflip.txt`, 120 products) at 0, order 3, budget 7e6: the value, coefficient by coefficient against the closed form C (-1)^m (1^j + ... + 120^j)/j! (`flip_value_mismatches`, `:625`, 50 digits) | m1 | fails: `BudgetExceeded` (7 024 486 units) |
+| `scaled_products_keep_their_value_at_the_repl_budget_release` (`:698`, release, ignored): `flip_text(485)`, which is `res/scflip.txt` without its final newline (99 799 bytes), at 0, order 30, REPL budget, 8 MB thread: `taylor_with_budget` Ok, `series_expansion` Ok with the closed form to 50 digits at every exponent below 30, `limit_with_error` `Finite(0)` with an error bound, under 20 s | m1 | fails: `taylor_with_budget` `BudgetExceeded` (100 000 104 units) |
+
+Logs: `closeout/head_cuts_dbg.log` (15 passed, 1 failed), `closeout/head_cuts_rel_ign.log` (1 passed,
+1 failed). The first release run of the HEAD check failed on the byte count of the text (the file has
+a final newline); the assertion was corrected to 99 799 before any library change. m2 is a doc
+change and has no test.
+
+### 2. The changes (file:line at the end of this step)
+
+**m1: the enclosure only where a cut check may read the class.** The class of a value flows only
+into the classes of the records above it on the work stack of `expand`, and only `cut_check` reads a
+class. So `expand` (`series_engine.rs:2527`) counts the records on its stack whose step checks a cut
+(`cut_records`, `:2530`, raised when such a record is pushed, `:2541`, and lowered when it is popped,
+`:2565`): `EFrame::checks_a_cut` (`:2299`) is true for log, sqrt and the inverse functions other than
+erf (whose steps call `cut_check` through `log`, `pow_const` and `atan_like`) and for every tower
+(`pow_const` for a non-integer constant exponent, `log` of the base for a series exponent; a tower
+with an integer exponent is counted too, which only computes a class that no check reads). A
+product record notes when it is pushed whether such a record lies below it (`EProd::class_read`,
+`:2175`, set at `:2539`; the records below it do not change while it is on the stack), and
+`finish_product` (`:2607`) reads the class from the enclosure (`Tail::scaled_enclosed`) only then,
+from the constant's structure (`Tail::scaled`) otherwise (`:2623`). Where a cut check may read the
+class, it is computed exactly as on HEAD, so no cut decision can change; elsewhere nothing reads it.
+Docs: `Tail::scaled_enclosed` (`:1221`) and `finish_product` (`:2599`). The cache per constant was
+not needed: the inputs of the item have no branch function above the products.
+
+**m2: the doc of `Konst::generic_nonconstant`** (`series_const.rs:2697` to `:2705`, the function at
+`:2706`). The doc now says what is charged: a polynomial in the parameters is grouped by
+`indet_groups`, charged before its walk; otherwise the walk that finds the one kernel is not charged
+(it reads each factor of each term once, allocates nothing, is linear in the constant, whose
+construction or kernel key was charged, and returns false without a charge at a parameter factor or
+a second kernel), and the grouping after it is charged as `indet_groups` before it runs. The code
+is unchanged, so no outcome or budget can move (the other option, a charge before the walk, would
+have charged the refusals of the walk anew).
+
+### 3. Results
+
+(1) **Debug suite** (`cargo test -j 2 -p rustmath-symbolic --no-fail-fast -- --test-threads=2`,
+`closeout/sym_dbg.log`, 2 min): unit 686 (5 ignored), `s1_cuts` 16 (2), `s1_depth` 14, `s1_finish1`
+11 (1), `s1_fuzz_data` 7, `s1_payload` 2 (1), `s1_regressions` 26 (2), `s1_review2` 2, `s1_review3`
+7 (7), `s1_review4` 4 (2), `s1_review4_memory` 1 (1), `s1_review5` 4 (2), `s1_review5_memory` 2 (2),
+`s1_review6` 4, `s1_singular_points` 9, doc 116 (11): 911 passed, 0 failed, 36 ignored (HEAD's 909
+and 35, plus the two new debug tests and the new ignored one).
+
+(2) **Release** (`closeout/run_rel.sh`, `closeout/rel_tests.log`; each of the 15 binaries):
+795 passed, 0 failed (HEAD's 793 plus the two new tests); `s1_cuts` 16 passed, 2 ignored. With
+`--ignored --test-threads=1`: 24 passed, 1 failed, the failure HEAD's `test_airy_numerical_helper`
+(`airy.rs:369`, a numeric demonstration that this step does not touch; the C-1 minor items report
+records it on HEAD). `cut_rule_within_the_bar_release` 0.41, 0.52 and 3.25 s;
+`scaled_products_keep_their_value_at_the_repl_budget_release` 1.20 s (all three entry points).
+
+(3) **Corpora** of the minors check, rebuilt from `c1mcheck/drv/p.rs` (`closeout/buildlib.sh` compiles
+HEAD's source, the C-1 code of `c1mcheck/pm/` and the fixed source as three release rlibs;
+`closeout/builddrv.sh`, `closeout/run_corp.sh`; outputs `closeout/out/*.gz`; comparison
+`closeout/cmp3.py`):
+
+| corpus | rows | fix against HEAD | HEAD against the checker's HEAD outputs |
+|---|---:|---|---|
+| `c1-1-regressions/hunt/h.tsv` | 1 807 | 0 differ | 0 differ |
+| `c1-1-regressions/rnd/r.tsv` | 6 000 | 0 | 0 |
+| `c1mcheck/par/tgt.tsv` | 12 856 | 0 | 0 |
+| `c1mcheck/par/g.tsv` | 8 000 | 0 | 0 |
+| `c1-1-regressions/corp/all.tsv` | 63 110 distinct | 0 | 0 |
+
+Every output line of the 91 773 rows (series kind and refusal message, terms, precision,
+`taylor_with_budget`, limit, limit with error) is identical to HEAD's apart from the time field; the
+driver's one panic (the point `1e400`, a parse of the driver) is the same in both. No row of the
+corpora was at the budget's edge, so none moved. The scflip family (`closeout/mbflip.tsv`:
+`flip_text(n)` for n = 30, 60, 120, 240, 485 at orders 3 and 30): one row differs from HEAD,
+`flip_text(485)` at order 30, `BudgetExceeded` to `Ok`, and its series, precision, taylor and limits
+equal the C-1 code's in every field; the other nine are identical in all three libraries.
+
+Least budgets (`c1mcheck/drv/mb.rs`, `closeout/mb/`) on 1 989 rows (the checker's samples
+`out/mbc.tsv`, `par/mb.tsv`, `par/sc.tsv`, `par/sc2.tsv`, `par/kp.tsv`): no outcome kind changed;
+fix / HEAD has median 1.00, 1st percentile 0.50, minimum 0.19 (the `sc` rows: sums of products of
+complex constants with no branch function), and no row above HEAD beyond the bisection's 1 %;
+fix / C-1 code has median 1.00, 99th percentile 1.53, maximum 1.93 (`log(2 + exp(I)*exp(-I)*x^2)`, a
+few 1e4 units: a product directly under a branch function keeps its enclosure, as on HEAD, even when
+the constant term turns out to be off the cut).
+
+(4) **Two-sided oracle** (`python3 -I -B s1_gp.py --two-sided s1_cuts.tsv s1_singular_points.tsv
+s1_fuzz.tsv`, `closeout/oracle.log`, 1.3 s): exit 0. Cuts: 64 value outcomes (14 selected), 0 fail,
+37 refusal rows, 27 with the formal series wrong on a side (`enc:11` and `enc:12` among them, so
+their refusals are right); the ten `enc` values hold on both sides. Matrix: 367 value outcomes, 0
+fail. Fuzz: 394, 0 fail. Both files that this step did not touch give the counts of the C-1 minor
+items report.
+
+(5) **Budget inputs** of `c1mcheck/res` (the 41 inputs of `res/list.txt` plus `scflip.txt`,
+`closeout/run_ep.sh` with `c1mcheck/drv/ep.rs`: all four entry points with the REPL budget, plus
+`to_expr`, `Display`, `Debug` and re-parse of the series):
+
+| | release, 8 MB (`closeout/ep_fix_rel.log`) | debug, 2 MB (`closeout/ep_fix_dbg.log`) |
+|---|---|---|
+| largest time of one entry point | 1.31 s (`sc_many`, `BudgetExceeded`); HEAD 1.56 s | 7.13 s, same input |
+| largest time of all entry points of one input | 4.82 s (`sc_many`) | 25.5 s (`sc_many`, four entry points) |
+| largest VmHWM | 45 MB (`gnc_poly_many`) | 46 MB |
+| stack overflow, abort, panic | none | none |
+
+Outcomes are those of HEAD (`closeout/ep_head_rel.log`) for every input except `scflip`: HEAD gives
+`BudgetExceeded` from `taylor_with_budget` and `series_expansion` and `limit_with_error` without a
+bound; now `taylor_with_budget` Ok in 0.43 s, `series_expansion` Ok in 0.34 s (Display, Debug and
+re-parse at 0.34 s, 21 824 characters), `limit_via_series` `Finite(0)` in 0.05 s, `limit_with_error`
+`Finite(0)` with its bound in 0.39 s, 34 MB (debug, 2 MB: 2.18 s at most, 35 MB). **The least budget
+of `scflip.txt` is now 61 988 831 units (6.20e7), that of the C-1 code exactly; HEAD needed
+102 996 826 (1.03e8).** At order 3 the same input needs 1.45e7 (HEAD 5.53e7).
+
+(6) **clippy and rustfmt**: `cargo clippy -j 2 -p rustmath-symbolic --no-deps` gives the library's
+54 warnings, as before, none on a changed line; `--test s1_cuts` adds none
+(`closeout/clippy_lib.log`, `closeout/clippy_cuts.log`, `closeout/changed_ranges.json`).
+`rustfmt --edition 2021 --check` is clean on `series_engine.rs`, `series_const.rs` and
+`tests/s1_cuts.rs`. No added Rust line is over 100 characters; no em-dash.
+
+### 4. Housekeeping and files
+
+`target/release` was deleted after the release runs, and the scratch libraries and executables
+(`closeout/lib`, `closeout/bin`) after the probes; `target/debug` is kept. An empty file
+`mbflip.pm` that a mistyped command of this step wrote at the repository root was removed.
+`rustmath-misc/output.txt` is unchanged (md5 746308829575e17c3331bbcb00c0898b), no `.tmp_dir_*`
+exists, `tests/data` has no `__pycache__`, and `git status --short` lists the five files of this step
+(`closeout/status_after.txt`, the diff `closeout/diff_after.patch`).
+
+Changed: `rustmath-symbolic/src/series_engine.rs` (`Tail::scaled_enclosed` doc, `EProd::class_read`,
+`EFrame::checks_a_cut`, `expand`, `finish_product`), `rustmath-symbolic/src/series_const.rs` (the
+doc of `generic_nonconstant`), `rustmath-symbolic/tests/s1_cuts.rs` (three tests and the helpers
+`flip_constant`, `flip_text`, `flip_value_mismatches`), `tests/data/gen_s1_cuts.py` and
+`tests/data/s1_cuts.tsv` (rows `enc:1` to `enc:12`).
+
+Handoffs: the tracker row of `series_engine.rs` may mention that the enclosure of a product's
+constant is read only under a record that checks a cut; a finer rule (read the deferred class in
+`cut_check` only when the constant term is not decided off the cut) would also spare the products
+directly under a branch function whose constant term is off its cut (fix / C-1 code 1.93 on
+`log(2 + exp(I)*exp(-I)*x^2)`), at the price of a class that carries its constants.

@@ -32,6 +32,9 @@
 #   pg:*, cls:*     (C-1 minor items) real arguments whose class is decided by the structure or
 #                   the enclosure of a constant: a variable exponent of a positive base, a
 #                   truncated argument scaled by a constant real by its enclosure (a value).
+#   enc:*           (C-1 minors check, m1) products scaled by a constant real or imaginary only by
+#                   its enclosure, some levels below the branch function whose cut check reads
+#                   their class (ten values), and two refusals (NotLaurent).
 import os
 import sys
 
@@ -147,6 +150,23 @@ ROWS = [
     # enclosure (log(-1)^2 = -pi^2) keeps the real class
     ('cls:1', 'arccos(-3 + log(-1)^2*sinh(x))', '0', 3, 'value'),
     ('cls:2', 'log(-1 + log(-1)^2*sin(x))', '0', 3, 'value'),
+    # S1 C-1 minors check, m1 (appended): a product scaled by a constant real or imaginary only by
+    # its enclosure (log(-1)^2 = -pi^2, I*log(-1)^2 = -pi^2 I), read by a cut check of a branch
+    # function some levels above it: under exp, a power, the exponent of a constant base, another
+    # product, a negation, cos, erf; on the imaginary axis's cuts; and two refusals (a constant
+    # complex by its enclosure, log(1 + I); a real class on an imaginary-axis cut)
+    ('enc:1', 'log(-1 + exp(log(-1)^2*sin(x)) - 1)', '0', 3, 'value'),
+    ('enc:2', '(-1 + log(-1)^2*sin(x))^(1/3)', '0', 3, 'value'),
+    ('enc:3', '(-1 + log(-1)^2*sin(x))^(1/2 + x)', '0', 3, 'value'),
+    ('enc:4', 'log(-3 + 2^(log(-1)^2*sin(x)))', '0', 3, 'value'),
+    ('enc:5', 'log(-1 + sin(x)*(log(-1)^2*sin(x) + x))', '0', 3, 'value'),
+    ('enc:6', 'log(-2 + cos(-log(-1)^2*x))', '0', 3, 'value'),
+    ('enc:7', 'arctan(2*I + I*log(-1)^2*sin(x))', '0', 3, 'value'),
+    ('enc:8', 'arcsinh(-3*I + I*log(-1)^2*x^2)', '0', 3, 'value'),
+    ('enc:9', 'log(-1 + erf(log(-1)^2*x))', '0', 3, 'value'),
+    ('enc:10', 'arccosh(1/2 + log(-1)^2*sin(x)^2)', '0', 3, 'value'),
+    ('enc:11', 'log(-1 + log(1 + I)*sin(x))', '0', 3, NL),
+    ('enc:12', 'arctan(2*I + log(-1)^2*sin(x))', '0', 3, NL),
 ]
 
 # the limit path where gp's floating constant term hides a rational one (the engine's constant

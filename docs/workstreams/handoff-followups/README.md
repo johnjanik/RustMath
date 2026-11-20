@@ -78,7 +78,11 @@ two review rounds (`impl/S1-symbolic.fin1-*.md`: not approved, six distinct bloc
 recursed and a re-parse of a result that was not bounded; `impl/S1-symbolic.fin2-*.md`: approved) and a check of the
 minor fixes (`impl/S1-symbolic.finminorscheck2.md`, approved). Then requests C-1 (branch cuts) and C-4 (the dependent
 crates) of `docs/workstreams/m23_golay/REQUESTS.md` were done and reviewed (`impl/S1-symbolic.c1-1-*.md`, both
-approved; their minor items were fixed, and no reviewer re-checked those fixes). The report with all its rounds is
+approved). Their minor items were fixed and checked (`impl/S1-symbolic.c1minorscheck.md`, approved with two minor
+items: the enclosure of every product's constant cost a 99.8 KB input its value under the REPL budget, and a doc
+overstated what `generic_nonconstant` charges); both were fixed (a product's constant is enclosed only under a record
+that checks a cut; the doc says what is charged) and approved by a semantics and a resources reviewer
+(`impl/S1-symbolic.closeout1-*.md`). The report with all its rounds is
 `impl/S1-symbolic.md`. S1's work-in-progress commit `4763f31` reached `main` through PR #584; the rest is in the S1 pull
 request. Open: S2 and the S1 handoffs (`docs/HANDOFF.md`, "Open follow-ups").
 
@@ -98,9 +102,10 @@ For the four committed units the trackers are updated (2026-11-14: `PROJECT_TRAC
 - S1 has more records, all in `impl/`: the report `S1-symbolic.md` (every round, with its handoffs); the reviews
   `S1-symbolic.review<r>-semantics.md` and `-resources.md` (rounds 1 to 6), `S1-symbolic.fin1-*.md` and
   `S1-symbolic.fin2-*.md` (the finish), `S1-symbolic.c1-1-semantics.md` and `-regressions.md` (request C-1); the check
-  of the minor fixes `S1-symbolic.finminorscheck2.md`; the tests-first report `S1-symbolic.tests_first.md` and its
-  check `S1-symbolic.testcheck.md`; and the owner's decisions `S1-symbolic.owner_decision.md` and
-  `S1-symbolic.owner_decision2.md`. In these files, and in the comments of the S1 code and tests, a path
+  of the minor fixes `S1-symbolic.finminorscheck2.md`; the check of C-1's minor fixes `S1-symbolic.c1minorscheck.md`
+  and the close-out reviews of its two items, `S1-symbolic.closeout1-semantics.md` and `-resources.md`; the
+  tests-first report `S1-symbolic.tests_first.md` and its check `S1-symbolic.testcheck.md`; and the owner's decisions
+  `S1-symbolic.owner_decision.md` and `S1-symbolic.owner_decision2.md`. In these files, and in the comments of the S1 code and tests, a path
   `fu2/s1impl/S1.<x>.md` is `impl/S1-symbolic.<x>.md`, `S1_impl.md` is `S1-symbolic.md`, `owner_decision.md` and
   `owner_decision2.md` are `S1-symbolic.owner_decision.md` and `S1-symbolic.owner_decision2.md`, `tests_report.md` is
   `S1-symbolic.tests_first.md`, `testcheck.md` is `S1-symbolic.testcheck.md`, and `S2_spec.md` is
