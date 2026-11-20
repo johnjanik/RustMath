@@ -343,8 +343,9 @@ finish under that bar had two review rounds, each with a semantics and a resourc
 (`impl/S1-symbolic.fin1-*.md`) was not approved (six distinct blockers, fixed test-first), the second
 (`impl/S1-symbolic.fin2-*.md`) approved, and so did a check of its minor fixes (`impl/S1-symbolic.finminorscheck2.md`).
 Requests C-1 and C-4 of `docs/workstreams/m23_golay/REQUESTS.md` were then approved by a semantics reviewer and a
-regressions reviewer (`impl/S1-symbolic.c1-1-*.md`); their minor items were fixed, and no reviewer re-checked those
-fixes. It is approved under the narrowed bar. The S1 items of the open list are fixed (the last bullet of the list) or
+regressions reviewer (`impl/S1-symbolic.c1-1-*.md`); their minor items were fixed and checked by an independent
+reviewer (`impl/S1-symbolic.c1minorscheck.md`, approved with two minor items), and the fixes of those two were approved
+by a semantics and a resources check (`impl/S1-symbolic.closeout1-*.md`). It is approved under the narrowed bar. The S1 items of the open list are fixed (the last bullet of the list) or
 moved to the S2 and S1-handoff bullets.
 
 C-1, the branch-cut rule. At each application of log, a non-integer power, arcsin, arccos, arctanh, arccosh, arctan or
