@@ -1,12 +1,17 @@
-# Session handoff (2026-11-15, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and 12 of 13 units of the open follow-ups)
+# Session handoff (2026-11-20, updated after Tasks 0-2, the L0-L1 fixes, their follow-ups, the final follow-up fixes and all 13 units of the open follow-ups)
 
 Read this first, then `CLAUDE.md` and `docs/README.md`. It records where the project stands and
 what to do next. **Tasks 0, 1 and 2 are done** (status notes below), and so are the L0-L1 defects
 the review found (2026-11-07), their follow-ups and the final follow-up fixes (both 2026-11-08). In the
-open follow-ups round **12 of 13 units are done** (2026-11-15; the last one committed is MF1, `f29c492`),
-and S1 is parked: its design was not approved after nine reviews and four red-team rounds. See "Open follow-ups round" below and
-`docs/workstreams/handoff-followups/README.md`, which has the designs and the steps to resume. After that
-come the dead code, the mixin wiring and the `docs/PLAN.md` build targets.
+open follow-ups round **all 13 units are done**. Twelve were committed by 2026-11-15 (the last is MF1, `f29c492`).
+The thirteenth, S1 (the rustmath-symbolic series engine and literal parser), is approved under the narrowed bar that
+the owner accepted on 2026-11-16. Its design was never approved: after nine design reviews and four red-team rounds
+the owner froze it (2026-11-15) and had it implemented test-first. Merged into `main`: the work-in-progress commit
+`4763f31`, through PR #584. This run's commits (the finish under the narrowed bar, requests C-1 and C-4 of
+`docs/workstreams/m23_golay/REQUESTS.md`, and these records) are on `claude/gracious-gates-e6b6l7` for the S1 pull
+request. Open: the follow-up unit S2 (DAG-aware consumers) and S1's minor handoffs. See "Open follow-ups round" below
+and `docs/workstreams/handoff-followups/README.md`, which has the designs, reports and reviews. After that come the
+dead code, the mixin wiring and the `docs/PLAN.md` build targets.
 
 ## Where things stand
 
@@ -250,7 +255,7 @@ with a new status: ch023.EqualDegreeFactorization from done to verified; 19 rows
 `path refreshed 9c24389`) and `docs/magma/REVIEW_2026-11-06.md` record the result. Designs, reports and reviews
 are in the session scratchpad only (`fu/final/`).
 
-**Open follow-ups round: 12 of 13 units done** on the same branch (paused 2026-11-13, resumed 2026-11-14). The list below was split
+**Open follow-ups round: all 13 units done** (paused 2026-11-13, resumed 2026-11-14; S1 finished 2026-11-20). The list below was split
 into 13 units by crate; every unit has a design with independent adversarial reviews, and each unit is
 implemented with adversarial code review before its commit. Designs, reviews, reports, the workflow script and
 the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pushed:
@@ -308,21 +313,71 @@ the resume steps are in `docs/workstreams/handoff-followups/`. Committed and pus
   antisymmetry; d checks the chart; the Lie derivative, symplectic, contact and topology routines delegate to the exact
   ones; three pullback and pushforward facades return `Err(NotImplemented)`. 49 new unit tests and 2 doc tests with
   PARI/GP 2.15 and Sage values.
+- S1 symbolic (`rustmath-symbolic`, and the REPL's `taylor` arm in `rustmath-jupyter/src/repl.rs`): the work-in-progress
+  commit `4763f31` (merged into `main` through PR #584) and this run's commits on `claude/gracious-gates-e6b6l7`. A
+  truncated Laurent series engine over exact constants (MAGMA ch. 49; `series_engine.rs`, `series_const.rs`,
+  `series_ball.rs`) behind `taylor`, `taylor_with_budget`, `series_expansion`, `laurent`, `asymptotic`,
+  `series_coefficients` and the limit path, with a work budget, typed refusals and structural caps on the result; the
+  owner's two rules at branch points and, from request C-1, a refusal when the argument leaves a branch cut; a parser
+  with literals of any size that reads `a/b` as a quotient and runs on a heap stack; `expand` under a minus; `simplify`
+  as a memoized work list with HEAD's results; a work-list `Display` and an iterative `Drop` for `Expr`. Reference
+  values from PARI/GP 2.15.4 at 300 digits.
 
-Still to do in this round: S1 (symbolic: `Expr::taylor`, the literal parser). Its design was not approved after
-nine design reviews and four red-team rounds (all in `docs/workstreams/handoff-followups/design/`; run 4 is summarized in
-that folder's README). Review 9's two blockers are narrow (a decided `DivisionByZero` for arcsin, arccos, arccosh and
-arcsinh of an exact-constant argument at +-1 or +-I, and for arctanh of a non-constant argument whose constant term is
-+-1), but every revision so far has opened new holes over the fixed bar. S1 is parked for an owner decision: fix the
-two blockers and implement with the random-input harness of review 9 as acceptance, or narrow the scope. Its items
-below stay open. The trackers follow all twelve commits: `PROJECT_TRACKER.md` (Change Log
-"Open follow-ups round, part 1", "part 2" and "part 3"), `docs/magma/status_overrides.csv` (part 2: 102 rows of the
-reviewed chapters re-rated, 57 of them with a new status, seven pilot rows, 18 rows added for chapters 83, 144 and
-145, and 384 path-only refreshes tagged `path refreshed 36c2170`; part 3: no row cites the code that `f29c492`
-changed, so none was re-rated) and `docs/magma/REVIEW_2026-11-06.md`. The list below no longer has the items they
-fixed; its last three bullets name each fixed item with its commit.
+S1 in detail. What is merged: the work-in-progress commit `4763f31`, through PR #584 (`main` `28c4b69`). This run's
+commits on `claude/gracious-gates-e6b6l7` add the finish under the narrowed bar, requests C-1 and C-4 and these records;
+they reach `main` through the S1 pull request. The design (`docs/workstreams/handoff-followups/design/S1-symbolic.md`)
+was never approved. Nine design reviews and four red-team rounds each found new holes over the fixed bar, so the owner
+froze it (2026-11-15, `impl/S1-symbolic.owner_decision.md` in that folder) and asked for the regression tests first
+(design review 9's two blockers, the red team's three holes, a singular-point matrix with gp values) and for two
+behaviour rules: an exact-constant argument of a branch function is evaluated, and a non-constant argument at a branch
+point is `NotLaurent`, never `DivisionByZero`. Six rounds of implementation review followed, each with a semantics and a
+resources reviewer. The semantics reviewer approved every round but round 5 (a variable named pi or I could name a constant),
+and in round 6 found no wrong value on 13,200 rows against a gp contour oracle. The resources reviewer kept finding consumers of a result (`simplify` in rounds 4 and 5; `expand`,
+`differentiate` and the REPL's `diff` in round 6) whose cost is about the number of terms times their cost on the input's
+kernel source. The owner then narrowed the bar (2026-11-16, `impl/S1-symbolic.owner_decision2.md`). A blocker is a wrong
+or guessed result, an undecided answer reported as decided, a regression against HEAD-before-S1 (`8a0b310`) on an input
+it handled, or a budget hole in S1's own entry points or in the printing, dropping and re-parsing of their results
+(100 KB of input, 20 s, 512 MB, an 8 MB release or a 2 MB debug thread). The cost of a consumer applied to a result is
+out of the bar: the doc comments give the measured scaling and claim no bound, and the follow-up unit S2 takes it. The
+finish under that bar had two review rounds, each with a semantics and a resources reviewer: the first
+(`impl/S1-symbolic.fin1-*.md`) was not approved (six distinct blockers, fixed test-first), the second
+(`impl/S1-symbolic.fin2-*.md`) approved, and so did a check of its minor fixes (`impl/S1-symbolic.finminorscheck2.md`).
+Requests C-1 and C-4 of `docs/workstreams/m23_golay/REQUESTS.md` were then approved by a semantics reviewer and a
+regressions reviewer (`impl/S1-symbolic.c1-1-*.md`); their minor items were fixed, and no reviewer re-checked those
+fixes. It is approved under the narrowed bar. The S1 items of the open list are fixed (the last bullet of the list) or
+moved to the S2 and S1-handoff bullets.
 
-**Open follow-ups** (each has a tracker row or note unless marked; lines at `f29c492`):
+C-1, the branch-cut rule. At each application of log, a non-integer power, arcsin, arccos, arctanh, arccosh, arctan or
+arcsinh, when the constant term of the argument lies on an open cut and the engine cannot decide that every higher
+coefficient is a real multiple of the cut's direction, the result is `NotLaurent` ("the argument leaves a branch cut at
+the point"); an undecided real zero test is `UndecidedZero`. The variable is real. Free parameters are generic complex
+indeterminates, the frozen design's convention, pending the owner. The five inputs of the request and their mirror
+images refuse; 37 real controls on the cuts keep their values; the two-sided oracle of
+`rustmath-symbolic/tests/data/s1_gp.py` passes the cut, matrix and fuzz data; one fuzz row changed with gp evidence
+(`U:y12.1`). C-4. Every crate that depends on rustmath-symbolic passes: rustmath-calculus 184, rustmath-curves 345
+(23 ignored), rustmath-functions 73, rustmath-geometry 523 (1 ignored), rustmath-manifolds 341 (11 ignored),
+rustmath-plot3d 90, rustmath-benchmarks (no tests) and rustmath-jupyter 124 (3 ignored): 1,680 passed, 0 failed,
+38 ignored. `cargo check --workspace --tests` has no error. rustmath-py is outside the workspace and was not built; by
+inspection it uses only functions whose signatures S1 kept. rustmath-symbolic itself: 909 passed in debug and 793 in
+release, 0 failed, and 23 other ignored tests pass (S1's 21 release measurements and child helpers, and HEAD's two
+factor tests, `factor.rs:389` and `:402`); the ignored `test_airy_numerical_helper` fails, as at HEAD.
+
+Conservative refusals, recorded (a later relaxation is welcome): a constant factor 0 does not hide a refused
+subexpression, so 39 rows of the singular-point matrix of the form `x + 0*f(...)` refuse (14 `DivisionByZero`, 25
+`NotLaurent`) where HEAD-before-S1 returned x, and two fuzz rows where HEAD returned 0; `sqrt(x^4)` and `abs(x)^2` at 0
+are `NotLaurent`, where the function is x^2 (HEAD gave terms in 0/0 and sign(0)); abs and sign of a series whose
+coefficients are real but not rational are `Unsupported` (`abs(x - sqrt(2))` at 0, where HEAD's value was right).
+
+The trackers follow all thirteen units: `PROJECT_TRACKER.md` (Change Log "Open follow-ups round, part 1", "part 2",
+"part 3" and "part 4 (S1)"), `docs/magma/status_overrides.csv` (part 2: 102 rows of the reviewed chapters re-rated, 57
+of them with a new status, seven pilot rows, 18 rows added for chapters 83, 144 and 145, and 384 path-only refreshes
+tagged `path refreshed 36c2170`; part 3: no row cites the code that `f29c492` changed, so none was re-rated; part 4: ten
+chapter 49 rows from missing to partial, tagged `fixed S1`, and two path refreshes, tagged `path refreshed S1`) and
+`docs/magma/REVIEW_2026-11-06.md`. The list below no longer has the items they fixed; its last four bullets name each
+fixed item with its commit.
+
+**Open follow-ups** (each has a tracker row or note unless marked; lines at `f29c492`, except in the files S1 changed,
+`rustmath-symbolic` and `rustmath-jupyter/src/repl.rs`, where they are at the S1 tree of this run):
 - MAGMA conventions still unverified against MAGMA itself (the handbook pages answer HTTP 401, no MAGMA
   binary): `Quotrem` over Z, `Content` over Q, the content in `IsIrreducible` over Z, `Binomial(n, r)` for
   r < 0, the shape of `QMatrix`, the generalised Jordan layout for deg p >= 2 and the block order of the primary
@@ -449,13 +504,13 @@ fixed; its last three bullets name each fixed item with its commit.
   - Review notes of J1b, marked required and not applied: `print(...)` joins strings past STRING_BYTES (`:958`;
     four nested prints reach 1.9 GB); `eval_depth` is not reset after a panic that `eval_guarded` catches
     (`:665`, `:808-817`; reset it in `eval` and name it in the `eval_guarded` doc, `kernel.rs:122`; latent); the
-    timing sentences of `BINOMIAL_WORK` (`:11037-11043`) and `checked_binomial` (`:12009-12020`) state pre-`80130e7`
+    timing sentences of `BINOMIAL_WORK` (`:11150-11156`) and `checked_binomial` (`:12183-12194`) state pre-`80130e7`
     times (C(524288, 262144) now takes 0.03 s); `gcd`, `lcm` and `xgcd` (`:1021`, `:1054`, `:1035`) run the quadratic
     gcd without the `check_rational_gcd` estimate (6.9 s at 2^21 bits). Nits: the TimeoutError text shows the
     current limit, `charpoly` prints through the library Display, the `EVAL_DEPTH` doc, and the time models
     refuse trivial calls such as `multinomial(4294967295, [4294967295])` (which is 1) and `stirling1(n, n - 1)`
     (which is C(n, 2)).
-  - Review notes of J1a: the phase-3 cost cap of `sqrt_mod_factor` (`:12448`, 20 s modelled) is above the worst
+  - Review notes of J1a: the phase-3 cost cap of `sqrt_mod_factor` (`:12622`, 20 s modelled) is above the worst
     case it bounds and restarts per piece; repeated factors are stripped one division at a time
     (`sqrt_mod(1, (2^10000)^30)` takes 59 s in debug; the finitefields `prime_power_sqrts` lift is bit by bit);
     probable primes above 4096 bits are refused where the earlier version gave a caveat (`sqrt_mod(4, 2^4423 - 1)`;
@@ -463,8 +518,7 @@ fixed; its last three bullets name each fixed item with its commit.
     (`rustmath-rationals/src/rational.rs:163`); `N` of NaN says "outside the range of a double"; a plot range or `find_root` bound with a real operand is
     computed in doubles, so `10^20 + pi - 10^20` is 0 there (as in MAGMA at 53 bits; documented, J1a design §9).
   - Nested calls `abs(abs(...))` overflow a debug build's 8 MB stack at about 40 levels, below `EVAL_DEPTH` = 200
-    (`:11127`; the kernel's 64 MiB thread holds 200); a symbolic chain `w + w + ... + w` of 3000 terms aborts the
-    debug driver in `Expr` Display and Drop (S1's area); `-(-x)` displays `--x` (S1's area).
+    (`:11301`; the kernel's 64 MiB thread holds 200).
   - No Float arithmetic in `apply_binary_op` (`2 * 1e-3` is a TypeError), and no Rational arm on symbolic values
     (`x / 2`, `x^(1/2)`); string literals are not unescaped; `integrate_num(x, x, 0, 1)` with a bare symbol is a
     TypeError; `Plot3DOptions` is unused and the 3D plots have fixed grids; graph commands other than the
@@ -479,22 +533,22 @@ fixed; its last three bullets name each fixed item with its commit.
     (9.3 s at 2^25 bits; the REPL converts through rug); Clifford and Jordan displays are outside the budget, and
     `print` and `vars` apply it per value; a plot samples a DAG as a tree (`e = e + e`); list literals copy their
     Integers; `det`, `rank`, `matrix_inverse`, `charpoly`, `rref`, `factor` (`:1089`, trial division), `sigma`'s
-    factoring (`:2774`) and `nth_prime` are unbounded library calls.
+    factoring (`:2790`) and `nth_prime` are unbounded library calls.
   - J1b's new items: every rational operation reduces with a quadratic Lehmer gcd and rustmath-rationals has no
     constructor from coprime parts, so the REPL refuses r^e of large fractions by its gcd estimate (27.7 s at
     2^22-bit parts); `POW_BITS` could be 2^26 (5.3 s measured); the binomial family and `PRIMES_COUNT` are
     conservative (`catalan(316227)` takes 0.03 s); `stirling_band`'s a-priori bounds are loose at the band edges
     for stirling2 with small k; `kernel_stops_on_shutdown_during_library_call` relies on `factor` being unbounded
-    trial division. `TAYLOR_ORDER` (`:11087`) was not re-measured (S1 not landed); for `FORM_COMPONENTS` and
-    `DIFF_FORM_DEGREE` see the manifolds items below. `is_prime`, `next_prime` and `sqrt_mod` prove primes up to
-    `PROOF_BITS` = 1024 bits (`:12353`).
+    trial division. `TAYLOR_ORDER` (`:11195`) stays 20000 as an argument check; S1's `TAYLOR_WORK` (`:11261`) bounds
+    the call (its calibration is an S1 handoff below); for `FORM_COMPONENTS` and `DIFF_FORM_DEGREE` see the manifolds
+    items below. `is_prime`, `next_prime` and `sqrt_mod` prove primes up to `PROOF_BITS` = 1024 bits (`:12527`).
 - Integer factorization and primality (not tracked as rows unless marked):
   - `factorint::factor_trial_division(n, None)` (`rustmath-integers/src/factorint.rs:199`) stops at 10^6 above
     2^128 and appends a composite cofactor, against its doc (tracker 🛑 row since 2026-11-14); `factorization::trial_division_stage`
     can serve it.
   - `prime::factor` and `prime::prime_divisors` (`prime.rs:634`, `:688`) are unbounded trial division (3.4 s in
     release on 100000007 * 1000000007; hours for a 12-digit second factor), used on 41 lines in 24 files of 8
-    crates (the REPL `factor` and `sigma` at `rustmath-jupyter/src/repl.rs:1089` and `:2774` among them); rebuild
+    crates (the REPL `factor` and `sigma` at `rustmath-jupyter/src/repl.rs:1089` and `:2790` among them); rebuild
     them on `factorization_with_limits(n, &FactorizationLimits::default())` or document the cost (tracker row).
   - `ECMLimit`: a new ECM (projective Montgomery or Edwards curves, Suyama's parametrisation, a seeded sigma, a
     full stage 2) is needed before an `ecm_limit` in `FactorizationLimits` pays; without it a large composite
@@ -510,27 +564,67 @@ fixed; its last three bullets name each fixed item with its commit.
   - Half-gcd is not implemented (Lehmer since `80130e7`; estimated crossover 10^5 to 10^6 bits), and
     `Integer::nth_root(n)` (MAGMA `Iroot`) is slow for a large n on a large input (num-bigint's Newton start; a
     start from the leading bits would fix it).
-- Unit S1 (parked after nine design reviews; the X2 split-outs it takes):
-  - S1: `Expr::taylor` (`rustmath-symbolic/src/series.rs:24`) differentiates without simplifying, so memory grows
-    exponentially with the order (x^2 at order 9 needs more than 3 GB) and a debug build overflows the stack at
-    order 20000 (`TAYLOR_ORDER`); no REPL bound prevents it. The i64-only literal parser
-    (`rustmath-symbolic/src/parser.rs:148-154`), and its `rational` (`:157`) reads integer / integer as one literal
-    before any operator, so `x^2/4` parses as x^(1/2), `2/3^2` as 4/9 and `1/x` not at all (the REPL gives
-    `diff(z^2/2, z)` = 1; J1a review 1 minor 6; S1 design §1.6; tracker 🔴 row since part 2). `expand` under a minus is wrong (`expand.rs:250-263`:
-    `expand(-(x - 1))` gives x - 1; tracker 🔴 row since part 2).
-  - For S1 from the MF1 report: every match on `Expr` in rustmath-manifolds is on a reference, so S1's `impl Drop
-    for Expr` compiles there; MF1's `root_sum`, `abs`, `x^y` and `d_budget` slot assertions are structural and depend
-    on HEAD's `simplify` results.
+- Unit S2, DAG-aware consumers (spec `docs/workstreams/handoff-followups/design/S2-dag-consumers.md`; not designed, not
+  implemented). A series result of S1 is a DAG whose kernels every term shares, but `expand`, `differentiate`,
+  `substitute`, `PartialEq`, `integrate` and the REPL's `diff`, `expand`, `subs` and `integrate` walk it as a tree, so
+  their cost on a result is about the number of terms times their cost on the input's kernel source: `expand` 4.0 s and
+  2.5 GB and then `simplify` 21.8 s and 5.6 GB for a 110-byte input at order 1000; the REPL's `diff` 11.6 s and 2.1 GB
+  for a 4.9 KB input; `integrate` 43.3 s at 1,000 terms (cubic, as at HEAD on the same polynomial typed as text). Goal:
+  cost linear in the DAG, outputs that share what the result shares, values unchanged; the acceptance inputs E1 to E6,
+  D1 to D10, S1 to S4 and I1 of the spec; iterative walks (`substitute` and `PartialEq` still recurse); an optional
+  phase 2 may relax S1's per-occurrence caps. It changes rustmath-symbolic code outside S1, so it needs its own design
+  and reviews.
+- S1 handoffs (minor; `docs/workstreams/handoff-followups/impl/S1-symbolic.md`, the "Handoffs" sections of each round;
+  tracker rows of rustmath-symbolic):
+  - Engine scope: Puiseux and log terms, gamma and zeta, fast series arithmetic, products of radicals, the result-tree
+    refusals of towers and a per-cell resource policy (design §7 items 1 to 10; rustmath-calculus `taylor.rs` keeps its
+    own implementation). abs and sign of a series with real but not rational coefficients need the owner's decision on
+    design §2.4 (11 first-step fuzz rows would become values; gp references in `tests/s1_review4.rs`). The thread-local
+    work state could become the design's `&mut Work` (a refactor under the same tests). `TAYLOR_WORK` (1e8) is the
+    design's provisional value: calibrate it with the design's §5.3 script, and port the design's §4.1 test list as
+    `tests/series_engine.rs`.
+  - Constant field: the numeric zero test has no complex coverage (trig and hyperbolic kernels of complex constants,
+    inverse functions off their real domains, complex radicals are `UndecidedZero`); sqrt(-b) = i sqrt(b) for a
+    rational b > 0 would decide `arctan(sqrt(-1)*x^0)` and reduce `((-4)^(1/2))^2`; fold exp, sin, cos, sinh and cosh
+    at q i pi (`exp(I*pi)` stays a kernel) and log(-c) = log(c) + i pi, so that `I*(log(-2) - log(2))` and
+    `exp(I*pi)` are decided real for the cut rule; Gaussian inverses for constants with parameters or more than 16
+    terms; cache each kernel's enclosure in `KData` (the class of a `log(2 + sin(...))` chain is quadratic, charged);
+    a float exponent with an integral value is undecided (`x^2.0` at 0, the design's rule of no float folding).
+  - Branch cuts (C-1): a finer rule for an argument that leaves the cut to the same side for both signs of x (the
+    eight rows of choice 2 in `tests/data/s1_cuts.tsv` are its first tests); a refused branch subexpression that cancels
+    or is multiplied by 0 refuses the input (`log(-1 + I*x) - log(-1 + I*x)`, `x + 0*sqrt(-1 + I*x)`); two owner
+    decisions were taken under the convention that parameters are generic complex (`log(-y^2 + I*x)` at 0, `log(sin(x))`
+    at a symbolic point), with the reviewer's alternative, real parameters, recorded in the report; `log(tan(x))` at a
+    symbolic point stays "cannot decide".
+  - Parser: exempt the parser's own printed forms from the depth limit (a printed result with an integer above
+    i64::MAX, a rational with such a denominator or `^ -(`, then more than 1,024 units of nesting, does not re-parse);
+    the docs' short form "128 levels of parentheses and calls (or 1 024 of `^`)" is exact only for unmixed nesting (the
+    limit is 1,024 units, 8 per parenthesis or call and 1 per `^`), and three byte counts in the docs are one too high
+    (`impl/S1-symbolic.finminorscheck2.md`, n1 and n2); `5 / 0`, `(1)/(0)` and `10\r/0` are refused, where HEAD read
+    Div(n, 0); a float literal that underflows to 0 is refused, where HEAD read 0.0.
+  - Limits (HEAD's code; tracker 🔴 row since part 4): `Expr::limit`, `limit_advanced` and the `combine_limits_*` laws
+    return symbolic `Finite` values without a zero test of a denominator (154 `Finite` values at a pole and 8 wrong
+    values on 181 inputs that the S1 parser now reads); direct substitution takes `0^10*exp(0/0)` as 0, so the left
+    limit of `1 + x^10*exp((sin(x^2)-x^2)/x^9)` at 0 is `Finite(1)` (it is +infinity); `log(-1 - I*x^2)` at 0 gives
+    `Finite(log(-1))` (-i pi for a real x); `Expr::limit`, `limit_enhanced` and `substitute` recurse per node (a tower
+    `x^-x^-...` of 1,400 levels aborts a 2 MB debug thread in this code of HEAD's, reached because S1's parser now
+    reads the text that HEAD's parser refused). `limit_with_error` gives `Finite` only for a rational limit (1,097 of
+    HEAD's symbolic answers became `Unknown`).
+  - Tests and tools: `kernel_protocol.rs` picks ports by binding and releasing them, so parallel kernels can collide
+    (`AddrInUse`) and `kernel_aborts_queued_cells` then waits forever (run it with `--test-threads=1`); the ignored
+    `test_airy_numerical_helper` fails (`airy.rs:369`, as at HEAD); `expand` of `L = -(L + x) + x` needs memory
+    quadratic in the depth (1.48 GB at 4,000 levels, as at HEAD).
 - Manifolds after MF1 (MF1 design §4.4 and §5, report and code review; `rustmath-manifolds/src/` unless marked; not
   tracked as rows unless marked):
-  - REPL (`rustmath-jupyter/src/repl.rs`, design §4.4): `DIFF_FORM_DEGREE` (`:11101`, used at `:4819`) can go, since the
-    library returns `DegreeOverflow`; drop its test lines (`:14671-14672`, and the degree block of
-    `test_form_component_limits` from `:14820`). The arms' own overflow checks (`:4862-4863`, `:4901-4902`) are
-    redundant. `check_form_components` (`:12314`) and `missing_components_error` (`:12334`) should count with
+  - REPL (`rustmath-jupyter/src/repl.rs`, design §4.4): `DIFF_FORM_DEGREE` (`:11275`, used at `:4835`) can go, since the
+    library returns `DegreeOverflow`; drop its test lines (`:14845-14846`, and the degree block of
+    `test_form_component_limits` from `:15456`). The arms' own overflow checks (`:4878-4879`, `:4917-4918`) are
+    redundant. `check_form_components` (`:12488`) and `missing_components_error` (`:12508`) should count with
     `rustmath_manifolds::tensor_field::component_count` ("too many components to store"). Re-measure `FORM_COMPONENTS`
-    in release with J1b's harness (64 bytes a slot, held once) and rewrite its doc (`:11102-11107`, which still says
-    each d enlarges the expressions) and the `repl_limits` overview (`:11002-11003`). Every REPL chart is named
-    `user_chart` (`:4801`) and is not registered, so REPL charts need unique names or registration before forms get
+    in release with J1b's harness (64 bytes a slot, held once) and rewrite its doc (`:11276-11281`, which still says
+    each d enlarges the expressions) and the `repl_limits` overview (`:11115-11116`, which also still says that
+    `TAYLOR_ORDER` waits for S1). Every REPL chart is named
+    `user_chart` (`:4817`) and is not registered, so REPL charts need unique names or registration before forms get
     symbolic components. Optional: expose `is_closed`, `closedness`, `interior_product`, `lie_derivative` and the
     components (a form displays only its degree, `:550-553`).
   - The `differentiate` facades of rustmath-symbolic (tracker 🛑 row "Derivative of a named function":
@@ -566,10 +660,11 @@ fixed; its last three bullets name each fixed item with its commit.
     `SymplecticForm::volume_form` ends in `ComponentAllocationFailed`. `DiffForm::new` means both "zero" and "no
     components in this chart". `tracker_08_09_tests.rs` is still not compiled (it reads the private field
     `PullBack::map`).
-  - One public zero test: move `expr_zero` to rustmath-symbolic (and, if S1 lands, merge it with S1's constants).
+  - One public zero test: move `expr_zero` to rustmath-symbolic and merge it with S1's constant field
+    (`series_const.rs`, whose zero test is three-valued too).
     rustmath-symbolic's `simplify` folds `0 * a` to 0 for any a (`oo`, NaN and `1/(y - y)` included) and keeps
     `Rational(1)` as a `Rational`; `Expr::from(f64)` maps NaN and the infinities to `Integer(0)`
-    (`rustmath-symbolic/src/expression.rs:399-404`), so such a float becomes a literal 0 before the finiteness checks of
+    (`rustmath-symbolic/src/expression.rs:485-490`), so such a float becomes a literal 0 before the finiteness checks of
     forms see it.
   - `cargo clippy -p rustmath-manifolds` stops in rustmath-combinatorics on its five old deny lints (see Combinatorics;
     `--no-deps` passes), and with `--tests` also on `approx_constant` in `examples.rs:520`, `:522`.
@@ -644,6 +739,13 @@ fixed; its last three bullets name each fixed item with its commit.
   contraction that summed index values, the tensor product layout, `Add` and `Neg` returning an operand, the
   structural `is_closed`, `is_contact` and symplectic volume form built on the facades, `ContactForm::standard` with
   symbols that are not coordinates, and the three pullback and pushforward relabellings (now `Err(NotImplemented)`).
+- Fixed by part 4 of the round (S1) and removed from this list: `4763f31` and this run's S1 commits: `Expr::taylor`
+  differentiating without simplifying (memory exponential in the order, a stack overflow at order 20000; now the
+  series engine under `TAYLOR_WORK`); the i64-only literal parser and its `rational` rule (`x^2/4` read as x^(1/2),
+  `2/3^2` as 4/9, `1/x` refused; tracker 🔴 row since part 2); `expand` under a minus (`expand(-(x - 1))` gave x - 1;
+  tracker 🔴 row since part 2); the `laurent` facade that dropped the principal part; a symbolic chain `w + w + ... + w`
+  of 3000 terms aborting the debug driver in `Expr` Display and Drop; `-(-x)` displayed as `--x`; and the MF1 note on
+  `impl Drop for Expr` (it compiles in rustmath-manifolds, and MF1's slot assertions pass).
 
 **Next steps** (unchanged): wire up or delete the dead code listed in
 `docs/magma/REVIEW_2026-11-06.md` (the `rustmath-rings/src/number_field/` orphan files, the gated
