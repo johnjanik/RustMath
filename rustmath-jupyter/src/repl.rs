@@ -11209,16 +11209,41 @@ mod repl_limits {
     /// the input's own literal arithmetic, which `simplify` folds left to right where the engine
     /// folded it in pairwise rounds). S1 fix-up round 5: the text and the folding are counted at
     /// every occurrence in the tree, the literals every node may fold to also weigh in the text
-    /// cap, and the literals of the distinct nodes are at most 2^22 words (32 MiB), so that
-    /// `subs`, `expand` and `diff`, which rebuild the tree, stay bounded too. `simplify` simplifies
-    /// a node with two or more parents in the walked DAG once while its memo holds at most 32 MiB
-    /// of literals (past that it recomputes, as HEAD), releases a value after its last use, and
-    /// folds a rational power only up to 2^20 bits (the engine's own cap). So, in release on an
-    /// 8 MB thread, for an accepted result: `simplify` of it and of its `subs`, `expand` and `diff`
-    /// folds for at most a few seconds (at most 4.1 s measured at the caps), the printing of each
-    /// takes at most about 8 s (8.0 s measured at the text cap), and `subs` and `==` walk at most 2^21
-    /// nodes; all within the S1 bar (20 s, 512 MB; a 2^21-node result took about 200 MB, and 2^27
-    /// units add at most 128 MiB of copies). On other values `simplify` does HEAD's work:
+    /// cap, and the literals of the distinct nodes are at most 2^22 words (32 MiB). `simplify`
+    /// simplifies a node with two or more parents in the walked DAG once while its memo holds at
+    /// most 32 MiB of literals (past that it recomputes, as HEAD), releases a value after its last
+    /// use, and folds a rational power only up to 2^20 bits (the engine's own cap).
+    ///
+    /// What is bounded (the S1 bar, as the owner set it on 2026-11-16): the `taylor` call itself,
+    /// and the printing, dropping and re-parsing of its result. In release on an 8 MB thread the
+    /// printing of a result takes at most about 8 s (8.0 s measured at the text cap); its re-parse
+    /// at most about 3.5 s for its characters plus the parse of its numbers
+    /// (`series_const::MAX_RESULT_PARSE_WORK`, about 6 to 8 s), and the parser takes no stack per
+    /// level of the text (S1 finish, fix-up round 1). A printed result whose text holds an integer
+    /// above i64::MAX (1/21! and beyond), a rational with such a denominator or `^ -(`, and then
+    /// nests more than 128 levels of parentheses and calls (or 1 024 of `^`), is refused at once
+    /// when it is read back (the parser's depth limit, a `ParseError`; the doc of `mod depth` in
+    /// `rustmath-symbolic/src/parser.rs`).
+    ///
+    /// What is not bounded: the commands applied to a result. They rebuild its tree without its
+    /// sharing, and a kernel made from an input node is named at every term, so their cost is
+    /// about the number of terms times their cost on the input's kernel source. Measured (S1
+    /// review 6, B1 and B2, and rounds 4 and 5; release unless named): `simplify` of a result took
+    /// 0.86 s at the slowest edge of the caps measured (14 families of literal-heavy kernel
+    /// sources), and about 4 to 5 s after `expand` or `subs` of the same results; `simplify` of
+    /// its `subs` about the number of terms times the folds of one substituted coefficient
+    /// (`(10^100-1)^1050/7^120000/(1-x)` with x = 2: 6.8 s at order 10 and 66.0 s at order 100 in
+    /// the fin1 resources review; the engine now refuses this input above order 32, and the
+    /// accepted orders 29 to 32 take 18 to 23 s);
+    /// `e = expand(t)` of `t = taylor(sin((y0+z0)*...*(y11+z11))/(1-x), x, 0, 1000)` (a 110-byte
+    /// input, `t` in 0.05 s) 5.7 s and 2.5 GB (debug), and `simplify` of that output 21.8 s and
+    /// 5.6 GB; `d = diff(t, x)` of `taylor(sin(y0^y1^...^y999)/(1-x), x, 0, 1040)` (4.9 KB)
+    /// 11.6 s and 2.1 GB (debug), of the product `sin(y0*...*y999)/(1-x)` 5.0 s and 664 MB; `subs`
+    /// and `==` walk up to 2^21 nodes (a 2^21-node result took about 200 MB); `integrate` of
+    /// `taylor(1/(1-x), x, 0, N)` 0.78 s at N = 250, 5.6 s at 500, 43.3 s at 1000 (HEAD's
+    /// `integrate` is cubic in the terms, also on the polynomial typed as text). A follow-up unit,
+    /// S2 ("DAG-aware consumers"), makes `simplify`, `expand`, `diff`, `subs` and `integrate`
+    /// share repeated subexpressions. On values that are not results, `simplify` does HEAD's work:
     /// `simplify` of an input with a long chain of literal divisions can take minutes (HEAD's
     /// rules). Before these caps (S1 fix-up rounds 2 to 5):
     /// `simplify(taylor("sqrt(N)/(1-x)", x, 0, 20000))` with N of 99 950 digits took 824 MB,

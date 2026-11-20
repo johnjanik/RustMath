@@ -78,7 +78,7 @@ use nom::{
     character::complete::{alpha1, alphanumeric1, char, digit1, multispace0},
     combinator::{map, opt, recognize},
     error::{Error, ErrorKind},
-    multi::{many0, separated_list0},
+    multi::many0,
     sequence::{delimited, pair, tuple},
     IResult,
 };
@@ -123,11 +123,33 @@ pub fn parse(input: &str) -> Result<Expr, ParseError> {
     // - Show context around the error
     // - Support error recovery for interactive use
 
-    match expression(input) {
+    depth::reset();
+    let r = expression(input);
+    let too_deep = depth::refused();
+    depth::reset();
+    match r {
         Ok(("", expr)) => Ok(expr),
+        // S1 finish under the narrowed bar: a level past the limit of a text in the S1 syntax
+        // (`depth`); the rule that met it failed, and so did the parse
+        _ if too_deep => Err(ParseError {
+            message: format!(
+                "the expression nests too deeply for its syntax: after a sign run, a signed \
+                 exponent such as x^-y, an integer literal outside i64, or an integer literal \
+                 divided at once by something other than an integer literal (2/x), at most {} \
+                 levels of parentheses and calls (or {} of ^) are read",
+                depth::LIMIT / depth::NEST,
+                depth::LIMIT / depth::TOWER
+            ),
+        }),
         Ok((remaining, _)) => Err(ParseError {
             message: format!("Unexpected input remaining: '{}'", remaining),
             // TODO: Add position information: message: format!("at position {}", input.len() - remaining.len())
+        }),
+        // S1 finish, minor items of the reviews fin2 (resources minor 2): the literal fold of
+        // `expression` refuses a zero divisor with `Verify` (its only use of that kind); the
+        // message is design §2.12's
+        Err(nom::Err::Failure(e)) if e.code == ErrorKind::Verify => Err(ParseError {
+            message: "division by zero in a literal".to_string(),
         }),
         // S1 fix-up round 3: the refusal of a float literal that underflows names the literal
         Err(nom::Err::Failure(e)) if e.code == ErrorKind::Float => {
@@ -147,6 +169,148 @@ pub fn parse(input: &str) -> Result<Expr, ParseError> {
     }
 }
 
+/// S1 finish under the narrowed bar (review 6, resources lens, minor 2): the depth of the parse.
+///
+/// The parser before S1 (HEAD 8a0b310) refused four constructs at once with a `ParseError`:
+/// - a sign after `^` other than a literal's own (`x^-2` and `x^ -2.5` it read, `x^-y`, `x^+2`
+///   and `x^--2` it refused);
+/// - more than one sign before an operand other than a literal's (`--5` and `- -5` it read as
+///   -(-5), `--x` and `- - -x` it refused);
+/// - an integer literal outside i64: above i64::MAX, or below i64::MIN for the negative literal
+///   of the two rules above (`x^-9223372036854775808` it read);
+/// - a literal rational (an integer literal, then '/' at once) whose denominator is not an
+///   integer literal at once: `2/3` and `2/-3` it read, `2/x`, `1/(x+1)`, `2/ 3`, `2/--3`,
+///   `2/3.5` and `x^2/x` it refused (`head_denominator`).
+///
+/// The S1 parser reads them (design §2.12). Its recursive rules then went on into the rest of the
+/// text, so `x^-x^-...^-x` of 1 500 levels, or any of these constructs before 300 nested
+/// parentheses, aborted a 2 MB debug thread, where HEAD returned a `ParseError` (S1_BAR (b)).
+/// Once the text has used one of these constructs (`relax`), the parse refuses to nest deeper
+/// than `LIMIT` units, a level of atoms (a parenthesis or call) `NEST` units and a `^` level
+/// `TOWER` unit: at most 128 levels of parentheses and calls or 1 024 levels of `^` in all (the
+/// depth counts from the start of the text, so a construct met deep inside the text refuses any
+/// deeper level at once). The counter is only checked after `relax`, and `relax` runs only for
+/// these constructs, so a text that HEAD reads is never limited (S1 finish fix-up round 1:
+/// HEAD's negative literal i64::MIN and its literal rational relaxed the limit wrongly before,
+/// `Lit`). The state is per thread and reset by `parse`.
+///
+/// S1 finish, fix-up round 1 (fin1 resources B4): the parser no longer recurses (`expression`
+/// runs on a work stack on the heap), so no text overflows its thread's stack, the re-parse of a
+/// printed result included. The limit keeps HEAD's outcome, a `ParseError`, for deep texts in the
+/// syntax HEAD refused, so their trees, deeper than any HEAD built from such a text, do not reach
+/// the consumers that recurse (`differentiate`, `substitute`, `==`).
+///
+/// The exception for printed results (S1 finish, minor items of the reviews fin2: semantics m1,
+/// resources minor 1). The limit also applies when a printed result is re-parsed, and a result
+/// prints relaxing constructs of its own: an integer above i64::MAX (a factorial from 21! on, as
+/// in the coefficient 1/21!), a `Rational` with such a denominator, or `^ -(`, which is how
+/// `Display` writes the negated exponent this parser builds for HEAD's `x^-2^-2`. So a printed
+/// result does not re-parse when its text holds such a construct and then nests more than
+/// `LIMIT` units counted from the start of the text (more than 128 levels of parentheses and
+/// calls, or 1 024 of `^`): the parse stops there with the refusal of `parse`, at once, with no
+/// time or memory beyond the text read so far, on any thread. Measured (2 MB debug and 8 MB
+/// release threads, `tests/s1_finish1.rs`, `fin2_a_printed_relaxing_construct_limits_the_reparse`;
+/// the reviewers' examples), as the result of `taylor_with_budget` with the REPL's budget:
+/// - `x` followed by 110 copies of `^-2` (332 bytes, HEAD's syntax) at 1, order 3 (100 copies
+///   re-parse), and followed by 33 333 copies (100 KB) at 1, order 3;
+/// - `exp(x) + sin^150(1)/(1-x)` (767 bytes, 150 nested calls of `sin` around 1) at 0 from
+///   order 21, once 1/21! is printed (order 20 re-parses);
+/// - `exp(x)*sin^130(1)` (659 bytes, HEAD's syntax) at 0, order 25 (order 20 re-parses);
+/// - `sin(A1+...+A200)/(1-x)` with 30-digit integers Ak at 0, order 3 and up (measured at orders
+///   3 and 5 177): `Display` writes the kernel's source, a left-deep chain, with a parenthesis per
+///   `+`, so the first literal comes after 200 of them (100 terms re-parse).
+///
+/// HEAD's parser refused each of these constructs, so it read none of these printed texts either.
+/// A follow-up may exempt the parser's own printed forms from the limit.
+mod depth {
+    use std::cell::Cell;
+
+    /// the units a text in the S1 syntax may nest
+    pub const LIMIT: u32 = 1024;
+    /// the units of a level of nested atoms, a parenthesis or a call argument (`atom`)
+    pub const NEST: u32 = 8;
+    /// the units of one level of `^` (`power`)
+    pub const TOWER: u32 = 1;
+
+    /// S1 finish, fix-up round 1 (fin1 semantics B2, resources B1 and B2): what HEAD's `integer`
+    /// rule read at the next integer literal of the text
+    #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+    pub enum Lit {
+        /// an atom after the signs that HEAD's `unary` took: an integer up to i64::MAX
+        Atom,
+        /// an atom whose '-' HEAD's `integer` took (after `^`, or the second sign of an
+        /// operand: `x^-5`, `--5`): its magnitude up to 2^63 (i64::MIN)
+        NegAtom,
+        /// the denominator of HEAD's literal rational (`2/3`, `2/-3`), which its numerator
+        /// checked (`super::head_denominator`)
+        Denom,
+    }
+
+    thread_local! {
+        static DEPTH: Cell<u32> = const { Cell::new(0) };
+        static RELAXED: Cell<bool> = const { Cell::new(false) };
+        static REFUSED: Cell<bool> = const { Cell::new(false) };
+        static LIT: Cell<Lit> = const { Cell::new(Lit::Atom) };
+    }
+
+    pub fn reset() {
+        DEPTH.with(|d| d.set(0));
+        RELAXED.with(|r| r.set(false));
+        REFUSED.with(|r| r.set(false));
+        LIT.with(|l| l.set(Lit::Atom));
+    }
+
+    /// what HEAD read at the next integer literal (`number` takes it at every atom)
+    #[inline(never)]
+    pub fn set_lit(l: Lit) {
+        LIT.with(|c| c.set(l));
+    }
+
+    /// the state `set_lit` left for this atom, and `Lit::Atom` for the next one
+    #[inline(never)]
+    pub fn take_lit() -> Lit {
+        LIT.with(|c| c.replace(Lit::Atom))
+    }
+
+    /// whether `enter` refused a level during this parse
+    pub fn refused() -> bool {
+        REFUSED.with(|r| r.get())
+    }
+
+    /// the text used a construct the parser before S1 refused
+    #[inline(never)]
+    pub fn relax() {
+        RELAXED.with(|r| r.set(true));
+    }
+
+    /// enter a level of `units`: false (and no change but `refused`) when the text has used such
+    /// a construct and the level would pass `LIMIT`
+    #[inline(never)]
+    pub fn enter(units: u32) -> bool {
+        let n = DEPTH.with(|d| d.get()).saturating_add(units);
+        if n > LIMIT && RELAXED.with(|r| r.get()) {
+            REFUSED.with(|r| r.set(true));
+            return false;
+        }
+        DEPTH.with(|d| d.set(n));
+        true
+    }
+
+    /// leave a level of `units` that `enter` accepted
+    #[inline(never)]
+    pub fn exit(units: u32) {
+        DEPTH.with(|d| d.set(d.get().saturating_sub(units)));
+    }
+}
+
+/// The refusal of a level past `depth::LIMIT` (a Failure: no other rule reads the text; `parse`
+/// names it by `depth::refused`). Out of line, written into the caller's result, so the
+/// recursive frames hold no error value.
+#[inline(never)]
+fn too_deep<O>(input: &str) -> IResult<&str, O> {
+    Err(nom::Err::Failure(Error::new(input, ErrorKind::TooLarge)))
+}
+
 // Whitespace handling
 fn ws<'a, F, O>(inner: F) -> impl FnMut(&'a str) -> IResult<&'a str, O>
 where
@@ -157,12 +321,61 @@ where
 
 // Unsigned integer literal of any size (S1 design §2.12; the sign is the unary rule's). The
 // literal `a/b` is not a token: `multiplicative` folds a quotient of two signed integer literals.
-fn integer_literal(input: &str) -> IResult<&str, Integer> {
+// S1 finish: the constructs of HEAD's `integer` and `rational` rules (`depth`). `lit` says what
+// HEAD read here (`depth::take_lit`): an atom up to i64::MAX, a negative literal down to
+// i64::MIN (fix-up round 1, fin1 semantics B2 and resources B1: 2^63 relaxed the limit there
+// too, where HEAD read -9223372036854775808), or the denominator of a literal rational, which
+// its numerator checked. An atom directly followed by '/' was HEAD's literal rational, which
+// needs HEAD's integer right after the '/' (fix-up round 1, fin1 resources B2: HEAD refused
+// `2/x`, `1/(x+1)`, `2/ 3`, `2/3.5` and `2/--3` at once).
+fn integer_literal(input: &str, lit: depth::Lit) -> IResult<&str, Integer> {
     let (rest, digits) = digit1(input)?;
+    if lit != depth::Lit::Denom {
+        let max = if lit == depth::Lit::NegAtom {
+            "9223372036854775808"
+        } else {
+            "9223372036854775807"
+        };
+        let sig = digits.trim_start_matches('0');
+        if sig.len() > 19 || (sig.len() == 19 && sig > max) {
+            depth::relax();
+        }
+        if let Some(den) = rest.strip_prefix('/') {
+            if head_denominator(den) {
+                depth::set_lit(depth::Lit::Denom);
+            } else {
+                depth::relax();
+            }
+        }
+    }
     match Integer::from_decimal_str(digits) {
         Some(n) => Ok((rest, n)),
         None => Err(nom::Err::Error(Error::new(input, ErrorKind::Digit))),
     }
+}
+
+// S1 finish, fix-up round 1 (fin1 resources B2): whether the text right after the '/' of a
+// literal rational is HEAD's denominator (`integer`): an optional '-' and digits at once, whose
+// value with the sign is in i64 and is not 0 (HEAD's `Rational::new` refused 0), and no '.'
+// after the digits (HEAD's `integer` stops there, and no rule of HEAD's grammar reads a '.', so
+// HEAD refused `2/3.5`). Then the port reads the same text: a sign run of one '-' and the digits.
+#[inline(never)]
+fn head_denominator(t: &str) -> bool {
+    let (neg, t) = match t.strip_prefix('-') {
+        Some(r) => (true, r),
+        None => (false, t),
+    };
+    let n = t.bytes().take_while(u8::is_ascii_digit).count();
+    if n == 0 || t[n..].starts_with('.') {
+        return false;
+    }
+    let sig = t[..n].trim_start_matches('0');
+    let max = if neg {
+        "9223372036854775808"
+    } else {
+        "9223372036854775807"
+    };
+    !sig.is_empty() && (sig.len() < 19 || (sig.len() == 19 && sig <= max))
 }
 
 // Parse a floating-point number (must have decimal point, no sign: the unary rule reads it)
@@ -243,22 +456,6 @@ fn variable(input: &str) -> IResult<&str, Expr> {
     })(input)
 }
 
-// Parse a function name and determine the appropriate UnaryOp or Function variant
-fn function_call(input: &str) -> IResult<&str, Expr> {
-    let (input, func_name) = identifier(input)?;
-    let (input, _) = ws(char('('))(input)?;
-    let (input, args) = separated_list0(ws(char(',')), expression)(input)?;
-    let (input, _) = ws(char(')'))(input)?;
-
-    // Convert args to Vec<Arc<Expr>>
-    let arc_args: Vec<Arc<Expr>> = args.into_iter().map(Arc::new).collect();
-
-    // Map known function names to UnaryOp (one construction, out of the recursive frame)
-    let expr = make_call(func_name, arc_args);
-
-    Ok((input, expr))
-}
-
 // The unary operation of a one-argument call by its name.
 fn unary_op_by_name(name: &str) -> Option<UnaryOp> {
     Some(match name {
@@ -299,8 +496,12 @@ fn make_call(name: &str, mut args: Vec<Arc<Expr>>) -> Expr {
     Expr::Function(name.to_string(), args)
 }
 
-// Parse a number: a float, or an unsigned integer literal of any size
+// Parse a number: a float, or an unsigned integer literal of any size. The first rule of every
+// atom, so it takes what HEAD read at this atom (`depth::take_lit`, S1 finish fix-up round 1).
+// Never inlined: its locals stay out of the recursive frame of `atom`.
+#[inline(never)]
 fn number(input: &str) -> IResult<&str, Expr> {
+    let lit = depth::take_lit();
     // Try to parse as float first (with decimal point); a literal that underflows is a Failure
     // (S1 fix-up round 3), so its digits are not read again as an integer
     match float(input) {
@@ -308,25 +509,66 @@ fn number(input: &str) -> IResult<&str, Expr> {
         Err(e @ nom::Err::Failure(_)) => return Err(e),
         Err(_) => {}
     }
-    map(integer_literal, Expr::Integer)(input)
+    let (rest, n) = integer_literal(input, lit)?;
+    Ok((rest, Expr::Integer(n)))
 }
 
 // A run of signs ('-' | '+')*, read by a loop (no recursion per sign, so 100 KB of signs costs
-// no stack): whether the run is negative (an odd number of '-').
+// no stack): whether the run is negative (an odd number of '-'), the number of signs (at most 3
+// is told apart), and whether the last sign is a '-' followed at once by a digit (a negative
+// literal for the parser before S1). The white space between signs is the grammar's
+// (`multispace0`: space, tab, CR, LF; S1 finish: before, any Unicode white space).
 #[inline(never)]
-fn sign_run(input: &str) -> (&str, bool) {
+fn sign_run(input: &str) -> (&str, bool, u8, bool) {
     let mut neg = false;
+    let mut n: u8 = 0;
+    let mut minus_last = false;
     let mut rest = input;
     loop {
-        let t = rest.trim_start();
+        let t = rest.trim_start_matches([' ', '\t', '\r', '\n']);
         if let Some(r) = t.strip_prefix('-') {
             neg = !neg;
             rest = r;
+            minus_last = true;
         } else if let Some(r) = t.strip_prefix('+') {
             rest = r;
+            minus_last = false;
         } else {
-            return (rest, neg);
+            let literal = minus_last && rest.starts_with(|c: char| c.is_ascii_digit());
+            return (rest, neg, n, literal);
         }
+        n = n.saturating_add(1).min(3);
+    }
+}
+
+// The signs of an operand (`unary`). HEAD read one sign, or a sign and a negative literal
+// (`--5`, `- -5`, `+-5`); any other run relaxes the depth limit (`depth`). The negative literal
+// is HEAD's down to i64::MIN (`depth::Lit::NegAtom`, S1 finish fix-up round 1).
+#[inline(never)]
+fn operand_signs(input: &str) -> (&str, bool) {
+    let (rest, neg, n, literal) = sign_run(input);
+    if n >= 3 || (n == 2 && !literal) {
+        depth::relax();
+    } else if n == 2 {
+        depth::set_lit(depth::Lit::NegAtom);
+    }
+    (rest, neg)
+}
+
+// The signs of an exponent, after `^`, and the entry into the exponent's level of the tower,
+// which `make_power` leaves. HEAD read no sign, or a negative literal (`x^-2`); any other sign
+// relaxes the depth limit. `None` past the limit (`depth::refused` names the reason).
+fn exponent_signs(input: &str) -> Option<(&str, bool)> {
+    let (rest, neg, n, literal) = sign_run(input);
+    if n >= 2 || (n == 1 && !literal) {
+        depth::relax();
+    } else if n == 1 {
+        depth::set_lit(depth::Lit::NegAtom);
+    }
+    if depth::enter(depth::TOWER) {
+        Some((rest, neg))
+    } else {
+        None
     }
 }
 
@@ -342,52 +584,29 @@ fn signed_integer_literal(e: &Expr) -> Option<Integer> {
     }
 }
 
-// Parse a parenthesized expression
-fn parens(input: &str) -> IResult<&str, Expr> {
-    delimited(
-        ws(char('(')),
-        expression,
-        ws(char(')')),
-    )(input)
+// The white space of `multispace0` (space, tab, CR, LF) at the start of the text, skipped.
+fn skip_space(input: &str) -> &str {
+    input.trim_start_matches([' ', '\t', '\r', '\n'])
 }
 
-// Parse an atom: number, variable, function call, or parenthesized expression.
-// Never inlined: in release `atom` was inlined into the recursive `power`, whose frame then held
-// its locals across the recursion (552 bytes per `^` level against HEAD's 312), so a caret tower
-// that HEAD parses overflowed (S1 review 1, B1; `tests/s1_depth.rs`).
-#[inline(never)]
-fn atom(input: &str) -> IResult<&str, Expr> {
-    alt((
-        number,
-        function_call,
-        parens,
-        variable,
-    ))(input)
+// The character `c` with the white space around it: the rest of the text after it
+fn token(input: &str, c: char) -> Option<&str> {
+    ws(char::<&str, Error<&str>>(c))(input)
+        .ok()
+        .map(|(rest, _)| rest)
 }
 
-// Parse power expression (right-associative)
-// Example: 2^3^2 = 2^(3^2) = 2^9 = 512
-// Note: Power has HIGHER precedence than unary minus
-// So -x^2 = -(x^2), not (-x)^2
-// The exponent is signed: exponent := ('-' | '+')* power, and a negated integer literal folds to
-// a negative literal (`x^-2` is Pow(x, Integer(-2)); `2^-x` is Pow(2, Neg(x))).
-fn power(input: &str) -> IResult<&str, Expr> {
-    let (input, base) = ws(atom)(input)?;
-
-    if let Ok((input, _)) = ws(char::<&str, Error<&str>>('^'))(input) {
-        let (input, neg) = sign_run(input);
-        let (input, exp) = power(input)?; // Right-associative recursion
-        Ok((input, make_power(base, neg, exp)))
-    } else {
-        Ok((input, base))
-    }
+// `^` with the white space around it: the rest of the text after it
+fn caret(input: &str) -> Option<&str> {
+    token(input, '^')
 }
 
-// The node of `base ^ (sign) exp`. Out of line (and in `unary` and `multiplicative` likewise),
-// so that the frames of the recursive rules stay as small as HEAD's: the parser's recursion over
-// parentheses and calls is the only one over a text (S1 design §2.12, §2.16).
-#[inline(never)]
+// The node of `base ^ (sign) exp`: a negated integer literal folds to a negative literal
+// (`x^-2` is Pow(x, Integer(-2)); `2^-x` is Pow(2, Neg(x))). It leaves the level of the tower
+// that `exponent_signs` entered (S1 finish). On an error the level is not left: an error fails
+// the whole parse (no rule of this grammar recovers from one), and `parse` resets the depth.
 fn make_power(base: Expr, neg: bool, exp: Expr) -> Expr {
+    depth::exit(depth::TOWER);
     let exp = match (neg, &exp) {
         (false, _) => exp,
         (true, Expr::Integer(n)) => Expr::Integer(-n.clone()),
@@ -396,7 +615,6 @@ fn make_power(base: Expr, neg: bool, exp: Expr) -> Expr {
     Expr::Binary(BinaryOp::Pow, Arc::new(base), Arc::new(exp))
 }
 
-#[inline(never)]
 fn negate_if(neg: bool, e: Expr) -> Expr {
     if neg {
         Expr::Unary(UnaryOp::Neg, Arc::new(e))
@@ -408,7 +626,6 @@ fn negate_if(neg: bool, e: Expr) -> Expr {
 // One step of a `*` `/` chain. A quotient of two signed integer literals is the exact rational
 // (an Integer when it divides): value-preserving, so `1/3` is still Rational(1/3) and `-2/3`
 // Rational(-2/3). A zero divisor is an error (`None`).
-#[inline(never)]
 fn product_step(op: char, l: Expr, r: Expr) -> Option<Expr> {
     if op == '/' {
         if let (Some(a), Some(b)) = (signed_integer_literal(&l), signed_integer_literal(&r)) {
@@ -424,71 +641,211 @@ fn product_step(op: char, l: Expr, r: Expr) -> Option<Expr> {
     Some(Expr::Binary(bin_op, Arc::new(l), Arc::new(r)))
 }
 
-// Parse a unary expression: a run of signs (an odd number of '-' gives one Neg, an even number
-// none: "--5" is 5, "---x" is Neg(x)), then a power.
-// This comes AFTER power to ensure -x^2 = -(x^2)
-fn unary(input: &str) -> IResult<&str, Expr> {
-    let (input, neg) = sign_run(input);
-    let (input, expr) = power(input)?;
-    Ok((input, negate_if(neg, expr)))
+// One open level of the text in `expression`'s work stack.
+enum Frame<'a> {
+    /// a sum (`additive`): the terms so far and the operator ('+' or '-') of the pending one
+    Sum(Option<(Expr, char)>),
+    /// a product (`multiplicative`): the factors so far and the operator ('*' or '/') of the
+    /// pending one
+    Product(Option<(Expr, char)>),
+    /// the signs of an operand (`unary`): whether its run is negative
+    Signs(bool),
+    /// the base of `^` and the sign of its pending exponent (`power`)
+    Power(Expr, bool),
+    /// a parenthesis (`parens`)
+    Paren,
+    /// a call (`function_call`): its name and the arguments read so far
+    Call(&'a str, Vec<Arc<Expr>>),
 }
 
-// Parse multiplicative expression (*, /)
-fn multiplicative(input: &str) -> IResult<&str, Expr> {
-    // TODO: Implicit multiplication support
-    // Detect and insert implicit * in cases like:
-    // - "2x" → "2*x" (number followed by identifier)
-    // - "2(x+1)" → "2*(x+1)" (number followed by parenthesis)
-    // - "(x+1)(x-1)" → "(x+1)*(x-1)" (adjacent parentheses)
-    // - "x y" → "x*y" (adjacent identifiers, only if no whitespace in strict mode)
-    //
-    // Challenges:
-    // - Must not break multi-character symbols like "sin", "alpha"
-    // - Need lookahead to distinguish "2e5" (scientific) from "2e" (2*e)
-    // - Unicode operators (×, ⋅) should also be recognized
-
-    let (input, mut expr) = unary(input)?;
-
-    let mut input = input;
-    loop {
-        if let Ok((new_input, op)) = ws(alt((char::<&str, Error<&str>>('*'), char('/'))))(input) {
-            let (new_input, rhs) = unary(new_input)?;
-            expr = match product_step(op, expr, rhs) {
-                Some(e) => e,
-                // "division by zero in a literal"
-                None => return Err(nom::Err::Failure(Error::new(new_input, ErrorKind::Verify))),
-            };
-            input = new_input;
-        } else {
-            break;
-        }
-    }
-
-    Ok((input, expr))
+// What `expression` reads next.
+enum Next<'a> {
+    /// an operand (`unary`): its signs, then a `power`
+    Operand(&'a str),
+    /// an atom (the first one of a `power`, or of an exponent)
+    Atom(&'a str),
+    /// an atom was read (its level of `depth` is left here): `^`, or the end of a power, of a
+    /// product and of a sum
+    AtomDone(&'a str, Expr),
+    /// an expression was read: what its frame reads after it
+    ExprDone(&'a str, Expr),
 }
 
-// Parse additive expression (+, -)
-fn additive(input: &str) -> IResult<&str, Expr> {
-    let (input, mut expr) = multiplicative(input)?;
-
-    let mut input = input;
-    loop {
-        if let Ok((new_input, op)) = ws(alt((char::<&str, Error<&str>>('+'), char('-'))))(input) {
-            let (new_input, rhs) = multiplicative(new_input)?;
-            let bin_op = if op == '+' { BinaryOp::Add } else { BinaryOp::Sub };
-            expr = Expr::Binary(bin_op, Arc::new(expr), Arc::new(rhs));
-            input = new_input;
-        } else {
-            break;
-        }
-    }
-
-    Ok((input, expr))
-}
-
-// Parse a full expression
+/// Parse a full expression, with the white space around it:
+///
+/// ```text
+/// expression := additive
+/// additive   := multiplicative (('+' | '-') multiplicative)*      left to right
+/// multiplicative := unary (('*' | '/') unary)*                    left to right
+/// unary      := ('-' | '+')* power             an odd run of '-' gives one Neg
+/// power      := atom ('^' ('-' | '+')* power)?  right to left: 2^3^2 = 2^(3^2)
+/// atom       := number | name '(' (expression (',' expression)*)? ')' | '(' expression ')' | name
+/// ```
+///
+/// Power binds tighter than the signs, so -x^2 = -(x^2), not (-x)^2. A quotient of two signed
+/// integer literals folds to the exact rational (`product_step`), and a negated integer exponent
+/// to a negative literal (`make_power`).
+///
+/// S1 finish, fix-up round 1 (fin1 resources B4): the rules run on an explicit work stack on
+/// the heap (`Frame`), not by recursion, so the parser's use of the thread's stack does not grow
+/// with the nesting of the text. A result of the series engine prints deeper than its input
+/// (the sum of its terms, the product with h^k, and `Display`'s parentheses around every binary
+/// node of a kernel's source), so its re-parse overflowed the thread on which its input parsed
+/// (`sin^195(1)/(1-x)` at order 1000 on a 2 MB debug thread, `sin^4320(1)/(1-x)` at order 100 on
+/// an 8 MB release thread, `sin(1+2+...+300)/(1-x)` in debug). Every text is read as the
+/// recursive rules of the S1 parser read it (`fu2/s1impl/fix1f/pdiff/`: the same trees and
+/// refusals on the fuzz texts of the reviews); where those rules backtracked from a call whose
+/// arguments fail (to the name alone, whose '(' no rule then reads), this one fails at once, and
+/// the text is a `ParseError` either way. The limit of `depth` still refuses deep texts in the
+/// syntax HEAD refused.
 fn expression(input: &str) -> IResult<&str, Expr> {
-    ws(additive)(input)
+    let mut stack: Vec<Frame<'_>> = vec![Frame::Sum(None), Frame::Product(None)];
+    let mut next = Next::Operand(input);
+    loop {
+        next = match next {
+            Next::Operand(t) => {
+                let (rest, neg) = operand_signs(t);
+                stack.push(Frame::Signs(neg));
+                Next::Atom(rest)
+            }
+            Next::Atom(t) => {
+                // S1 finish: one level of `depth` per atom (every parenthesis and call argument is
+                // read through an atom, so the levels of nested atoms are the nesting of the text)
+                if !depth::enter(depth::NEST) {
+                    return too_deep(t);
+                }
+                let s = skip_space(t);
+                // `number` first, as in every atom (it takes `depth::take_lit`)
+                match number(s) {
+                    Ok((rest, e)) => Next::AtomDone(rest, e),
+                    Err(e @ nom::Err::Failure(_)) => return Err(e),
+                    Err(_) => {
+                        if let Ok((after, name)) = identifier(s) {
+                            match token(after, '(') {
+                                Some(rest) => {
+                                    // `name()`: the first argument fails at once (the recursive
+                                    // rule entered its atom's level there)
+                                    if !depth::enter(depth::NEST) {
+                                        return too_deep(rest);
+                                    }
+                                    depth::exit(depth::NEST);
+                                    match token(rest, ')') {
+                                        Some(r) => Next::AtomDone(r, make_call(name, Vec::new())),
+                                        None => {
+                                            stack.push(Frame::Call(name, Vec::new()));
+                                            stack.push(Frame::Sum(None));
+                                            stack.push(Frame::Product(None));
+                                            Next::Operand(rest)
+                                        }
+                                    }
+                                }
+                                None => {
+                                    let (rest, v) = variable(s)?;
+                                    Next::AtomDone(rest, v)
+                                }
+                            }
+                        } else if let Some(rest) = token(s, '(') {
+                            stack.push(Frame::Paren);
+                            stack.push(Frame::Sum(None));
+                            stack.push(Frame::Product(None));
+                            Next::Operand(rest)
+                        } else {
+                            return Err(nom::Err::Error(Error::new(s, ErrorKind::Alt)));
+                        }
+                    }
+                }
+            }
+            Next::AtomDone(t, e) => {
+                depth::exit(depth::NEST);
+                let t = skip_space(t);
+                if let Some(rest) = caret(t) {
+                    match exponent_signs(rest) {
+                        Some((rest, neg)) => {
+                            stack.push(Frame::Power(e, neg));
+                            Next::Atom(rest)
+                        }
+                        None => return too_deep(rest),
+                    }
+                } else {
+                    // the end of a power: the bases waiting for it (right to left), then the
+                    // signs of its operand
+                    let mut v = e;
+                    loop {
+                        match stack.pop() {
+                            Some(Frame::Power(base, neg)) => v = make_power(base, neg, v),
+                            Some(Frame::Signs(neg)) => {
+                                v = negate_if(neg, v);
+                                break;
+                            }
+                            _ => unreachable!("parser: a power belongs to an operand"),
+                        }
+                    }
+                    // the operand is a factor of the product below it
+                    let product = match stack.pop() {
+                        Some(Frame::Product(None)) => v,
+                        Some(Frame::Product(Some((l, op)))) => match product_step(op, l, v) {
+                            Some(p) => p,
+                            // "division by zero in a literal" (`parse` names it by the kind)
+                            None => {
+                                return Err(nom::Err::Failure(Error::new(t, ErrorKind::Verify)))
+                            }
+                        },
+                        _ => unreachable!("parser: an operand belongs to a product"),
+                    };
+                    if let Ok((rest, op)) = ws(alt((char::<&str, Error<&str>>('*'), char('/'))))(t)
+                    {
+                        stack.push(Frame::Product(Some((product, op))));
+                        Next::Operand(rest)
+                    } else {
+                        // the product is a term of the sum below it
+                        let sum = match stack.pop() {
+                            Some(Frame::Sum(None)) => product,
+                            Some(Frame::Sum(Some((l, op)))) => {
+                                let bin_op = if op == '+' {
+                                    BinaryOp::Add
+                                } else {
+                                    BinaryOp::Sub
+                                };
+                                Expr::Binary(bin_op, Arc::new(l), Arc::new(product))
+                            }
+                            _ => unreachable!("parser: a product belongs to a sum"),
+                        };
+                        if let Ok((rest, op)) =
+                            ws(alt((char::<&str, Error<&str>>('+'), char('-'))))(t)
+                        {
+                            stack.push(Frame::Sum(Some((sum, op))));
+                            stack.push(Frame::Product(None));
+                            Next::Operand(rest)
+                        } else {
+                            Next::ExprDone(skip_space(t), sum)
+                        }
+                    }
+                }
+            }
+            Next::ExprDone(t, v) => match stack.pop() {
+                None => return Ok((t, v)),
+                Some(Frame::Paren) => match token(t, ')') {
+                    Some(rest) => Next::AtomDone(rest, v),
+                    None => return Err(nom::Err::Error(Error::new(t, ErrorKind::Char))),
+                },
+                Some(Frame::Call(name, mut args)) => {
+                    args.push(Arc::new(v));
+                    if let Some(rest) = token(t, ',') {
+                        stack.push(Frame::Call(name, args));
+                        stack.push(Frame::Sum(None));
+                        stack.push(Frame::Product(None));
+                        Next::Operand(rest)
+                    } else {
+                        match token(t, ')') {
+                            Some(rest) => Next::AtomDone(rest, make_call(name, args)),
+                            None => return Err(nom::Err::Error(Error::new(t, ErrorKind::Char))),
+                        }
+                    }
+                }
+                _ => unreachable!("parser: an expression belongs to a parenthesis or a call"),
+            },
+        };
+    }
 }
 
 #[cfg(test)]

@@ -756,10 +756,12 @@ pub fn sin_cos(b: &Ser, hyper: bool, cx: &mut Ctx) -> Result<(Ser, Ser), SErr> {
     Ok((sin_b, cos_b))
 }
 
-/// log b; b must have valuation 0 with a nonzero constant term
+/// log b; b must have valuation 0 with a nonzero constant term. S1 request C-1: `tb` is the
+/// class of b's coefficients (`Tail`); an argument that leaves the cut (-oo, 0) is refused
+/// (`cut_check`)
 // revision 6: never inlined, so no frame on the recursive path of expand holds its locals
 #[inline(never)]
-pub fn log(b: &Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
+pub fn log(b: &Ser, tb: Tail, cx: &mut Ctx) -> Result<Ser, SErr> {
     if b.t.is_empty() {
         if b.prec == Exact {
             return Err(SErr::DivisionByZero("log(0)".into()));
@@ -774,6 +776,7 @@ pub fn log(b: &Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
             "log has a logarithmic singularity at the point".into(),
         ));
     }
+    cut_check("log", Cut::Log, b, tb)?;
     let prec = b.prec.at_most(cx.p);
     let b0 = b.t[0].1.clone();
     let w = scale(b, &b0.inverse(true)?)?;
@@ -859,8 +862,11 @@ fn miller(w: &Ser, alpha: &Konst, n: usize, cx: &mut Ctx) -> Result<Vec<Konst>, 
     Ok(g)
 }
 
-/// b^alpha for a constant non-integer alpha
-pub fn pow_const(b: &Ser, alpha: &Konst, cx: &mut Ctx) -> Result<Ser, SErr> {
+/// b^alpha for a constant non-integer alpha. S1 request C-1: `tb` is the class of b's coefficients
+/// for a power of the input (sqrt, a constant exponent), checked against the cut (-oo, 0) of the
+/// principal power (`cut_check`), and `None` for the integrands of the atan family, whose
+/// functions check their own cuts first
+pub fn pow_const(b: &Ser, alpha: &Konst, tb: Option<Tail>, cx: &mut Ctx) -> Result<Ser, SErr> {
     if b.t.is_empty() {
         if b.prec == Exact {
             return Ok(Ser::exact_const(kpow_const(&Konst::zero(), alpha)?));
@@ -884,6 +890,21 @@ pub fn pow_const(b: &Ser, alpha: &Konst, cx: &mut Ctx) -> Result<Ser, SErr> {
             )),
             (_, None) => Err(undecided(alpha)),
         };
+    }
+    if let Some(tb) = tb {
+        if let Err(e) = cut_check("a non-integer power", Cut::Log, b, tb) {
+            // the cut matters only for a non-integer exponent: an integer one is single-valued
+            match non_integer_status(alpha) {
+                (ZS::NonZero, _) => return Err(e),
+                (ZS::Zero, _) => {}
+                (_, Some(n)) => {
+                    return Err(undecided(
+                        &alpha.sub(&Konst::rat(Rational::from_integer(n))),
+                    ))
+                }
+                (_, None) => return Err(undecided(alpha)),
+            }
+        }
     }
     let prec = b.prec.at_most(cx.p);
     let b0 = b.t[0].1.clone();
@@ -1135,6 +1156,395 @@ fn integrate(q: &Ser, g0: Konst, cx: &mut Ctx) -> Result<Ser, SErr> {
     Ok(Ser { t, prec: Abs(prec) })
 }
 
+// ------------------------------------------------------------------------------------------
+// S1 request C-1 (docs/workstreams/m23_golay/REQUESTS.md, section 2): branch cuts for a real
+// variable. The variable is real (h = x - a real, or 1/x at infinity). Where the constant term c0
+// of the argument b of a branch function lies on an open cut of the function, the expansion
+// through the principal value at c0 is the function of a real variable only when b stays on the
+// cut: when every other coefficient of b is a real multiple of the cut's direction (real for the
+// cuts on the real axis, purely imaginary for those of arctan and arcsinh). Otherwise b leaves the
+// cut for x != a, and the series is the function on one side of the point or on neither
+// (`log(-1 - I*x^2)` at 0 is off by 2 pi I on both sides, gp's formal series alike). The rule:
+// the engine expands there only when it decides that b stays on the cut, from the classes of the
+// coefficients (`Tail`, which covers the coefficients beyond the precision too) or, for an exact
+// series, from every coefficient; a coefficient decided off the cut's direction is `NotLaurent`
+// ("leaves a branch cut at the point"); a real constant whose zero test is undecided (the
+// imaginary part of a coefficient, the distance of c0 from an end of the cut) is `UndecidedZero`;
+// anything else undecided is `NotLaurent` saying that the engine cannot decide it. A bounded
+// check never decides that b stays on the cut.
+// ------------------------------------------------------------------------------------------
+
+/// S1 C-1 minor items (semantics review m3): the largest constant (nodes of its tree) whose class
+/// `Tail::scaled_enclosed` reads from an enclosure
+pub const SCALE_ENCLOSE_TREE: u64 = 256;
+
+/// S1 request C-1: what is known about the coefficients of a value's series of every exponent
+/// other than 0 (all of them, beyond the precision too), for a real variable: `re`, they are all
+/// real; `im`, they are all purely imaginary. Both hold for a constant (it has none). Built node by
+/// node from the structural classes of the constants (`Konst::struct_real`, `struct_imag`): a
+/// sufficient condition, not a decision procedure.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Tail {
+    pub re: bool,
+    pub im: bool,
+}
+
+impl Tail {
+    pub const CONST: Tail = Tail { re: true, im: true };
+    pub const NONE: Tail = Tail {
+        re: false,
+        im: false,
+    };
+    pub const REAL: Tail = Tail {
+        re: true,
+        im: false,
+    };
+    pub const IMAG: Tail = Tail {
+        re: false,
+        im: true,
+    };
+    /// the class of a sum of series of these classes
+    pub fn and(self, o: Tail) -> Tail {
+        Tail {
+            re: self.re && o.re,
+            im: self.im && o.im,
+        }
+    }
+    /// the class of c times a series of this class, for a constant c
+    pub fn scaled(self, c: &Konst) -> Tail {
+        let (r, i) = (c.struct_real(), c.struct_imag());
+        Tail {
+            re: (r && self.re) || (i && self.im),
+            im: (r && self.im) || (i && self.re),
+        }
+    }
+    /// S1 C-1 minor items (semantics review m3): `scaled`, with the class of a constant whose
+    /// structure shows none decided by one complex enclosure at 64 bits (real when its imaginary
+    /// part is an exact 0, which only exact arithmetic gives: `log(-1)^2`), for a constant of at
+    /// most `SCALE_ENCLOSE_TREE` nodes (charged as `cdecide`; a larger one keeps `scaled`)
+    pub fn scaled_enclosed(self, c: &Konst) -> Tail {
+        if !(self.re || self.im) || c.struct_real() || c.struct_imag() {
+            return self.scaled(c);
+        }
+        if c.tree() > SCALE_ENCLOSE_TREE {
+            return self.scaled(c);
+        }
+        let (r, i) = match crate::series_ball::cball_konst(c, 64) {
+            Ok(b) if b.im.is_exact_zero() => (true, false),
+            Ok(b) if b.re.is_exact_zero() => (false, true),
+            _ => return self.scaled(c),
+        };
+        Tail {
+            re: (r && self.re) || (i && self.im),
+            im: (r && self.im) || (i && self.re),
+        }
+    }
+    /// the full class of a product of two series of these full classes
+    pub fn times(self, o: Tail) -> Tail {
+        Tail {
+            re: (self.re && o.re) || (self.im && o.im),
+            im: (self.re && o.im) || (self.im && o.re),
+        }
+    }
+}
+
+/// S1 request C-1: the constant term of s is known (it lies below the precision)
+fn known_constant_term(s: &Ser) -> bool {
+    s.prec == Exact || s.prec > Abs(0)
+}
+
+/// S1 request C-1: the full class of s (its constant term too) from the class `t` of its other
+/// coefficients
+fn full_class(s: &Ser, t: Tail) -> Tail {
+    if !known_constant_term(s) {
+        return Tail::NONE;
+    }
+    let c0 = s.coef(0);
+    Tail {
+        re: t.re && c0.struct_real(),
+        im: t.im && c0.struct_imag(),
+    }
+}
+
+/// S1 request C-1: the open cuts of the branch functions (the principal branches of the module
+/// conventions of `series.rs`)
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Cut {
+    /// log and the non-integer powers: (-oo, 0)
+    Log,
+    /// arcsin, arccos, arctanh: (-oo, -1) and (1, oo)
+    AsinLike,
+    /// arccosh: (-oo, -1) and (-1, 1)
+    Acosh,
+    /// arctan, arcsinh: (-I oo, -I) and (I, I oo)
+    Imag,
+}
+
+/// where a constant term lies with respect to an open cut
+enum Pos {
+    Off,
+    On,
+    Undecided(SErr),
+}
+
+/// what the coefficients of an argument on a cut do
+enum Verdict {
+    Stays,
+    Leaves,
+    Unknown(SErr),
+}
+
+fn leaves_cut(name: &str) -> SErr {
+    SErr::NotLaurent(format!(
+        "{name}: the argument leaves a branch cut at the point (its constant term lies on the \
+         cut, and a coefficient that is not a real multiple of the cut's direction takes it off; \
+         the engine expands a branch function on its cut only for an argument that stays there)"
+    ))
+}
+
+fn cannot_decide_cut(name: &str) -> SErr {
+    SErr::NotLaurent(format!(
+        "{name}: the engine cannot decide that the argument stays off or on a branch cut at the \
+         point (where its constant term lies, or whether its coefficients keep it on the cut); it \
+         expands a branch function on its cut only for an argument decided to stay there"
+    ))
+}
+
+/// the sign of a real ball minus q, decided only when it excludes 0 or is exactly 0
+fn rsign(b: &crate::series_ball::Ball, q: i64) -> Option<i32> {
+    if q == 0 {
+        b.sign()
+    } else {
+        b.sign_minus(q)
+    }
+}
+
+/// S1 request C-1: the position of t (a real number, the real ball `x`; for the cuts of the
+/// imaginary axis, c0 = t*I) with respect to the open cut: Some(true) on it, Some(false) off it or
+/// at an end (a branch point, left to the branch-point rules), None undecided
+fn real_position(cut: Cut, x: &crate::series_ball::Ball) -> Option<bool> {
+    match cut {
+        Cut::Log => match rsign(x, 0)? {
+            -1 => Some(true),
+            _ => Some(false),
+        },
+        Cut::AsinLike | Cut::Imag => {
+            let s1 = rsign(x, 1);
+            let s2 = rsign(x, -1);
+            if s1 == Some(1) || s2 == Some(-1) {
+                return Some(true);
+            }
+            if s1 == Some(0) || s2 == Some(0) || (s1 == Some(-1) && s2 == Some(1)) {
+                return Some(false);
+            }
+            None
+        }
+        Cut::Acosh => match rsign(x, 1)? {
+            -1 => match rsign(x, -1) {
+                // -1 is a branch point inside the cut: a leaving argument is NotLaurent there
+                // too, and one that stays meets the branch-point rule of the integrand
+                Some(0) => Some(false),
+                _ => Some(true),
+            },
+            _ => Some(false),
+        },
+    }
+}
+
+/// S1 request C-1: the constant whose zero test decides where t lies (t minus the end of the cut
+/// that its ball could not separate it from), for the `UndecidedZero` report. S1 C-1 minor items:
+/// a fault of the enclosures (the budget) is returned as the fault
+fn position_undecided(cut: Cut, t: &Konst) -> Result<SErr, SErr> {
+    let ends: &[i64] = match cut {
+        Cut::Log => &[0],
+        Cut::Acosh => &[1],
+        Cut::AsinLike | Cut::Imag => &[1, -1],
+    };
+    for e in ends {
+        let d = t.sub(&Konst::int(*e));
+        let sep = crate::series_ball::cdecide(&d, |b| b.re.sign().filter(|s| *s != 0));
+        check()?;
+        if sep.is_none() {
+            return Ok(undecided(&d));
+        }
+    }
+    Ok(undecided(t))
+}
+
+/// S1 request C-1: where the constant term c0 of an argument lies with respect to the open cuts of
+/// `cut`. A constant term that depends on a free parameter is off the cut for generic values of
+/// the parameters when it is a nonconstant function of them (`Konst::generic_nonconstant`: a
+/// nonconstant polynomial in the parameters, decided by its groups as the zero test decides, or,
+/// since the C-1 minor items (regressions review m1), a Laurent polynomial in one kernel of an
+/// analytic function of such a function, `sin(a)` or `log(a)`); otherwise undecided. The
+/// parameters are generic complex numbers (the module conventions), so the exception set has no
+/// interior but can hold every real value of a parameter (`log(-y^2 + I*x)` at 0).
+fn position(name: &str, cut: Cut, c0: &Konst) -> Result<Pos, SErr> {
+    if c0.t.sz.any_indet {
+        let generic = c0.generic_nonconstant(true);
+        check()?;
+        return Ok(if generic {
+            Pos::Off
+        } else {
+            Pos::Undecided(cannot_decide_cut(name))
+        });
+    }
+    let real_axis = cut != Cut::Imag;
+    // structural exits: a real c0 is off the imaginary axis's cuts (0 is not on them); a
+    // nonzero imaginary c0 is off the real axis
+    if !real_axis && c0.struct_real() {
+        return Ok(Pos::Off);
+    }
+    if real_axis && c0.struct_imag() && !c0.is_zero() {
+        return Ok(Pos::Off);
+    }
+    // the coordinate that must vanish for c0 to lie on the axis of the cut, and the other one,
+    // which locates it on the axis
+    let exact_axis = if real_axis {
+        c0.struct_real()
+    } else {
+        c0.struct_imag()
+    };
+    let decided = crate::series_ball::cdecide(c0, |b| {
+        let (off_axis, along) = if real_axis {
+            (&b.im, &b.re)
+        } else {
+            (&b.re, &b.im)
+        };
+        let on_axis = exact_axis || off_axis.is_exact_zero();
+        if !on_axis {
+            if matches!(off_axis.sign(), Some(1) | Some(-1)) {
+                return Some(false);
+            }
+            // undecided distance from the axis: off when its position along the axis is off
+            // the cut (or at an end of it) whatever the other coordinate is
+            return match real_position(cut, along) {
+                Some(false) => Some(false),
+                _ => None,
+            };
+        }
+        real_position(cut, along)
+    });
+    check()?;
+    Ok(match decided {
+        Some(true) => Pos::On,
+        Some(false) => Pos::Off,
+        None => {
+            let (a, bb) = c0.split_imag();
+            check()?;
+            let parts_real = a.struct_real() && bb.struct_real();
+            if exact_axis {
+                // on the axis: the position along it is undecided; reported as a real constant
+                // when c0 is one (real axis) or is t*I with t written out (imaginary axis)
+                let t = if real_axis {
+                    Some(c0.clone())
+                } else if a.is_zero() && bb.struct_real() {
+                    Some(bb)
+                } else {
+                    None
+                };
+                match t {
+                    Some(t) => Pos::Undecided(position_undecided(cut, &t)?),
+                    // S1 C-1 minor items (regressions review m3): c0 = i t on the imaginary axis
+                    // with t not written out (`sqrt(-1)`): its distance from the ends +-i of the
+                    // cuts is the real constant 1 + c0^2 = 1 - t^2, whose zero test is the
+                    // undecided one (before C-1, the integrand's 1 + b^2 named it)
+                    None => Pos::Undecided(undecided(&c0.mul(c0).add(&Konst::one()))),
+                }
+            } else if parts_real {
+                // the distance from the axis is undecided
+                Pos::Undecided(undecided(if real_axis { &bb } else { &a }))
+            } else {
+                Pos::Undecided(cannot_decide_cut(name))
+            }
+        }
+    })
+}
+
+/// S1 request C-1: whether the coefficient c is a real multiple of the cut's direction
+/// (Some(true)), decided not to be (Some(false)), or undecided (Err: the report)
+fn coefficient_direction(name: &str, cut: Cut, c: &Konst) -> Result<Result<bool, SErr>, SErr> {
+    let real_axis = cut != Cut::Imag;
+    if (real_axis && c.struct_real()) || (!real_axis && c.struct_imag()) {
+        return Ok(Ok(true));
+    }
+    let d = crate::series_ball::cdecide(c, |b| {
+        let off = if real_axis { &b.im } else { &b.re };
+        match off.sign() {
+            Some(0) => Some(true),
+            Some(_) => Some(false),
+            None => None,
+        }
+    });
+    check()?;
+    Ok(match d {
+        Some(v) => Ok(v),
+        None => {
+            let (a, bb) = c.split_imag();
+            check()?;
+            if a.struct_real() && bb.struct_real() {
+                Err(undecided(if real_axis { &bb } else { &a }))
+            } else {
+                Err(cannot_decide_cut(name))
+            }
+        }
+    })
+}
+
+/// S1 request C-1: whether the argument b (constant term on a cut) stays on it. Every stored
+/// coefficient other than the constant term is checked: one decided off the cut's direction
+/// decides that b leaves; all decided in it decide that b stays only when b is exact (every
+/// coefficient is stored). A truncated b whose stored coefficients stay is undecided (its terms
+/// beyond the precision are not known; `Tail` covers them when it can).
+fn coefficient_verdict(name: &str, cut: Cut, b: &Ser) -> Result<Verdict, SErr> {
+    let mut first: Option<SErr> = None;
+    for (e, c) in &b.t {
+        if *e == 0 {
+            continue;
+        }
+        match coefficient_direction(name, cut, c)? {
+            Ok(true) => {}
+            Ok(false) => return Ok(Verdict::Leaves),
+            Err(err) => {
+                if first.is_none() {
+                    first = Some(err);
+                }
+            }
+        }
+    }
+    Ok(match first {
+        None if b.prec == Exact => Verdict::Stays,
+        None => Verdict::Unknown(cannot_decide_cut(name)),
+        Some(err) => Verdict::Unknown(err),
+    })
+}
+
+/// S1 request C-1: the branch-cut rule at one application of a branch function `name` with the
+/// open cuts `cut` to the argument b of class `tb` (b has valuation >= 0; for log and the powers,
+/// valuation 0 with a decided nonzero constant term). Ok when b's class keeps it in the cut's
+/// direction, when its constant term is decided off the cut, or when it is decided to stay on it;
+/// otherwise the refusal (`NotLaurent` when it leaves the cut, `UndecidedZero` or `NotLaurent`
+/// when that cannot be decided).
+fn cut_check(name: &str, cut: Cut, b: &Ser, tb: Tail) -> Result<(), SErr> {
+    let in_direction = if cut == Cut::Imag { tb.im } else { tb.re };
+    if in_direction || b.t.is_empty() || !known_constant_term(b) {
+        return Ok(());
+    }
+    let c0 = b.coef(0);
+    match position(name, cut, &c0)? {
+        Pos::Off => Ok(()),
+        Pos::On => match coefficient_verdict(name, cut, b)? {
+            Verdict::Stays => Ok(()),
+            Verdict::Leaves => Err(leaves_cut(name)),
+            Verdict::Unknown(e) => Err(e),
+        },
+        Pos::Undecided(e) => match coefficient_verdict(name, cut, b)? {
+            Verdict::Stays => Ok(()),
+            _ => Err(e),
+        },
+    }
+}
+
 /// arctan, arctanh, arcsin, arccos, arcsinh, arccosh and erf of a series: f(b0) plus the integral
 /// of the integrand Q (b' (1 + b^2)^-1 for arctan, and so on).
 ///
@@ -1153,32 +1563,71 @@ fn integrate(q: &Ser, g0: Konst, cx: &mut Ctx) -> Result<Ser, SErr> {
 ///    (arcsin, arccos, arcsinh, arccosh), so the result is the typed `NotLaurent` (or a request
 ///    for precision when the integrand's valuation is undecided), never `DivisionByZero` from the
 ///    pole of f(b0) (B2: `atanh(1 + x)` at 0).
-pub fn atan_like(op: UnaryOp, b: &Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
+///
+/// S1 request C-1: `tb` is the class of b's coefficients (`Tail`). After the exact-constant rule
+/// and the valuation check, an argument whose constant term lies on an open cut of f and that
+/// leaves the cut is refused (`cut_check`). The result carries the class of its own coefficients:
+/// those of the integrand Q, the product of b' (whose class is b's tail class) and the multiplier
+/// (1 +- b^2)^-1, (1 -+ b^2)^(-1/2) or (b - 1)^(-1/2) (b + 1)^(-1/2), whose class is that of its
+/// constant term when b's own coefficients are all real or all purely imaginary (then 1 +- b^2
+/// has real coefficients). erf is entire: real for a real b, odd.
+pub fn atan_like(op: UnaryOp, b: &Ser, tb: Tail, cx: &mut Ctx) -> Result<(Ser, Tail), SErr> {
     if op != UnaryOp::Erf {
         if let Some(c) = exact_constant(b) {
-            return Ok(Ser::exact_const(kapply(op, &c)?).trunc(cx.p));
+            return Ok((Ser::exact_const(kapply(op, &c)?).trunc(cx.p), Tail::CONST));
         }
     }
-    require_nonneg_val(b, &format!("{:?}", op).to_lowercase())?;
+    let name = format!("{:?}", op).to_lowercase();
+    require_nonneg_val(b, &name)?;
+    match op {
+        UnaryOp::Erf => {}
+        UnaryOp::Arctan | UnaryOp::Arcsinh => cut_check(&name, Cut::Imag, b, tb)?,
+        UnaryOp::Arccosh => cut_check(&name, Cut::Acosh, b, tb)?,
+        _ => cut_check(&name, Cut::AsinLike, b, tb)?,
+    }
+    let fb = full_class(b, tb);
+    // b's coefficients all real or all purely imaginary: 1 +- b^2 has real coefficients
+    let fb_real = fb.re || fb.im;
+    let mut mcls: Option<Tail> = None;
     let b0 = b.coef(0);
     let d = deriv(b)?;
     let one = Ser::exact_const(Konst::one());
     let b2 = mul(b, b, cx)?;
     let half = Konst::rat(Rational::new(Integer::from(-1), Integer::from(2)).unwrap());
     let q = match op {
-        UnaryOp::Arctan => mul(&d, &inv(&add(&one, &b2, cx)?, cx)?, cx)?,
-        UnaryOp::Arctanh => mul(&d, &inv(&add(&one, &neg(&b2), cx)?, cx)?, cx)?,
-        UnaryOp::Arcsin => mul(&d, &pow_const(&add(&one, &neg(&b2), cx)?, &half, cx)?, cx)?,
-        UnaryOp::Arccos => neg(&mul(
-            &d,
-            &pow_const(&add(&one, &neg(&b2), cx)?, &half, cx)?,
-            cx,
-        )?),
-        UnaryOp::Arcsinh => mul(&d, &pow_const(&add(&one, &b2, cx)?, &half, cx)?, cx)?,
+        UnaryOp::Arctan => {
+            mcls = fb_real.then_some(Tail::REAL);
+            mul(&d, &inv(&add(&one, &b2, cx)?, cx)?, cx)?
+        }
+        UnaryOp::Arctanh => {
+            mcls = fb_real.then_some(Tail::REAL);
+            mul(&d, &inv(&add(&one, &neg(&b2), cx)?, cx)?, cx)?
+        }
+        UnaryOp::Arcsin | UnaryOp::Arccos => {
+            let m = pow_const(&add(&one, &neg(&b2), cx)?, &half, None, cx)?;
+            mcls = (fb_real && known_constant_term(&m)).then(|| Tail::REAL.scaled(&m.coef(0)));
+            let q = mul(&d, &m, cx)?;
+            if op == UnaryOp::Arccos {
+                neg(&q)
+            } else {
+                q
+            }
+        }
+        UnaryOp::Arcsinh => {
+            let m = pow_const(&add(&one, &b2, cx)?, &half, None, cx)?;
+            mcls = (fb_real && known_constant_term(&m)).then(|| Tail::REAL.scaled(&m.coef(0)));
+            mul(&d, &m, cx)?
+        }
         UnaryOp::Arccosh => {
             // principal branch: 1/(sqrt(b-1) sqrt(b+1))
-            let m1 = pow_const(&add(b, &neg(&one), cx)?, &half, cx)?;
-            let p1 = pow_const(&add(b, &one, cx)?, &half, cx)?;
+            let m1 = pow_const(&add(b, &neg(&one), cx)?, &half, None, cx)?;
+            let p1 = pow_const(&add(b, &one, cx)?, &half, None, cx)?;
+            // b - 1 and b + 1 have real coefficients only when b has (a real b)
+            mcls = (fb.re && known_constant_term(&m1) && known_constant_term(&p1)).then(|| {
+                Tail::REAL
+                    .scaled(&m1.coef(0))
+                    .times(Tail::REAL.scaled(&p1.coef(0)))
+            });
             mul(&d, &mul(&m1, &p1, cx)?, cx)?
         }
         UnaryOp::Erf => {
@@ -1199,7 +1648,26 @@ pub fn atan_like(op: UnaryOp, b: &Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
     // truncated integrand of negative precision: more precision) come before f(b0)
     integrate_check(&q)?;
     let g0 = kapply(op, &b0)?;
-    integrate(&q, g0, cx)
+    let cls = if op == UnaryOp::Erf {
+        if fb.re {
+            Tail::REAL
+        } else if fb.im {
+            Tail::IMAG
+        } else {
+            Tail::NONE
+        }
+    } else {
+        // b' has the class of b's tail (its coefficients are e c_e)
+        match mcls {
+            Some(m) => Tail {
+                re: tb.re,
+                im: tb.im,
+            }
+            .times(m),
+            None => Tail::NONE,
+        }
+    };
+    Ok((integrate(&q, g0, cx)?, cls))
 }
 
 /// abs and sign assume a real variable and a real point (all coefficients rational)
@@ -1246,14 +1714,50 @@ fn exact_constant(s: &Ser) -> Option<Konst> {
 }
 
 // revision 6: never inlined, so no frame on the recursive path of expand holds its locals
+/// S1 request C-1: with the class of the result's coefficients (`pow_int_class`, `pow_class`)
 #[inline(never)]
-fn pow_by_const(b: Ser, alpha: Konst, cx: &mut Ctx) -> Result<Ser, SErr> {
+fn pow_by_const(b: Ser, tb: Tail, alpha: Konst, cx: &mut Ctx) -> Result<(Ser, Tail), SErr> {
     if let Some(q) = alpha.as_rational() {
         if q.denominator().is_one() {
-            return pow_int(&b, q.numerator(), cx);
+            let cls = pow_int_class(&b, tb, q.numerator());
+            return Ok((pow_int(&b, q.numerator(), cx)?, cls));
         }
     }
-    pow_const(&b, &alpha, cx)
+    let v = pow_const(&b, &alpha, Some(tb), cx)?;
+    let cls = pow_class(&b, tb, &alpha, &v);
+    Ok((v, cls))
+}
+
+/// S1 request C-1: the class of b^n for an integer n: real for a real b, and for an imaginary b
+/// real or imaginary by the parity of n
+fn pow_int_class(b: &Ser, tb: Tail, n: &Integer) -> Tail {
+    if n.is_zero() {
+        return Tail::CONST;
+    }
+    let fb = full_class(b, tb);
+    if fb.re {
+        Tail::REAL
+    } else if fb.im {
+        if n.is_odd() {
+            Tail::IMAG
+        } else {
+            Tail::REAL
+        }
+    } else {
+        Tail::NONE
+    }
+}
+
+/// S1 request C-1: the class of v = b^alpha (pow_const: v = c0^alpha (1 + w)^alpha with w = u/c0).
+/// When b's coefficients are all real or all purely imaginary, w has real coefficients, so for a
+/// real alpha v's coefficients have the class of its constant term c0^alpha
+fn pow_class(b: &Ser, tb: Tail, alpha: &Konst, v: &Ser) -> Tail {
+    let fb = full_class(b, tb);
+    if (fb.re || fb.im) && alpha.struct_real() && known_constant_term(v) {
+        Tail::REAL.scaled(&v.coef(0))
+    } else {
+        Tail::NONE
+    }
 }
 
 /// S1 fix-up round 3 (review 3, resources m3): a function name as an error message names it, at
@@ -1642,7 +2146,9 @@ fn hint_exp_arg(t: &Ser, l: &Expr, r: &Expr) -> Result<(), SErr> {
 // its node, so that a finished regular node can hint its constant term.
 // ------------------------------------------------------------------------------------------
 
-type SV = (Ser, bool);
+/// S1 request C-1: a value is its series, whether its node is regular, and the class of its
+/// coefficients (`Tail`)
+type SV = (Ser, bool, Tail);
 struct ESum<'a> {
     node: &'a Expr,
     items: Vec<(bool, &'a Expr)>,
@@ -1650,6 +2156,7 @@ struct ESum<'a> {
     consts: Vec<(bool, Konst)>,
     sers: Vec<(bool, Ser)>,
     reg: bool,
+    tail: Tail,
 }
 struct EProd<'a> {
     node: &'a Expr,
@@ -1658,6 +2165,7 @@ struct EProd<'a> {
     consts: Vec<Konst>,
     acc: Option<Ser>,
     reg: bool,
+    tail: Tail,
 }
 /// where a tower is: waiting for nothing (just pushed), for the series of a base to raise to a
 /// constant exponent, for the series of the top exponent, or for the series of a base to raise
@@ -1666,7 +2174,7 @@ enum TSt {
     Init,
     BaseConst(Konst, bool),
     Top,
-    BaseGen(Ser, bool),
+    BaseGen(Ser, bool, Tail),
 }
 struct ETower<'a> {
     node: &'a Expr,
@@ -1694,6 +2202,7 @@ impl<'a> ETower<'a> {
         &mut self,
         g: Ser,
         reg_g: bool,
+        tg: Tail,
         cx: &mut Ctx,
     ) -> Result<Option<EStep<'a>>, SErr> {
         let (l, r, _) = self.levels[self.i];
@@ -1710,18 +2219,24 @@ impl<'a> ETower<'a> {
             } else {
                 None
             };
-            let v = pow_const_base(l, g, hint, cx)?;
+            let (v, tv) = pow_const_base(l, g, tg, hint, cx)?;
             let reg = reg_g && regular_val(&v) && !v.is_exact_zero();
-            return self.level_done(v, reg, cx);
+            return self.level_done(v, reg, tv, cx);
         }
-        self.st = TSt::BaseGen(g, reg_g);
+        self.st = TSt::BaseGen(g, reg_g, tg);
         Ok(Some(EStep::Visit(l)))
     }
     /// level i has the value v: the value of the tower, or level i - 1's exponent
-    fn level_done(&mut self, v: Ser, reg: bool, cx: &mut Ctx) -> Result<Option<EStep<'a>>, SErr> {
+    fn level_done(
+        &mut self,
+        v: Ser,
+        reg: bool,
+        tv: Tail,
+        cx: &mut Ctx,
+    ) -> Result<Option<EStep<'a>>, SErr> {
         if self.i == 0 {
             let reg = finish_flag(self.node, &v, reg)?;
-            return Ok(Some(EStep::Done((v, reg))));
+            return Ok(Some(EStep::Done((v, reg, tv))));
         }
         self.i -= 1;
         let mut v = v;
@@ -1729,7 +2244,7 @@ impl<'a> ETower<'a> {
             v = neg(&v);
             check()?;
         }
-        self.with_exponent(v, reg, cx)
+        self.with_exponent(v, reg, tv, cx)
     }
     fn resume(&mut self, v: Option<SV>, cx: &mut Ctx) -> Result<EStep<'a>, SErr> {
         let st = std::mem::replace(&mut self.st, TSt::Init);
@@ -1746,19 +2261,19 @@ impl<'a> ETower<'a> {
                     Some(EStep::Visit(self.top))
                 }
             }
-            (TSt::BaseConst(alpha, reg_e), Some((b, reg_b))) => {
-                let v = pow_by_const(b, alpha, cx)?;
+            (TSt::BaseConst(alpha, reg_e), Some((b, reg_b, tb))) => {
+                let (v, tv) = pow_by_const(b, tb, alpha, cx)?;
                 let reg = reg_e && reg_b && regular_val(&v) && !v.is_exact_zero();
-                self.level_done(v, reg, cx)?
+                self.level_done(v, reg, tv, cx)?
             }
-            (TSt::Top, Some((g, reg_g))) => self.with_exponent(g, reg_g, cx)?,
-            (TSt::BaseGen(g, reg_g), Some((f, reg_f))) => {
+            (TSt::Top, Some((g, reg_g, tg))) => self.with_exponent(g, reg_g, tg, cx)?,
+            (TSt::BaseGen(g, reg_g, tg), Some((f, reg_f, tf))) => {
                 let (l, r, _) = self.levels[self.i];
                 let ok = reg_f && reg_g && regular_val(&g) && regular_val(&f);
                 let hint = if ok { Some((l, r)) } else { None };
-                let v = pow_general(f, g, hint, cx)?;
+                let (v, tv) = pow_general(f, tf, g, tg, hint, cx)?;
                 let reg = ok && regular_val(&v) && !v.is_exact_zero();
-                self.level_done(v, reg, cx)?
+                self.level_done(v, reg, tv, cx)?
             }
             _ => unreachable!("tower state"),
         };
@@ -1771,8 +2286,9 @@ impl<'a> EFrame<'a> {
         match self {
             EFrame::Sum(s) => {
                 // the constant summands by one merge, the series by one k-way merge
-                if let Some((v, r)) = v {
+                if let Some((v, r, t)) = v {
                     s.reg &= r;
+                    s.tail = s.tail.and(t);
                     s.sers.push((s.items[s.next - 1].0, v));
                 }
                 while s.next < s.items.len() {
@@ -1788,15 +2304,22 @@ impl<'a> EFrame<'a> {
                 check()?;
                 let v = sum_series(std::mem::take(&mut s.sers), c, cx)?;
                 let reg = finish_flag(s.node, &v, s.reg && regular_val(&v))?;
-                Ok(EStep::Done((v, reg)))
+                Ok(EStep::Done((v, reg, s.tail)))
             }
             EFrame::Prod(s) => {
                 // a constant divisor is inverted as it is read (`inverse_src(false, its node)`),
                 // a series factor is multiplied in order (a series divisor inverted, strict)
-                if let Some((b, r)) = v {
+                if let Some((b, r, tb)) = v {
                     let div = s.items[s.next - 1].0;
                     // revision 7rt3: a series divisor must not vanish at the point (valuation 0)
                     s.reg &= r && (!div || b.t.first().is_some_and(|(e, _)| *e == 0));
+                    // S1 request C-1: a single factor keeps its class; a quotient or a product
+                    // takes the product of the full classes (1/b has the class of b)
+                    s.tail = match (&s.acc, div) {
+                        (None, false) => tb,
+                        (None, true) => full_class(&b, tb),
+                        (Some(a), _) => full_class(a, s.tail).times(full_class(&b, tb)),
+                    };
                     s.acc = Some(chain_step(s.acc.take(), b, div, cx)?);
                 }
                 while s.next < s.items.len() {
@@ -1812,18 +2335,19 @@ impl<'a> EFrame<'a> {
                         k
                     });
                 }
-                let v = finish_product(s.acc.take(), std::mem::take(&mut s.consts), cx)?;
+                let (v, tv) =
+                    finish_product(s.acc.take(), std::mem::take(&mut s.consts), s.tail, cx)?;
                 let reg = finish_flag(s.node, &v, s.reg && regular_val(&v))?;
-                Ok(EStep::Done((v, reg)))
+                Ok(EStep::Done((v, reg, tv)))
             }
             EFrame::Tower(t) => t.resume(v, cx),
             EFrame::Unary(op, node) => {
-                let (b, rb) = v.expect("the operand's series");
+                let (b, rb, tb) = v.expect("the operand's series");
                 // sign is not continuous where its argument vanishes (sign(x^2) at 0 is 1)
                 let sign_ok = *op != UnaryOp::Sign || b.t.first().is_some_and(|(e, _)| *e == 0);
-                let v = expand_unary(*op, b, cx)?;
+                let (v, tv) = expand_unary(*op, b, tb, cx)?;
                 let reg = finish_flag(node, &v, rb && sign_ok && regular_val(&v))?;
-                Ok(EStep::Done((v, reg)))
+                Ok(EStep::Done((v, reg, tv)))
             }
         }
     }
@@ -1902,13 +2426,15 @@ fn expand_visit<'a>(e: &'a Expr, cx: &mut Ctx) -> Result<Result<SV, EFrame<'a>>,
     // occurrence, each occurrence charged; `x*0` returns without other charges)
     cx.work.charge(KONST_NODE)?;
     if !depends(e) {
-        return Ok(Ok((expand_const(e, cx)?, true)));
+        return Ok(Ok((expand_const(e, cx)?, true, Tail::CONST)));
     }
     Ok(match e {
-        // the variable is regular at a finite point (its series x or a + h)
+        // the variable is regular at a finite point (its series x or a + h); S1 request C-1: its
+        // coefficients other than the constant term are 1 (h real, or 1/h at infinity)
         Expr::Symbol(_) => Ok((
             expand_var(cx)?,
             cx.xser.t.first().is_some_and(|(e, _)| *e >= 0),
+            Tail::REAL,
         )),
         Expr::Binary(BinaryOp::Add | BinaryOp::Sub, _, _) => {
             let items = chain_items_e(e, true);
@@ -1926,6 +2452,7 @@ fn expand_visit<'a>(e: &'a Expr, cx: &mut Ctx) -> Result<Result<SV, EFrame<'a>>,
                 consts: Vec::with_capacity(n),
                 sers: Vec::with_capacity(n),
                 reg: true,
+                tail: Tail::CONST,
             })))
         }
         // revision 7rt1 (red team 1, H3): `*` and `/` are one chain
@@ -1944,6 +2471,7 @@ fn expand_visit<'a>(e: &'a Expr, cx: &mut Ctx) -> Result<Result<SV, EFrame<'a>>,
                 consts: Vec::with_capacity(n),
                 acc: None,
                 reg: true,
+                tail: Tail::CONST,
             })))
         }
         // revision 7rt1 (red team 1, H1): a power tower is read along its right spine
@@ -2027,18 +2555,25 @@ fn chain_step(acc: Option<Ser>, b: Ser, div: bool, cx: &mut Ctx) -> Result<Ser, 
     })
 }
 
+/// S1 request C-1: `tail` is the class of the series factors' product; the result's class is that
+/// of c times it
 #[inline(never)]
-fn finish_product(acc: Option<Ser>, consts: Vec<Konst>, _cx: &mut Ctx) -> Result<Ser, SErr> {
+fn finish_product(
+    acc: Option<Ser>,
+    consts: Vec<Konst>,
+    tail: Tail,
+    _cx: &mut Ctx,
+) -> Result<(Ser, Tail), SErr> {
     let c = Konst::product_many(consts);
     check()?;
     let a = acc.expect("a chain that depends on the variable has a series factor");
     if c.is_zero() {
-        return Ok(Ser::exact_zero());
+        return Ok((Ser::exact_zero(), Tail::CONST));
     }
     if c.as_rational().map(|q| q.is_one()).unwrap_or(false) {
-        return Ok(a);
+        return Ok((a, tail));
     }
-    scale(&a, &c)
+    Ok((scale(&a, &c)?, tail.scaled_enclosed(&c)))
 }
 
 /// the series quotient
@@ -2054,12 +2589,44 @@ fn div_series(a: Ser, b: Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
 /// `(x+1)^2 - x^2 - 2*x - 1`) takes the rule of a constant base with that constant, as an exponent
 /// that is an exact constant already takes the rule of a constant exponent (review 1, m1).
 /// Revision 7rt2 took log of the exact zero, `DivisionByZero("log(0)")`, where 0^r = 0.
+/// S1 request C-1: `tf` and `tg` are the classes of f and g; `log f` checks the cut of log
 #[inline(never)]
-fn pow_general(f: Ser, g: Ser, hint: Option<(&Expr, &Expr)>, cx: &mut Ctx) -> Result<Ser, SErr> {
+fn pow_general(
+    f: Ser,
+    tf: Tail,
+    g: Ser,
+    tg: Tail,
+    hint: Option<(&Expr, &Expr)>,
+    cx: &mut Ctx,
+) -> Result<(Ser, Tail), SErr> {
     if let Some(c) = exact_constant(&f) {
-        return pow_const_base_k(c, g, hint, cx);
+        let cls = const_base_class(&c, &g, tg);
+        return Ok((pow_const_base_k(c, g, hint, cx)?, cls));
     }
-    let lf = log(&f, cx)?;
+    if let Some(e) = variable_exponent(&f, &g) {
+        return Err(e);
+    }
+    // f^g = exp(g log f) is real for a real f with a positive constant term and a real g. S1 C-1
+    // minor items (regressions review m2): positive by its structure (`struct_positive`: pi,
+    // sqrt(2), e) or by its enclosure (1 + sin(1); charged), as `const_base_class` and the kernel
+    // classes read it (C-1 accepted a positive rational only)
+    let real = full_class(&f, tf).re && full_class(&g, tg).re && known_constant_term(&f) && {
+        let f0 = f.coef(0);
+        struct_positive(&f0) || crate::series_ball::real_sign(&f0) == Some(1)
+    };
+    let cls = if real { Tail::REAL } else { Tail::NONE };
+    Ok((pow_general_log(f, tf, g, hint, cx)?, cls))
+}
+
+#[inline(never)]
+fn pow_general_log(
+    f: Ser,
+    tf: Tail,
+    g: Ser,
+    hint: Option<(&Expr, &Expr)>,
+    cx: &mut Ctx,
+) -> Result<Ser, SErr> {
+    let lf = log(&f, tf, cx)?;
     let t = mul(&g, &lf, cx)?;
     // revision 7rt3: the constant term of r log l is r(a) log(l(a)) for regular l and r
     if let Some((l, r)) = hint {
@@ -2068,15 +2635,111 @@ fn pow_general(f: Ser, g: Ser, hint: Option<(&Expr, &Expr)>, cx: &mut Ctx) -> Re
     exp(&t, cx)
 }
 
+/// f^g with f of decided nonzero valuation v and g not an exact constant: f = c h^v (1 + u), so
+/// f^g = exp(g log c + v g log h + g log(1 + u)). It is a Laurent series exactly when g is an
+/// integer constant k (then it is f^k): a term g_e h^e of g with e != 0 gives the term
+/// v g_e h^e log h, and a non-integer k a branch point. So, before the rule `exp(g log f)`
+/// (whose `log f` is `NotLaurent`):
+/// - a decided non-integer constant term, or a term e != 0 with a decided nonzero coefficient,
+///   keeps that rule (`None`, then `NotLaurent`), which is right then;
+/// - otherwise the first term e != 0 with an undecided coefficient is reported (`UndecidedZero`
+///   of that coefficient), for an exact and a truncated g alike: the function is f^k when it is 0;
+/// - a g with no stored term other than its constant term is `truncated_integer_exponent`'s.
+///
+/// S1 finish, fix-up round 1 (fin1 semantics B1): before, every g with a stored term other than
+/// its constant term took `log f`, also when that term's coefficient is undecided and 0, so
+/// `x^(1+(log(2)+log(3)-log(6))*x)` at 0 (which is x) and `(x-pi)^((1+x)/(1+x))` at pi (which is
+/// x - pi) were `NotLaurent`, a decided answer.
+fn variable_exponent(f: &Ser, g: &Ser) -> Option<SErr> {
+    if f.t.is_empty() || f.val() == 0 || f.lead_status() != Some(ZS::NonZero) {
+        return None;
+    }
+    if g.t.iter().all(|(e, _)| *e == 0) {
+        return truncated_integer_exponent(f, g);
+    }
+    // the constant term is known when it lies below the precision
+    if g.prec == Exact || g.prec > Abs(0) {
+        if let Some((_, k)) = g.t.iter().find(|(e, _)| *e == 0) {
+            let st = non_integer_status(k).0;
+            if let Err(e) = check() {
+                return Some(e);
+            }
+            if st == ZS::NonZero {
+                return None;
+            }
+        }
+    }
+    let mut first_undecided: Option<&Konst> = None;
+    for (e, c) in &g.t {
+        if *e == 0 {
+            continue;
+        }
+        let st = c.zero_status();
+        if let Err(err) = check() {
+            return Some(err);
+        }
+        match st {
+            ZS::NonZero => return None,
+            ZS::Unknown if first_undecided.is_none() => first_undecided = Some(c),
+            _ => {}
+        }
+    }
+    first_undecided.map(undecided)
+}
+
+/// S1 finish under the narrowed bar (review 6, semantics lens, m1): f^g with f of decided nonzero
+/// valuation v and g a truncated series whose only stored term is its constant term k (or that
+/// has no stored term). Then f^g = f^k exp((g - k) log f), with g - k = O(h^P): it is a Laurent
+/// series when g is the constant k and k is an integer, and it has the logarithmic term
+/// v (g - k) log h otherwise. Whether g - k is 0 is undecided (a truncated series is not an exact
+/// one), so the answer asks for precision (the driver raises it, and never decides:
+/// `PrecisionExhausted`). k must be an integer for f^k to be Laurent: a decided non-integer k is
+/// `NotLaurent` whatever g - k is, and an undecided one is reported (`UndecidedZero` of k - n, n
+/// the nearest integer), the module rule for an exponent. A g with other stored terms is
+/// `variable_exponent`'s (fix-up round 1 of the finish: the same argument for its stored terms).
+/// `None`: the rule `exp(g log f)` applies.
+fn truncated_integer_exponent(f: &Ser, g: &Ser) -> Option<SErr> {
+    if g.prec == Exact || f.t.is_empty() || f.val() == 0 || f.lead_status() != Some(ZS::NonZero) {
+        return None;
+    }
+    match g.t.as_slice() {
+        // O(h^P): its constant term is 0 (P > 0) or undecided (P <= 0)
+        [] => Some(SErr::NeedPrecision),
+        [(0, k)] => match non_integer_status(k) {
+            (ZS::NonZero, _) => Some(SErr::NotLaurent(format!(
+                "a non-integer power of an argument of valuation {} has a branch point there",
+                f.val()
+            ))),
+            (ZS::Zero, _) => Some(SErr::NeedPrecision),
+            (_, Some(n)) => Some(undecided(&k.sub(&Konst::rat(Rational::from_integer(n))))),
+            (_, None) => Some(undecided(k)),
+        },
+        _ => None,
+    }
+}
+
+/// S1 request C-1: with the class of the result (`const_base_class`)
 #[inline(never)]
 fn pow_const_base(
     l: &Expr,
     g: Ser,
+    tg: Tail,
     hint: Option<(&Expr, &Expr)>,
     cx: &mut Ctx,
-) -> Result<Ser, SErr> {
+) -> Result<(Ser, Tail), SErr> {
     let lc = konst_of(l)?;
-    pow_const_base_k(lc, g, hint, cx)
+    let cls = const_base_class(&lc, &g, tg);
+    Ok((pow_const_base_k(lc, g, hint, cx)?, cls))
+}
+
+/// S1 request C-1: the class of c^g = exp(g log c) for a constant c: real for a structurally
+/// positive c and a real g
+fn const_base_class(c: &Konst, g: &Ser, tg: Tail) -> Tail {
+    if struct_positive(c) && full_class(g, tg).re {
+        Tail::REAL
+    } else {
+        Tail::NONE
+    }
 }
 
 /// constant base: l^r = exp(r log l); the engine introduces log l, so l must be decided (m5)
@@ -2136,29 +2799,61 @@ fn zero_pow(g: &Ser) -> Result<Ser, SErr> {
     Ok(Ser::exact_zero())
 }
 
+/// S1 request C-1: `tb` is the class of b's coefficients; the result carries its own class
 #[inline(never)]
-fn expand_unary(op: UnaryOp, b: Ser, cx: &mut Ctx) -> Result<Ser, SErr> {
+fn expand_unary(op: UnaryOp, b: Ser, tb: Tail, cx: &mut Ctx) -> Result<(Ser, Tail), SErr> {
     use UnaryOp::*;
+    let fb = full_class(&b, tb);
+    // a real function of a real argument is real; an odd one of an imaginary argument imaginary
+    // and an even one real (sin(i t) = i sinh t, cos(i t) = cosh t)
+    let odd = if fb.re {
+        Tail::REAL
+    } else if fb.im {
+        Tail::IMAG
+    } else {
+        Tail::NONE
+    };
+    let even = if fb.re || fb.im {
+        Tail::REAL
+    } else {
+        Tail::NONE
+    };
     let r = match op {
-        Neg => Ok(neg(&b)),
-        Exp => exp(&b, cx),
-        Log => log(&b, cx),
-        Sqrt => pow_const(
-            &b,
-            &Konst::rat(Rational::new(Integer::from(1), Integer::from(2)).unwrap()),
-            cx,
-        ),
-        Sin => Ok(sin_cos(&b, false, cx)?.0),
-        Cos => Ok(sin_cos(&b, false, cx)?.1),
-        Sinh => Ok(sin_cos(&b, true, cx)?.0),
-        Cosh => Ok(sin_cos(&b, true, cx)?.1),
+        Neg => Ok((neg(&b), tb)),
+        Exp => {
+            let v = exp(&b, cx)?;
+            // exp(b0 + u) = exp(b0) exp(u): exp(u) - 1 is real for a real tail u
+            let cls = if tb.re && known_constant_term(&v) {
+                Tail::REAL.scaled(&v.coef(0))
+            } else {
+                Tail::NONE
+            };
+            Ok((v, cls))
+        }
+        Log => {
+            let v = log(&b, tb, cx)?;
+            // log(c0 + u) = log c0 + log(1 + u/c0), u/c0 real
+            Ok((v, even))
+        }
+        Sqrt => {
+            let half = Konst::rat(Rational::new(Integer::from(1), Integer::from(2)).unwrap());
+            let v = pow_const(&b, &half, Some(tb), cx)?;
+            let cls = pow_class(&b, tb, &half, &v);
+            Ok((v, cls))
+        }
+        Sin => Ok((sin_cos(&b, false, cx)?.0, odd)),
+        Cos => Ok((sin_cos(&b, false, cx)?.1, even)),
+        Sinh => Ok((sin_cos(&b, true, cx)?.0, odd)),
+        Cosh => Ok((sin_cos(&b, true, cx)?.1, even)),
         Tan | Tanh => {
             let (s, c) = sin_cos(&b, op == Tanh, cx)?;
             let ic = inv(&c, cx)?;
-            mul(&s, &ic, cx)
+            Ok((mul(&s, &ic, cx)?, odd))
         }
-        Arctan | Arcsin | Arccos | Arcsinh | Arccosh | Arctanh | Erf => atan_like(op, &b, cx),
-        Abs | Sign => abs_sign(op, &b),
+        Arctan | Arcsin | Arccos | Arcsinh | Arccosh | Arctanh | Erf => atan_like(op, &b, tb, cx),
+        // abs and sign need rational coefficients: abs keeps them, sign is a constant
+        Abs => Ok((abs_sign(op, &b)?, Tail::REAL)),
+        Sign => Ok((abs_sign(op, &b)?, Tail::CONST)),
         Gamma | Factorial | Zeta => Err(SErr::Unsupported(
             format!("{:?} of an expression in the variable", op).to_lowercase(),
         )),
@@ -2310,8 +3005,10 @@ pub fn expansion(
                         return Err(SErr::Unsupported("a series exponent overflows i64".into()));
                     }
                     // revision 7rt3 (red team 3 structure, H2): the result's tree is bounded
-                    // before it is rendered, so a consumer that walks it as a tree (simplify,
-                    // substitute, PartialEq) is bounded too; S1 fix-up round 2 (review 2, B2):
+                    // before it is rendered (its printing and dropping are linear in it, its
+                    // re-parsing in its text, MAX_RESULT_TEXT, plus its numbers,
+                    // MAX_RESULT_PARSE_WORK; the consumers that rebuild it are not bounded by S1,
+                    // see MAX_RESULT_TEXT); S1 fix-up round 2 (review 2, B2):
                     // the leaf text of that tree is bounded after the rendering, in
                     // series.rs `public_expansion` (MAX_RESULT_TEXT; round 3: and the leaf text
                     // of the tree `simplify` makes of it)
@@ -2417,4 +3114,45 @@ pub fn render_tree(s: &Ser) -> u64 {
             .saturating_add(4)
             .saturating_add(th)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// S1 C-1 minor items (semantics review m7): a fault of the cut check inside `pow_const` (the
+    /// budget refused an enclosure of the constant term) is reported as the fault, also when the
+    /// exponent's integrality is undecided, for (-1 + I*h)^(sin(1)^2 + cos(1)^2). It passes on
+    /// the code before the minor items too: the fault is sticky, and `undecided` (series_const.rs)
+    /// returns it before it builds the constant of `UndecidedZero(alpha - n)`. A guard.
+    #[test]
+    fn pow_const_reports_a_budget_fault_of_the_cut_check() {
+        reset_work(u64::MAX / 4);
+        let alpha =
+            konst_of(&crate::parser::parse("sin(1)^2 + cos(1)^2").expect("parse")).expect("alpha");
+        let i = konst_of(&crate::parser::parse("I").expect("parse")).expect("I");
+        assert_eq!(
+            non_integer_status(&alpha).0,
+            ZS::Unknown,
+            "alpha's integrality"
+        );
+        let b = Ser {
+            t: vec![(0, Konst::int(-1)), (1, i)],
+            prec: Exact,
+        };
+        let mut cx = Ctx {
+            xser: Ser {
+                t: vec![(1, Konst::one())],
+                prec: Exact,
+            },
+            p: 4,
+            work: Work { used: 0 },
+        };
+        // a budget of one unit: the first enclosure of the cut check is refused
+        COST.with(|c| c.set(0));
+        MAXCOST.with(|m| m.set(1));
+        let r = pow_const(&b, &alpha, Some(Tail::NONE), &mut cx);
+        assert!(matches!(r, Err(SErr::Budget(_))), "{:?}", r.err());
+        reset_work(u64::MAX / 4);
+    }
 }

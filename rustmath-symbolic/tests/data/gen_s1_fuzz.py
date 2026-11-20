@@ -329,7 +329,10 @@ def main():
         else:
             lim = 'Unknown' if lim_proto[0] == 'Unknown' else '-'
             want = 'err ' + kind
-            if cls == 'U' and kind == 'UndecidedZero':
+            if cls == 'U' and kind == 'UndecidedZero' and rid in C1_NOT_A_VALUE:
+                want += ' | ' + C1_NOT_A_VALUE[rid][0]
+                lim = '%s | Unknown' % lim
+            elif cls == 'U' and kind == 'UndecidedZero':
                 v, coefs = gr[1], gr[2]
                 want += ' | value %d %s' % (v, ' '.join('%s:%s' % (re_, im_) for (_, re_, im_) in coefs))
                 lim = '%s | %s' % (lim, value_limit(v, coefs))
@@ -338,7 +341,9 @@ def main():
                     raise SystemExit('ALSO_ACCEPTED lists %s of class %s' % (rid, cls))
                 want += ' | ' + ALSO_ACCEPTED[rid][0]
         note = 'gp: ' + ('series' if gp_ok else gr[1][:100]) + '; prototype: ' + (proto_msg(msg) if kind else 'value')
-        if cls == 'U' and kind == 'UndecidedZero':
+        if cls == 'U' and kind == 'UndecidedZero' and rid in C1_NOT_A_VALUE:
+            note += '; also accepted: %s (%s)' % C1_NOT_A_VALUE[rid]
+        elif cls == 'U' and kind == 'UndecidedZero':
             note += '; also accepted: gp\'s value (the undecided constant is nonzero)'
         if rid in ALSO_ACCEPTED:
             note += '; also accepted: %s (%s)' % (ALSO_ACCEPTED[rid][0], ALSO_ACCEPTED[rid][1])
@@ -462,6 +467,19 @@ ALSO_ACCEPTED = {
               'acos(1) = 0, so the input raises the exact 0 to the power -1; the design\'s constant '
               'field cannot decide sin(1)^2+cos(1)^2 = 1 (UndecidedZero), a port that can gives '
               'DivisionByZero'),
+}
+
+# U rows whose UndecidedZero no longer accepts gp's value (S1 request C-1, a real variable): the
+# two-sided oracle (python3 -I s1_gp.py --two-sided s1_fuzz.tsv) shows that gp's formal series is
+# not the function on one side of the point, so the input has no Laurent expansion there; the
+# second accepted outcome is NotLaurent: id -> (the outcome, the reason with the gp evidence).
+C1_NOT_A_VALUE = {
+    'y12.1': ('err NotLaurent', 'S1 request C-1: the operand of acos is (x(x^2+1))^(2+x) = '
+              '(-2 + 4h + ...)^(1 + h) at -1, with constant term -2 on the cut of acos and the '
+              'coefficient of h, 4 - 2 log 2 - 2 pi I (gp), not real, so it leaves the cut; gp, two-sided at '
+              'realprecision 300: the formal series is the function at -1 - 1e-16 (error 1.4e-14) and '
+              'not at -1 + 1e-16 (error 73.4); the engine cannot decide that exp(log(-2)) is real, '
+              'so its message says that it cannot decide'),
 }
 
 # Rows left out, with the reason (none since the multi-outcome rows: y11.18 and y13.0, left out

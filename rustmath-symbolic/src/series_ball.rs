@@ -1008,3 +1008,419 @@ pub fn non_integer(
     }
     (ZS::Unknown, nearest)
 }
+
+// ---------------------------------------------------------------------------------------------
+// S1 request C-1 (docs/workstreams/m23_golay/REQUESTS.md, section 2): complex enclosures of a
+// constant, for the branch-cut rule of the series engine (`series_engine::cut_check`). The real
+// balls above enclose a constant only when every step of its expression is real (log of a
+// positive ball, and so on), so a constant term such as log(-2), (-4)^(1/2) or arcsin(2) has no
+// real enclosure. A complex enclosure is a rectangle re + im i of two real balls, computed with
+// the principal branches of the engine's conventions (`series.rs`, module header): log z =
+// log|z| + i arg z with arg in (-pi, pi], sqrt and powers through exp(a log z), arcsin z =
+// -i log(iz + sqrt(1 - z^2)), arccos z = pi/2 - arcsin z, arctan z = (i/2)(log(1 - iz) -
+// log(1 + iz)), arcsinh z = log(z + sqrt(1 + z^2)), arccosh z = log(z + sqrt(z + 1) sqrt(z - 1)),
+// arctanh z = (log(1 + z) - log(1 - z))/2. A log whose argument's rectangle meets the cut
+// (-oo, 0] without lying on it exactly has no enclosure at that precision (too wide); on the cut
+// exactly (an imaginary part that is the exact 0) it is log|z| + i pi. A real step keeps the real
+// ball's result and an exact 0 imaginary part, so a real constant stays exactly real. The engine
+// uses these enclosures only to decide that a quantity is nonzero (a rectangle that excludes 0
+// from one coordinate) or exactly 0 (an exact 0 coordinate); a coordinate whose ball contains 0
+// decides nothing. Charged before it runs: COMPLEX_COST_FACTOR times ball_cost.
+// ---------------------------------------------------------------------------------------------
+
+/// a complex operation costs at most this many real ones (a product: 4 products and 2 sums)
+pub const COMPLEX_COST_FACTOR: u64 = 8;
+
+/// a rectangle re + im i enclosing a complex constant
+#[derive(Clone)]
+pub struct CBall {
+    pub re: Ball,
+    pub im: Ball,
+}
+
+impl Ball {
+    /// Some(1) or Some(-1) when the ball excludes 0, Some(0) for the exact 0, else None
+    pub fn sign(&self) -> Option<i32> {
+        if self.is_exact_zero() {
+            Some(0)
+        } else if self.excludes_zero() {
+            Some(if self.m > rz(self.p) { 1 } else { -1 })
+        } else {
+            None
+        }
+    }
+    /// the sign of (self - q) for a small integer q
+    pub fn sign_minus(&self, q: i64) -> Option<i32> {
+        let b = Ball::exact(self.p, RealMPFR::with_val(self.p, q as f64))?;
+        self.add(&b.neg())?.sign()
+    }
+}
+
+fn cexact_zero(p: u32) -> Option<Ball> {
+    Ball::exact(p, rz(p))
+}
+
+impl CBall {
+    fn real(b: Ball) -> Option<CBall> {
+        let p = b.p;
+        Some(CBall {
+            re: b,
+            im: cexact_zero(p)?,
+        })
+    }
+    fn i_unit(p: u32) -> Option<CBall> {
+        Some(CBall {
+            re: cexact_zero(p)?,
+            im: Ball::exact(p, RealMPFR::with_val(p, 1.0))?,
+        })
+    }
+    fn int(p: u32, q: i64) -> Option<CBall> {
+        CBall::real(Ball::exact(p, RealMPFR::with_val(p, q as f64))?)
+    }
+    /// the imaginary part is the exact 0: the constant is real
+    pub fn is_real(&self) -> bool {
+        self.im.is_exact_zero()
+    }
+    fn add(&self, o: &CBall) -> Option<CBall> {
+        Some(CBall {
+            re: self.re.add(&o.re)?,
+            im: self.im.add(&o.im)?,
+        })
+    }
+    fn neg(&self) -> CBall {
+        CBall {
+            re: self.re.neg(),
+            im: self.im.neg(),
+        }
+    }
+    fn sub(&self, o: &CBall) -> Option<CBall> {
+        self.add(&o.neg())
+    }
+    fn mul(&self, o: &CBall) -> Option<CBall> {
+        if self.is_real() && o.is_real() {
+            return CBall::real(self.re.mul(&o.re)?);
+        }
+        // (a + bi)(c + di) = (ac - bd) + (ad + bc) i; exact zeros stay exact (Ball::mul)
+        let ac = self.re.mul(&o.re)?;
+        let bd = self.im.mul(&o.im)?;
+        let ad = self.re.mul(&o.im)?;
+        let bc = self.im.mul(&o.re)?;
+        Some(CBall {
+            re: ac.add(&bd.neg())?,
+            im: ad.add(&bc)?,
+        })
+    }
+    /// times i
+    fn mul_i(&self) -> CBall {
+        CBall {
+            re: self.im.neg(),
+            im: self.re.clone(),
+        }
+    }
+    fn half(&self) -> Option<CBall> {
+        let h = CBall::real(Ball::exact(self.re.p, RealMPFR::with_val(self.re.p, 0.5))?)?;
+        self.mul(&h)
+    }
+    fn inv(&self) -> Option<CBall> {
+        if self.is_real() {
+            return CBall::real(self.re.inv()?);
+        }
+        // 1/(a + bi) = (a - bi)/(a^2 + b^2)
+        let d = self.re.mul(&self.re)?.add(&self.im.mul(&self.im)?)?;
+        let di = d.inv()?;
+        Some(CBall {
+            re: self.re.mul(&di)?,
+            im: self.im.neg().mul(&di)?,
+        })
+    }
+    fn exp(&self) -> Option<CBall> {
+        let e = self.re.unary(UnaryOp::Exp)?;
+        if self.is_real() {
+            return CBall::real(e);
+        }
+        Some(CBall {
+            re: e.mul(&self.im.unary(UnaryOp::Cos)?)?,
+            im: e.mul(&self.im.unary(UnaryOp::Sin)?)?,
+        })
+    }
+    /// the principal log: arg in (-pi, pi]; a rectangle that meets the cut (-oo, 0] without lying
+    /// on it exactly is too wide, and 0 has no log
+    fn log(&self) -> Option<CBall> {
+        let p = self.re.p;
+        if self.is_real() {
+            return match self.re.sign() {
+                Some(1) => CBall::real(self.re.unary(UnaryOp::Log)?),
+                Some(-1) => Some(CBall {
+                    re: self.re.neg().unary(UnaryOp::Log)?,
+                    im: Ball::rounded(p, RealMPFR::pi(p), false)?,
+                }),
+                Some(_) => None,
+                None => too_wide(),
+            };
+        }
+        let m2 = self.re.mul(&self.re)?.add(&self.im.mul(&self.im)?)?;
+        let lm = m2
+            .unary(UnaryOp::Log)?
+            .mul(&Ball::exact(p, RealMPFR::with_val(p, 0.5))?)?;
+        let half_pi = Ball::rounded(p, &RealMPFR::pi(p) * &RealMPFR::with_val(p, 0.5), false)?;
+        let arg = if self.re.sign() == Some(1) {
+            self.im.mul(&self.re.inv()?)?.unary(UnaryOp::Arctan)?
+        } else if self.im.sign() == Some(1) {
+            half_pi.add(&self.re.mul(&self.im.inv()?)?.unary(UnaryOp::Arctan)?.neg())?
+        } else if self.im.sign() == Some(-1) {
+            half_pi
+                .neg()
+                .add(&self.re.mul(&self.im.inv()?)?.unary(UnaryOp::Arctan)?.neg())?
+        } else {
+            // the rectangle meets the half-line (-oo, 0]
+            return too_wide();
+        };
+        Some(CBall { re: lm, im: arg })
+    }
+    fn sqrt(&self) -> Option<CBall> {
+        if self.is_real() {
+            return match self.re.sign() {
+                Some(1) | Some(0) => CBall::real(self.re.unary(UnaryOp::Sqrt)?),
+                Some(_) => Some(CBall {
+                    re: cexact_zero(self.re.p)?,
+                    im: self.re.neg().unary(UnaryOp::Sqrt)?,
+                }),
+                None => too_wide(),
+            };
+        }
+        self.log()?.half()?.exp()
+    }
+    /// z^w = exp(w log z) (principal), z nonzero
+    fn pow(&self, w: &CBall) -> Option<CBall> {
+        w.mul(&self.log()?)?.exp()
+    }
+    fn powi(&self, k: i64) -> Option<CBall> {
+        let p = self.re.p;
+        let mut acc = CBall::int(p, 1)?;
+        let mut base = self.clone();
+        let mut e = k.unsigned_abs();
+        while e > 0 {
+            if e & 1 == 1 {
+                acc = acc.mul(&base)?;
+            }
+            e >>= 1;
+            if e > 0 {
+                base = base.mul(&base)?;
+            }
+        }
+        if k < 0 {
+            acc.inv()
+        } else {
+            Some(acc)
+        }
+    }
+    fn unary(&self, op: UnaryOp) -> Option<CBall> {
+        use UnaryOp::*;
+        let p = self.re.p;
+        if self.is_real() {
+            // a real step keeps the real ball (an exact 0 imaginary part); outside the real
+            // domain of op (log of a negative ball, arcsin of 2) the complex formulas below
+            if let Some(b) = self.re.unary(op) {
+                return CBall::real(b);
+            }
+            if matches!(
+                op,
+                Exp | Sin | Cos | Tan | Sinh | Cosh | Tanh | Arctan | Arcsinh | Erf | Abs | Neg
+            ) {
+                // total on the reals: a failure is a window or guard failure, not a domain one
+                return None;
+            }
+        }
+        let one = CBall::int(p, 1)?;
+        match op {
+            Neg => Some(self.neg()),
+            Exp => self.exp(),
+            Log => self.log(),
+            Sqrt => self.sqrt(),
+            Abs => {
+                let m2 = self.re.mul(&self.re)?.add(&self.im.mul(&self.im)?)?;
+                CBall::real(m2.unary(Sqrt)?)
+            }
+            Sin | Cos | Sinh | Cosh => {
+                // sin(a + bi) = sin a cosh b + i cos a sinh b, cos(a + bi) = cos a cosh b -
+                // i sin a sinh b; sinh(a + bi) = sinh a cos b + i cosh a sin b, cosh(a + bi) =
+                // cosh a cos b + i sinh a sin b
+                let (a, b) = (&self.re, &self.im);
+                match op {
+                    Sin => Some(CBall {
+                        re: a.unary(Sin)?.mul(&b.unary(Cosh)?)?,
+                        im: a.unary(Cos)?.mul(&b.unary(Sinh)?)?,
+                    }),
+                    Cos => Some(CBall {
+                        re: a.unary(Cos)?.mul(&b.unary(Cosh)?)?,
+                        im: a.unary(Sin)?.mul(&b.unary(Sinh)?)?.neg(),
+                    }),
+                    Sinh => Some(CBall {
+                        re: a.unary(Sinh)?.mul(&b.unary(Cos)?)?,
+                        im: a.unary(Cosh)?.mul(&b.unary(Sin)?)?,
+                    }),
+                    _ => Some(CBall {
+                        re: a.unary(Cosh)?.mul(&b.unary(Cos)?)?,
+                        im: a.unary(Sinh)?.mul(&b.unary(Sin)?)?,
+                    }),
+                }
+            }
+            Tan => self.unary(Sin)?.mul(&self.unary(Cos)?.inv()?),
+            Tanh => self.unary(Sinh)?.mul(&self.unary(Cosh)?.inv()?),
+            Arcsin => {
+                // -i log(iz + sqrt(1 - z^2))
+                let s = one.sub(&self.mul(self)?)?.sqrt()?;
+                let l = self.mul_i().add(&s)?.log()?;
+                Some(l.mul_i().neg())
+            }
+            Arccos => {
+                let half_pi = CBall::real(Ball::rounded(
+                    p,
+                    &RealMPFR::pi(p) * &RealMPFR::with_val(p, 0.5),
+                    false,
+                )?)?;
+                half_pi.sub(&self.unary(Arcsin)?)
+            }
+            Arctan => {
+                // (i/2)(log(1 - iz) - log(1 + iz))
+                let iz = self.mul_i();
+                let d = one.sub(&iz)?.log()?.sub(&one.add(&iz)?.log()?)?;
+                d.mul_i().half()
+            }
+            Arcsinh => {
+                let s = one.add(&self.mul(self)?)?.sqrt()?;
+                self.add(&s)?.log()
+            }
+            Arccosh => {
+                let s = self.add(&one)?.sqrt()?.mul(&self.sub(&one)?.sqrt()?)?;
+                self.add(&s)?.log()
+            }
+            Arctanh => one.add(self)?.log()?.sub(&one.sub(self)?.log()?)?.half(),
+            _ => None,
+        }
+    }
+}
+
+/// a complex enclosure of the constant expression e at precision p (memoized by node address, an
+/// explicit stack, as `ball_expr`); `None` for a node it does not evaluate (a free symbol, a
+/// function call, mod, erf, gamma, ... of a non-real argument) or a failed guard
+pub fn cball_expr(e: &Expr, p: u32) -> Option<CBall> {
+    use std::collections::HashMap;
+    fn ad(x: &Expr) -> usize {
+        std::ptr::from_ref(x).addr()
+    }
+    let named_i = !crate::series_const::var_is_named_i();
+    let mut memo: HashMap<usize, CBall> = HashMap::new();
+    let mut stack: Vec<(&Expr, bool)> = vec![(e, false)];
+    while let Some((x, expanded)) = stack.pop() {
+        if memo.contains_key(&ad(x)) {
+            continue;
+        }
+        if !expanded {
+            stack.push((x, true));
+            match x {
+                Expr::Binary(op, l, r) => {
+                    let int_pow = matches!((op, r.as_ref()), (BinaryOp::Pow, Expr::Integer(_)));
+                    if !int_pow && !memo.contains_key(&ad(r)) {
+                        stack.push((r, false));
+                    }
+                    if !memo.contains_key(&ad(l)) {
+                        stack.push((l, false));
+                    }
+                }
+                Expr::Unary(_, i) if !memo.contains_key(&ad(i)) => stack.push((i, false)),
+                _ => {}
+            }
+            continue;
+        }
+        let get = |y: &Expr| memo.get(&ad(y));
+        let v: Option<CBall> = match x {
+            Expr::Symbol(s) if s.name() == "I" && named_i => CBall::i_unit(p),
+            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => {
+                CBall::real(ball_expr(x, p)?)
+            }
+            Expr::Binary(op, l, r) => {
+                let a = get(l)?;
+                match op {
+                    BinaryOp::Add => a.add(get(r)?),
+                    BinaryOp::Sub => a.sub(get(r)?),
+                    BinaryOp::Mul => a.mul(get(r)?),
+                    BinaryOp::Div => a.mul(&get(r)?.inv()?),
+                    BinaryOp::Pow => {
+                        let k = match r.as_ref() {
+                            Expr::Integer(n) => rustmath_core::NumericConversion::to_i64(n),
+                            _ => small_int_value(r),
+                        };
+                        match k {
+                            Some(k) => {
+                                if k < 0 && a.re.is_exact_zero() && a.im.is_exact_zero() {
+                                    None
+                                } else {
+                                    a.powi(k)
+                                }
+                            }
+                            None if matches!(r.as_ref(), Expr::Integer(_)) => None,
+                            None => {
+                                if a.re.is_exact_zero() && a.im.is_exact_zero() {
+                                    None
+                                } else {
+                                    a.pow(get(r)?)
+                                }
+                            }
+                        }
+                    }
+                    BinaryOp::Mod => None,
+                }
+            }
+            Expr::Unary(op, i) => get(i)?.unary(*op),
+            Expr::Function(_, _) => None,
+        };
+        memo.insert(ad(x), v?);
+    }
+    memo.remove(&ad(e))
+}
+
+/// a complex enclosure of a constant free of indeterminates at precision p, charged
+/// COMPLEX_COST_FACTOR times `ball_cost` before it runs; `TooWide` when a guard failed on a
+/// rectangle that a higher precision may shrink
+pub fn cball_konst(c: &Konst, p: u32) -> Result<CBall, NoBall> {
+    if c.is_zero() {
+        return CBall::real(Ball::exact(p, rz(p)).ok_or(NoBall::Never)?).ok_or(NoBall::Never);
+    }
+    if c.t.sz.any_indet {
+        return Err(NoBall::Never);
+    }
+    let e = c.to_expr();
+    let remaining = crate::series_const::remaining();
+    let cost = ball_cost(&e, p, remaining).saturating_mul(COMPLEX_COST_FACTOR);
+    if !crate::series_const::charge(cost) {
+        return Err(NoBall::Never);
+    }
+    TOO_WIDE.with(|w| w.set(false));
+    match cball_expr(&e, p) {
+        Some(b) => Ok(b),
+        None => Err(if TOO_WIDE.with(|w| w.get()) {
+            NoBall::TooWide
+        } else {
+            NoBall::Never
+        }),
+    }
+}
+
+/// S1 request C-1: decide a question about a constant by its complex enclosures at 64, 256 and
+/// 1024 bits: `f` returns `Some(answer)` when the rectangle decides, `None` when it does not; a
+/// precision without an enclosure that is too wide goes on to the next one, and `Never` stops.
+pub fn cdecide<T>(c: &Konst, f: impl Fn(&CBall) -> Option<T>) -> Option<T> {
+    for p in [64u32, 256, 1024] {
+        match cball_konst(c, p) {
+            Ok(b) => {
+                if let Some(t) = f(&b) {
+                    return Some(t);
+                }
+            }
+            Err(NoBall::TooWide) => continue,
+            Err(NoBall::Never) => return None,
+        }
+    }
+    None
+}
