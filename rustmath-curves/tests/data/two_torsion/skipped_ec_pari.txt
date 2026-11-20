@@ -1,0 +1,6 @@
+k = 21, q = 7145929705339707732730866756067132440577
+P mod 2 = x^2 + 1
+k = 1: v2 #E = 128, v2 #E' = 2
+k = 2: v2 #E = 130, v2 #E' = 2
+k = 1 untwisted SNF 2-valuations: [128, 0]; twisted: [2, 0]
+k = 2 untwisted SNF 2-valuations: [129, 1]; twisted: [1, 1]
