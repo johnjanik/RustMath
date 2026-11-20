@@ -405,20 +405,37 @@ impl Expr {
 /// words of fresh literals it holds that no entry accounts for (`weight`); a value is memoized
 /// only while the entries' total stays within the cap, and past it the node's next uses
 /// recompute it, as HEAD does. So the memory is HEAD's live set plus at most the cap, and the
-/// work is at most HEAD's (each visit is one HEAD makes; a memo hit only skips a subtree). A
-/// result the series engine accepted needs no recomputation: the literals its distinct nodes fold
-/// to are at most `series_const::MAX_RESULT_MEMO_WORDS` (the same cap), which also bounds the
-/// memo of `simplify` after `differentiate`, whose clones share the result's nodes
+/// work is at most HEAD's (each visit is one HEAD makes; a memo hit only skips a subtree). For a
+/// result the series engine accepted, the literals its distinct nodes fold to are at most
+/// `series_const::MAX_RESULT_MEMO_WORDS` (the same cap), so the memo needs no recomputation on
+/// the result, nor after `differentiate`, whose clones share the result's nodes
 /// (`tests/s1_review5_memory.rs`).
 ///
 /// The work: one visit per distinct node, plus the constant folds of HEAD's rules, each run once
 /// per distinct node while the memo holds it, and `MAX_FOLD_POWER_BITS` bounds one power. On any
 /// input this is HEAD's work or less: the folds of the input's own literal arithmetic are not
 /// bounded here (a 24 KB chain `(2^254+1)^4096/3/.../3` takes 35 s with HEAD's rules, review 4).
-/// On a result that the series engine accepted, the engine has bounded them per occurrence in the
-/// result's tree, so also after a consumer that rebuilds the tree (`substitute`, `expand`): at most
-/// `series_const::MAX_RESULT_FOLD_WORK` units (2^31, at most 4.1 s measured in release; S1 fix-up
-/// rounds 4 and 5, reviews 4 and 5 B1), counted by `series_const::tree_bound`.
+///
+/// On a result of the series engine (the S1 finish, under the bar the owner set on 2026-11-16):
+/// the engine refuses a result whose folds, counted at every occurrence in its tree, pass
+/// `series_const::MAX_RESULT_FOLD_WORK` (2^31 units, counted by `series_const::tree_bound`).
+/// Measured at the edges of the caps (release, 14 families; S1 fix-up rounds 4 and 5):
+/// the slowest `simplify` of a result itself took 0.86 s; after `expand`, `substitute(x, 2)` or
+/// `differentiate` of the same results the slowest took 4.12 s, 3.93 s and 2.90 s (the fin2
+/// semantics review measured 4.53 s and 4.70 s for the first two, on a sum of 1 487 fractions 1/p
+/// in a kernel at order 10). That is a measured scaling, not a bound on `simplify` of a result:
+/// the cap does not count the nodes that `expand` and `differentiate` add, nor the folds of a
+/// value that `substitute` puts in, and `simplify` after them costs about the number of terms
+/// times its cost on the input's kernel source (or on one substituted coefficient). After
+/// `substitute(x, 2)` of the result of `(10^100-1)^1050/7^120000/(1-x)` (32 bytes; release): 6.8 s
+/// at order 10 and 66.0 s at order 100 (fin1 resources review); the engine now refuses this input
+/// above order 32 (`series_const::MAX_RESULT_PARSE_WORK`), and the accepted orders 29 to 32 take
+/// 18 to 23 s (the doc of `series_const::MAX_RESULT_TEXT`).
+/// Review 6 (release, 8 MB thread): after `expand` of
+/// `sin((y0+z0)*...*(y11+z11))/(1-x)` at order 1000 (a 110-byte input), 21.8 s and 5.6 GB; after
+/// `differentiate` of `sin(y0^y1^...^y999)/(1-x)` at order 1040 (4.9 KB), 9.1 s and 2.9 GB. The
+/// measured numbers are in the doc of `series_const::MAX_RESULT_TEXT`; the follow-up unit S2
+/// ("DAG-aware consumers") makes these consumers share repeated subexpressions.
 #[inline(never)]
 pub fn simplify(expr: &Expr) -> Expr {
     /// A step of the walk: visit a node (the root, or a child through its `Arc`), or combine the

@@ -50,7 +50,8 @@ pub enum SErr {
     DivisionByZero(String),
     /// the expansion point is not usable
     BadPoint(String),
-    /// internal: working precision too low (a denominator is weakly zero)
+    /// internal: working precision too low to decide an operand (a denominator, the argument of
+    /// log, an exponent or a branch-point argument whose leading part is O(h^P))
     NeedPrecision,
     /// bounded precision search found no answer
     PrecisionExhausted(i64),
@@ -98,7 +99,26 @@ pub struct KData {
     /// revision 7rt3 (red team 3 structure, H2): an upper bound of the number of nodes of `expr`
     /// as a tree (saturating), from the arguments' cached tree sizes or the input node's
     pub tree: u64,
+    /// S1 request C-1: the structural class of the kernel's value (`KCLS_REAL`, `KCLS_IMAG` or
+    /// `KCLS_UNKNOWN`), from its kind and its arguments' classes (`kernel_struct_class`)
+    pub kcls: u8,
+    /// S1 C-1 minor items (regressions review m4): the kernel's value is a positive real number
+    /// by its structure (`kernel_struct_pos`; then `kcls` is `KCLS_REAL`). `struct_positive`
+    /// reads it, so a chain of kernels of positive constants (`sqrt(sqrt(...(2)))`,
+    /// `log(2 + log(2 + ...))`) gets its classes without an enclosure of each argument
+    pub kpos: bool,
+    /// S1 C-1 minor items (regressions review m1): the kernel is a free parameter, or an analytic
+    /// function of an argument that is a nonconstant function of the free parameters
+    /// (`kernel_generic_nonconstant`); false for a kernel without a parameter
+    pub gnc: bool,
 }
+
+/// S1 request C-1: a kernel whose value is not known to be real or purely imaginary
+pub const KCLS_UNKNOWN: u8 = 0;
+/// S1 request C-1: a kernel whose value is real
+pub const KCLS_REAL: u8 = 1;
+/// S1 request C-1: a kernel whose value is purely imaginary (i times a real number)
+pub const KCLS_IMAG: u8 = 2;
 
 #[derive(Clone)]
 pub struct Kernel(pub Arc<KData>);
@@ -233,6 +253,12 @@ pub struct KSize {
     /// revision 7rt3 (red team 3 structure, H2): the nodes of to_expr_raw as a tree (saturating; a
     /// kernel counts its expression's tree at every occurrence), as mono_expr and balanced_arc build it
     pub tree: u64,
+    /// S1 request C-1: every term is real by the structural classes of its kernels (an even
+    /// number of purely imaginary factors, the others real); true for 0
+    pub all_real: bool,
+    /// S1 request C-1: every term is purely imaginary by the same classes (an odd number of
+    /// purely imaginary factors); true for 0
+    pub all_imag: bool,
 }
 /// depth added by balanced_sum / balanced_product over n leaves
 pub fn bal_depth(n: u64) -> u32 {
@@ -257,6 +283,8 @@ fn ksize(m: &Terms) -> KSize {
         only_indet: true,
         real_free: true,
         one_named_imag: true,
+        all_real: true,
+        all_imag: true,
         ..Default::default()
     };
     let mut max_term: u32 = 0;
@@ -359,6 +387,18 @@ fn ksize(m: &Terms) -> KSize {
             }
         }
         z.max_term_bits = z.max_term_bits.max(tb);
+        // S1 request C-1: the term's structural class (the parity of its imaginary factors)
+        let mut known = true;
+        let mut odd = false;
+        for (k, e) in mono {
+            match k.0.kcls {
+                KCLS_REAL => {}
+                KCLS_IMAG => odd ^= e % 2 != 0,
+                _ => known = false,
+            }
+        }
+        z.all_real &= known && !odd;
+        z.all_imag &= known && odd;
         // the term's expression (mono_expr): q * (balanced numerator) / (balanced denominator)
         // q = 1 prints the product alone, q = -1 as a negation, any other q as q * product
         let numer = if nn == 0 {
@@ -630,17 +670,24 @@ pub const MAX_KERNELS: usize = 1 << 16;
 pub const MAX_CONST_TERMS: usize = 1 << 20;
 /// depth of a kernel's expression: at most max(MAX_KERNEL_DEPTH, KERNEL_DEPTH_FACTOR * input depth)
 pub const MAX_KERNEL_DEPTH: u32 = 1024;
+/// S1 finish under the narrowed bar (review 6, m3): the terms of a constant with the kernel I that
+/// `Konst::gaussian_inverse` inverts exactly. A^2 + B^2 has at most about the square of the terms,
+/// so the extra work of the exact inverse stays below a few hundred term products; a larger
+/// constant keeps the kernel 1/c.
+pub const GAUSSIAN_INVERSE_TERMS: usize = 16;
 /// revision 7rt3 (red team 3 structure, H2): nodes of a result as a tree (its rendering, or the
-/// constant of UndecidedZero), so that a consumer that walks the tree node by node (substitute,
-/// PartialEq, the walk of Display, expand, differentiate) is bounded by the cap times its cost per
-/// node. The payload of the nodes is bounded by the other caps. S1 fix-up round 5 (review 5, B1):
-/// each of them is counted at every occurrence in the tree, so that it also bounds a consumer
-/// that rebuilds the tree without its sharing (`substitute`, `expand`, `differentiate`, which make
-/// a fresh node at every occurrence): `MAX_RESULT_TEXT` the digits `Display` converts, in the
-/// result, in its `simplify` and in the literals its nodes may fold to, and
-/// `MAX_RESULT_FOLD_WORK` the folds of `simplify`; `MAX_RESULT_MEMO_WORDS` bounds the literals of
-/// the distinct nodes, which `simplify`'s memo holds when `differentiate` shares them. The
-/// consumers measured, and the bound that holds, are in the doc of `MAX_RESULT_TEXT`.
+/// constant of UndecidedZero). The walks of `Display` and `Drop` are linear in it. The re-parsing
+/// of the printed text is linear in its characters (`MAX_RESULT_TEXT`) plus the parse of its
+/// numbers (`MAX_RESULT_PARSE_WORK`, S1 finish fix-up round 1), and takes no stack per level of
+/// the text (the parser runs on a heap stack, same round); a printed result with a construct that
+/// relaxes the parser's depth limit, then more than 128 levels of nesting, is refused at once
+/// (the doc of `MAX_RESULT_TEXT`). S1 fix-up round 5 (review 5, B1): the payload caps are
+/// counted at every occurrence in the tree: `MAX_RESULT_TEXT` the digits `Display` converts (in
+/// the result, in its `simplify` and in the literals its nodes may fold to) and
+/// `MAX_RESULT_FOLD_WORK` the folds of `simplify`; `MAX_RESULT_MEMO_WORDS` counts the literals of
+/// the distinct nodes. What these caps bound, and the measured cost of the consumers of a result
+/// that they do not bound (`simplify`, `expand`, `differentiate`, `substitute`, `==`, the REPL's
+/// `diff` and `integrate`), are in the doc of `MAX_RESULT_TEXT`.
 pub const MAX_RESULT_TREE: u64 = 1 << 21;
 /// S1 fix-up round 2 (review 2, B2), round 3 (review 3, B1, B2 and m1): the printing weight of a
 /// result's tree and of the tree `simplify` makes of it (`tree_text`), the payload that the node
@@ -653,47 +700,96 @@ pub const MAX_RESULT_TREE: u64 = 1 << 21;
 /// 0.21 d^(1/2) ns per digit above 10^4 digits, and `print_weight` grows as d^(3/2) above
 /// 2^16 digits, so 2^27 units print in about 7 to 8 s whatever the size of the integers
 /// (measured at the cap: 10^5-digit leaves 6.9 s, 3.1e5-digit folded leaves 7.6 s, 4.2e5-digit
-/// leaves 7.3 s; `fu2/s1impl/fix3/probe/edge1.log`). This cap bounds the printing of a result
-/// and of `simplify`'s output (at most about 8 s, 7.8 s measured for `sin((2^254+1)^4096)/(1-x)`
-/// at order 192, its largest accepted order, review 4), and the size of the literals `simplify`
-/// builds. It does not bound the time of `simplify`'s folds: the input's own literal arithmetic in
-/// a kernel's source folds left to right (review 4, B1: 35 s for a 24 KB chain whose folded
-/// literal prints 638 KB). `MAX_RESULT_FOLD_WORK` bounds that (S1 fix-up round 4).
+/// leaves 7.3 s; `fu2/s1impl/fix3/probe/edge1.log`). This cap bounds the printing of a result (at
+/// most about 8 s, 7.8 s measured for `sin((2^254+1)^4096)/(1-x)` at order 192, its largest
+/// accepted order, review 4). It also counts the tree `simplify` makes of the result and the
+/// literals it builds (the printing of `simplify`'s output measured about 8 s at the cap). It does
+/// not count the time of `simplify`'s folds: the input's own literal arithmetic in a kernel's
+/// source folds left to right (review 4, B1: 35 s for a 24 KB chain whose folded literal prints
+/// 638 KB). `MAX_RESULT_FOLD_WORK` counts those (S1 fix-up round 4).
 ///
-/// S1 fix-up round 5 (review 5, B1): the same cap also bounds `TextBound::lit_text`, the printing
-/// weight of the literal at every node of the tree and every occurrence (a leaf's, and the one an
-/// inner node may fold to), the payload that the output of `simplify` after `differentiate` may
-/// print: the quotient and power rules keep the values of inner nodes (d(3/a) holds a^2), so the
-/// derivative of the chain `3/(3/(...(3/K)...))` with 255 levels printed 160 MB in 20.6 s before
-/// this count. Its edge is the text cap's for a result whose literals are all printed
-/// (`sin((2^254+1)^4096)/(1-x)` stays a value up to order 192).
+/// S1 fix-up round 5 (review 5, B1): the same cap also applies to `TextBound::lit_text`, the
+/// printing weight of the literal at every node of the tree and every occurrence (a leaf's, and
+/// the one an inner node may fold to), the payload that the output of `simplify` after
+/// `differentiate` may print: the quotient and power rules keep the values of inner nodes (d(3/a)
+/// holds a^2), so the derivative of the chain `3/(3/(...(3/K)...))` with 255 levels printed
+/// 160 MB in 20.6 s before this count. Its edge is the text cap's for a result whose literals are
+/// all printed (`sin((2^254+1)^4096)/(1-x)` stays a value up to order 192).
 ///
-/// The bound that holds (the node cap, the three per-occurrence caps, `MAX_RESULT_MEMO_WORDS` and
-/// `simplify`'s memo): for an accepted result, `simplify` of it and of the output of
-/// `substitute(x, 2)`, `expand` and `differentiate(x)` each fold at most about 2^31 units of the
-/// model (plus the new folds of the substituted value, and of the derivative's own constants),
-/// `Display` of each of these outputs takes at most about 8 s, and `substitute` and `==` one visit
-/// per node of the tree. Measured at the edges of the caps (release, 8 MB thread, 14 families of
-/// literal-heavy kernel sources at orders 1 and 10, bisected to the largest accepted size,
-/// `fu2/s1impl/fix5/probe/edges_final.log`): `simplify` after `substitute` or `expand` at most
-/// 4.1 s (a sum of 1 487 fractions 1/p in a kernel at order 10, 1.9 ns per unit of the model) and
-/// after `differentiate` at most 0.9 s; `Display` of the derivative's `simplify` at most 7.9 s
-/// (60 MB, the 16-level `3/(...)` chain at order 10); `sin((2^254+1)^4096)/(1-x)` at order 192:
-/// `simplify` after `substitute` 1.5 s and after `differentiate` 2.9 s, each output printed in
-/// about 8 s; VmHWM at most 320 MB (`exp(x)` at order 8996, every consumer in one process). All
-/// within S1_BAR (c). `exp(x)`, whose coefficients 1/k! are not shared, stays a value up to
-/// order 8996 (the work budget of the REPL refuses it from about 9150 anyway); `simplify` after
-/// `substitute(x, 2)` folds its 8 997 terms in 1.1 s.
+/// What the caps bound (the bar the owner set for S1 on 2026-11-16): the entry points
+/// (`taylor_with_budget` with the REPL's budget, `series_expansion` with `to_expr`, the limit path
+/// and `limit_with_error`) and the printing (`Display`, `Debug`), the dropping and the re-parsing
+/// of their results. `Display` of a result takes at most about 8 s (8.0 s measured at the text
+/// cap); `Drop` is linear in the tree. The re-parse of the printed text: its characters at about
+/// 25 ns each, so at most about 3.5 s at this cap (`exp(x)` at order 8 996, 134 MB, 2.9 s), and its
+/// numbers within `MAX_RESULT_PARSE_WORK`. S1 finish fix-up round 1 (fin1 resources B3, B4): before
+/// that cap the re-parse paid the gcd of a printed rational at every term (95 s for
+/// `(10^100-1)^1050/7^120000/(1-x)`, a 32-byte input, at order 514), and the recursive parser
+/// overflowed on a result that nests deeper than its input (`sin^195(1)/(1-x)` at order 1000 on a
+/// 2 MB debug thread); the parser now runs on a heap stack, so no re-parse overflows a thread.
+/// A re-parse can still be refused, at once and at no cost (S1 finish, minor items of the reviews
+/// fin2): the parser's depth limit applies to a printed result too, so a text that holds an
+/// integer above i64::MAX (1/21! and beyond), a rational with such a denominator or `^ -(` and
+/// then nests more than 128 levels of parentheses and calls, or 1 024 of `^`, is a `ParseError`
+/// (`exp(x) + sin^150(1)/(1-x)` at 0 from order 21; the conditions and the measured examples are
+/// in the doc of `mod depth` in `parser.rs`).
+///
+/// What they do not bound: a consumer applied to a result. A kernel made from an input node
+/// renders as that node at every term that names it, and the consumers rebuild the tree without
+/// its sharing, so their cost is about the number of terms times their cost on the input's kernel
+/// source. Measured (release, 8 MB thread, budget 1e8; `fu2/s1impl/S1.review6-resources.md` B1 and
+/// B2, and rounds 4 and 5):
+/// - `expand`: `sin((y0+z0)*(y1+z1)*...*(y11+z11))/(1-x)` (110 bytes) at 0, order 1000, is
+///   accepted in 0.007 s; its `expand` takes 4.0 s and 2.5 GB, and `simplify` of that 21.8 s and
+///   5.6 GB (at order 100: 0.29 s and 257 MB, then 1.9 s and 622 MB). HEAD's `expand` of the input
+///   itself takes 0.004 s and 7 MB. The REPL's `expand(t)` of the same result: 2.5 GB.
+/// - `differentiate`, and the REPL's `diff` (`differentiate`, then `simplify`): 290 to 650 bytes
+///   per tree node of the result, so 0.6 to 1.3 GB at the node cap, and for a power tower its
+///   `simplify` keeps a tree quadratic in the tower at every term. `sin(y0^y1^...^y999)/(1-x)`
+///   (4.9 KB) at order 1040: `differentiate` 1.1 s and 1.3 GB, then `simplify` 9.1 s and 2.9 GB;
+///   the REPL's `diff` 11.6 s and 2.1 GB (debug). The product `sin(y0*y1*...*y999)/(1-x)`: 0.5 s
+///   and 610 MB. HEAD's `differentiate` of the inputs themselves: 15 MB (225 MB for the tower).
+/// - `simplify` of a result: its folds are counted at every occurrence (`MAX_RESULT_FOLD_WORK`).
+///   Measured at the edges of the caps (14 families of literal-heavy kernel sources at orders 1
+///   and 10, bisected to the largest accepted size, `fu2/s1impl/fix5/probe/edges_final.log`):
+///   the slowest `simplify` of the result itself took 0.86 s (a sum of 2 032 fractions 1/p in a
+///   kernel at order 1), `Display` of its output about 8 s, the largest VmHWM was 320 MB
+///   (`exp(x)` at order 8996, which stays a value up to that order). After another consumer the
+///   same results cost more. The sum of 1 487 fractions 1/p at order 10 (the largest accepted
+///   size): `simplify` 0.35 s, after `expand` 4.12 s, after `substitute(x, 2)` 3.93 s (fix-up
+///   round 5; the fin2 semantics review measured 0.36 s, 4.53 s and 4.70 s). After
+///   `differentiate`, the slowest took 2.90 s (`sin((2^254+1)^4096)/(1-x)` at order 192).
+/// - `simplify` after `substitute`: the cap does not count the folds of the substituted value with
+///   the result's literals, so this costs about the number of terms times the folds of one
+///   substituted coefficient. `(10^100-1)^1050/7^120000/(1-x)` (32 bytes), `simplify` of the
+///   result with x = 2 (fin1 resources review, release, VmHWM 49 MB): 6.8 s at order 10, 34.1 s at
+///   50, 66.0 s at 100, 348 s at 514; since `MAX_RESULT_PARSE_WORK` (fix-up round 1 of the finish)
+///   the input is refused above order 32. At the accepted orders: 18.3 s at order 29 and 20.0 s
+///   at order 30 (fix-up round 1 of the finish; the re-parse of the result 5.0 s and 5.6 s), and
+///   21.9 s at order 30 and 23.3 s at order 32, the largest accepted order (the fin2 resources
+///   review).
+/// - `substitute` and `==` visit every node of the tree (up to 2^21; a result of 2^21 nodes took
+///   about 200 MB), and `==` recurses as deep as the tree.
+/// - The REPL's `integrate`: HEAD's `integrate` is cubic in the number of terms
+///   (`taylor(1/(1-x), x, 0, N)`: 0.78 s at N = 250, 5.6 s at 500, 43.3 s at 1000), as it is on the
+///   same polynomial typed as text.
+///
+/// These costs are not bounded here. The follow-up unit S2 ("DAG-aware consumers") makes these
+/// functions share repeated subexpressions, so that their cost on a result is linear in its DAG.
 pub const MAX_RESULT_TEXT: u64 = 1 << 27;
 /// S1 fix-up round 4 (review 4, B1): the work of `simplify`'s constant folds on a result's tree
-/// (in the units of the engine's charged arithmetic, the sizes from the bounds of `tree_bound`),
-/// so that `simplify` of every accepted result stays within S1_BAR (c) whatever order the input's
-/// literal arithmetic is written in. S1 fix-up round 5 (review 5, B1): counted at every
+/// (in the units of the engine's charged arithmetic, the sizes from the bounds of `tree_bound`):
+/// the input's own literal arithmetic in a kernel's source folds in `simplify` left to right,
+/// where the engine folded it in its own order. S1 fix-up round 5 (review 5, B1): counted at every
 /// occurrence in the tree (`TextBound::total` of the root; round 4 counted each distinct node
-/// once, `TextMemo::work`), so that it also bounds `simplify` after `substitute`, `expand` or
-/// `differentiate`, which rebuild the tree and fold a shared kernel source once per term:
-/// `sin(K/3 x 2535)/(1-x)` at order 10 took 24.1 s after `substitute` and is now refused. See
-/// `fold_binary_work` for why the engine's own charges do not bound it. Release, 8 MB thread
+/// once, `TextMemo::work`), the folds of a copy of the tree without its sharing, as `substitute`
+/// makes it: `sin(K/3 x 2535)/(1-x)` at order 10 took 24.1 s after `substitute` and is now
+/// refused. The cap counts the result's own folds only, not the folds of the value `substitute`
+/// puts in with the result's literals (the doc of `MAX_RESULT_TEXT`). It does not count the
+/// nodes that `expand` and `differentiate` add to a result, so it does not bound `simplify`
+/// after them (21.8 s and 5.6 GB after `expand` on a 110-byte input, review 6; the doc of
+/// `MAX_RESULT_TEXT`). See
+/// `fold_binary_work` for why the engine's own charges do not bound the folds. Release, 8 MB thread
 /// (`series_const::tests::fold_work_calibration`): 0.37 to 1.11 ns per unit on 24 shapes (chains of
 /// quotients by 3, by 2^61 - 1 and under pi, sums with growing denominators, products and sums of
 /// 1 to 4 rational powers with 2^19-bit parts, a balanced gcd of two 2^20-bit integers, chains of
@@ -701,14 +797,35 @@ pub const MAX_RESULT_TEXT: u64 = 1 << 27;
 /// folding. At the cap (review 4's B1 families at their largest accepted length,
 /// `tests/s1_review4.rs`): `simplify` 0.8 to 2.8 s. S1 fix-up round 5: a sum of 1 487 fractions
 /// 1/p (products of primes as denominators) at order 10, at the cap, folds in 4.1 s after
-/// `expand` (1.9 ns per unit), the slowest shape measured.
+/// `expand` (1.9 ns per unit; 4.5 s in the fin2 semantics review), the slowest shape measured;
+/// `simplify` of that result itself takes 0.35 s.
 pub const MAX_RESULT_FOLD_WORK: u64 = 1 << 31;
 /// S1 fix-up round 5 (review 5, B2): the words of the literals that `simplify` may build at the
 /// distinct nodes of a result's DAG (`TextMemo::payload`, `TextBound::lit`), at most the payload
 /// of `simplify`'s memo (`simplify::MEMO_PAYLOAD_WORDS`, 2^22 words, 32 MiB). A consumer that
 /// clones the result's nodes and so makes them shared (`differentiate`: the product rule clones
-/// both factors, sharing their children) needs every such literal in the memo at once.
+/// both factors, sharing their children) needs every such literal in the memo at once, so that
+/// `simplify` does not recompute them. It counts literals only, not the nodes the consumer adds
+/// (the doc of `MAX_RESULT_TEXT`).
 pub const MAX_RESULT_MEMO_WORDS: u64 = crate::simplify::MEMO_PAYLOAD_WORDS;
+/// S1 finish, fix-up round 1 (fin1 resources B3): the work of re-parsing a result's printed text
+/// beyond its characters (`TextBound::parse`, every occurrence counted): num-bigint's quadratic
+/// decimal parse of each integer literal (`int_parse_units`), and the gcd with which the parser
+/// folds each printed quotient of two integer literals, a `Rational` p/q or a `/` of two signed
+/// integers (`quot_parse_units`). A kernel or rational of the result is computed once, but its
+/// text is printed, and re-parsed, at every term that names it: `(10^100-1)^1050/7^120000/(1-x)`
+/// (32 bytes) at order 514 printed 106 MB in 7.1 s, and its re-parse took 95 s (0.16 s per
+/// quotient, of which 0.14 s is the gcd). Release, 8 MB thread
+/// (`series_const::tests::parse_work_calibration`): 0.63 to 0.69 ns per unit on texts whose
+/// numbers dominate (the whole parse time), so the cap is about 6 s in the calibration. At the
+/// cap the fin2 resources review measured 5.9 to 7.6 s under load (q3,
+/// `(10^30-1)^1050/7^37000/(1-x)` at order 379, 8.58e9 units: 0.69 to 0.88 ns per unit at load
+/// 5), so the cap is about 6 to 8 s of re-parsing. The rest of the text is
+/// bounded by the other caps: its leaf characters by `MAX_RESULT_TEXT` (`exp(x)` at order 8 996,
+/// 134 MB, re-parsed in 2.9 s) and its operators and parentheses by the nodes of
+/// `MAX_RESULT_TREE` (about 0.2 microseconds per node: `1/3 + x` 400 000 times, 2 million nodes,
+/// 0.43 s).
+pub const MAX_RESULT_PARSE_WORK: u64 = 1 << 33;
 /// S1 fix-up round 3 (review 3, minor m1): the digits of one integer up to which `print_weight`
 /// counts one unit per character. num-bigint's decimal conversion takes 7.5 ns per digit at 10^3
 /// digits, 22 at 10^4, 63 at 10^5, 130 at 4x10^5 and 264 at 1.6x10^6 (release, `fix3/probe`), so
@@ -1085,7 +1202,8 @@ pub struct TextBound {
     work: u64,
     /// S1 fix-up round 5 (review 5, B1): an upper bound of the work of `simplify`'s folds on the
     /// node's tree, every occurrence of a shared subtree counted (`work` plus the children's
-    /// `total`): the folds of `simplify` after a consumer that rebuilds the tree
+    /// `total`): the folds of `simplify` on a copy of the tree without its sharing (`substitute`
+    /// makes one; `expand` and `differentiate` make larger trees, which it does not count)
     total: u64,
     /// S1 fix-up round 5 (review 5, B2): an upper bound of the words of the literals `simplify`
     /// builds at this node alone (the literal it may fold to, and the c/d of (c * rest) / d)
@@ -1095,10 +1213,49 @@ pub struct TextBound {
     /// to): what the output of `simplify` after `differentiate` may print, whose quotient and
     /// power rules keep the values of inner nodes (d(3/a) has a^2 in its denominator)
     lit_text: u64,
+    /// S1 finish, fix-up round 1 (fin1 resources B3): the work of re-parsing the node's printed
+    /// text beyond its characters, every occurrence counted (`MAX_RESULT_PARSE_WORK`)
+    parse: u64,
+    /// the bits of the integer when the node prints as a signed integer literal (an `Integer`, or
+    /// its negation), which the parser folds with another one in a quotient
+    int_bits: Option<u64>,
+}
+/// S1 finish, fix-up round 1 (fin1 resources B3): the work, in units of about one word operation,
+/// of re-parsing a printed integer literal of `bits` bits: num-bigint 0.4.8's decimal parse
+/// multiplies the value read so far by 10^19 for every 19 digits, about w^2 / 2 word products for
+/// w words
+fn int_parse_units(bits: u64) -> u64 {
+    let w = bits / 64 + 1;
+    w.saturating_mul(w) / 2 + 1
+}
+/// S1 finish, fix-up round 1: the work of the gcd that the parser's `Rational::new` takes to fold
+/// a printed quotient p/q of two integer literals (Lehmer's algorithm, `rustmath-integers`
+/// `lehmer.rs`, and the two exact divisions: about 8 word operations per pair of words)
+fn quot_parse_units(p_bits: u64, q_bits: u64) -> u64 {
+    (p_bits / 64 + 1)
+        .saturating_mul(q_bits / 64 + 1)
+        .saturating_mul(8)
+}
+/// the parse work of a leaf (`TextBound::parse`)
+fn leaf_parse_units(e: &Expr) -> u64 {
+    match e {
+        Expr::Integer(i) => int_parse_units(i.bit_length()),
+        Expr::Rational(q) => {
+            let (p, d) = (q.numerator().bit_length(), q.denominator().bit_length());
+            int_parse_units(p)
+                .saturating_add(int_parse_units(d))
+                .saturating_add(quot_parse_units(p, d))
+        }
+        _ => 0,
+    }
 }
 impl TextBound {
     pub fn text(&self) -> u64 {
         self.text
+    }
+    /// S1 finish, fix-up round 1: the re-parse work of the node's printed text
+    pub fn parse(&self) -> u64 {
+        self.parse
     }
     /// S1 fix-up round 5: the fold work of the node's tree, per occurrence
     pub fn total(&self) -> u64 {
@@ -1132,6 +1289,8 @@ impl TextBound {
             total: work,
             lit,
             lit_text,
+            parse: 0,
+            int_bits: None,
         }
     }
     /// a leaf: its value when it is an integer or a rational
@@ -1159,6 +1318,11 @@ impl TextBound {
         // words to the memo (`lit`); its text counts in `lit_text`
         let mut b = TextBound::with_val(node_text(e), 0, 0, val, 0);
         b.lit = 0;
+        // S1 finish, fix-up round 1: its parse work
+        b.parse = leaf_parse_units(e);
+        if let Expr::Integer(i) = e {
+            b.int_bits = Some(i.bit_length());
+        }
         b
     }
     /// the integer literal m (an exponent of h)
@@ -1209,6 +1373,11 @@ impl TextBound {
         let mut v = TextBound::with_val(a.text, a.chars, a.den_chars, val, work);
         v.total = work.saturating_add(a.total);
         v.lit_text = v.lit_text.saturating_add(a.lit_text);
+        // S1 finish, fix-up round 1: the negation of a signed integer literal prints as one
+        v.parse = a.parse;
+        if op == UnaryOp::Neg {
+            v.int_bits = a.int_bits;
+        }
         v
     }
     /// a call: its name, its parentheses and its arguments (`simplify` folds no call; it copies
@@ -1228,6 +1397,9 @@ impl TextBound {
             total: 0,
             lit: 0,
             lit_text: 0,
+            // S1 finish, fix-up round 1
+            parse: args.iter().fold(0, |acc, a| acc.saturating_add(a.parse)),
+            int_bits: None,
         }
         .with_children(args)
     }
@@ -1373,6 +1545,12 @@ impl TextBound {
             .saturating_add(div_lit.1)
             .saturating_add(l.lit_text)
             .saturating_add(r.lit_text);
+        // S1 finish, fix-up round 1 (fin1 resources B3): the parser folds a printed quotient of
+        // two signed integer literals (a gcd)
+        v.parse = l.parse.saturating_add(r.parse);
+        if let (Div, Some(a), Some(b)) = (op, l.int_bits, r.int_bits) {
+            v.parse = v.parse.saturating_add(quot_parse_units(a, b));
+        }
         v
     }
     /// the bound of the tree that `balanced_arc(items, op)` builds (the same shape); its fold
@@ -1633,18 +1811,40 @@ pub fn memo_limit() -> SErr {
         MAX_RESULT_MEMO_WORDS,
     )
 }
+/// S1 finish, fix-up round 1 (fin1 resources B3): the refusal of a result (or of the constant of
+/// `UndecidedZero`) whose printed text would take more than `MAX_RESULT_PARSE_WORK` units to
+/// re-parse
+pub fn parse_limit() -> SErr {
+    SErr::Limit(
+        "units of work to re-parse the result's text",
+        MAX_RESULT_PARSE_WORK,
+    )
+}
+/// The bound of one rendered value's tree that `bound_caps` checks (`tree_bound`; the fields of
+/// `TextBound` and of `TextMemo`)
+pub struct ResultBound {
+    pub text: u64,
+    pub total: u64,
+    pub payload: u64,
+    pub lit_text: u64,
+    /// S1 finish, fix-up round 1: the re-parse work (`TextBound::parse`)
+    pub parse: u64,
+}
 /// The caps of one rendered value's tree (`tree_bound`), the refusal if any: the text
-/// (`MAX_RESULT_TEXT`), the fold work per occurrence (`MAX_RESULT_FOLD_WORK`, S1 fix-up round 5)
-/// and the literal words of the distinct nodes (`MAX_RESULT_MEMO_WORDS`, round 5).
-pub fn bound_caps(text: u64, total: u64, payload: u64, lit_text: u64) -> Option<SErr> {
-    if text > MAX_RESULT_TEXT {
+/// (`MAX_RESULT_TEXT`), the fold work per occurrence (`MAX_RESULT_FOLD_WORK`, S1 fix-up round 5),
+/// the literal words of the distinct nodes (`MAX_RESULT_MEMO_WORDS`, round 5), and (S1 finish,
+/// fix-up round 1) the work of re-parsing its text (`MAX_RESULT_PARSE_WORK`).
+pub fn bound_caps(b: &ResultBound) -> Option<SErr> {
+    if b.text > MAX_RESULT_TEXT {
         Some(text_limit())
-    } else if lit_text > MAX_RESULT_TEXT {
+    } else if b.lit_text > MAX_RESULT_TEXT {
         Some(literal_text_limit())
-    } else if total > MAX_RESULT_FOLD_WORK {
+    } else if b.total > MAX_RESULT_FOLD_WORK {
         Some(fold_limit())
-    } else if payload > MAX_RESULT_MEMO_WORDS {
+    } else if b.payload > MAX_RESULT_MEMO_WORDS {
         Some(memo_limit())
+    } else if b.parse > MAX_RESULT_PARSE_WORK {
+        Some(parse_limit())
     } else {
         None
     }
@@ -1653,7 +1853,13 @@ pub fn bound_caps(text: u64, total: u64, payload: u64, lit_text: u64) -> Option<
 pub fn result_caps(e: &Expr) -> Option<SErr> {
     let mut memo = TextMemo::default();
     let b = tree_bound(e, &mut memo);
-    bound_caps(b.text, b.total, memo.payload, b.lit_text)
+    bound_caps(&ResultBound {
+        text: b.text,
+        total: b.total,
+        payload: memo.payload,
+        lit_text: b.lit_text,
+        parse: b.parse,
+    })
 }
 pub const KERNEL_DEPTH_FACTOR: u32 = 4;
 /// revision 5 (review 5, B2): units per factor of a monomial that a product, a power or an
@@ -1988,6 +2194,16 @@ impl Konst {
     }
     pub fn is_zero(&self) -> bool {
         self.t.is_empty()
+    }
+    /// S1 request C-1: real by the structural classes of its kernels (O(1), cached); a sufficient
+    /// condition only
+    pub fn struct_real(&self) -> bool {
+        self.t.sz.all_real
+    }
+    /// S1 request C-1: purely imaginary by the structural classes of its kernels (O(1), cached);
+    /// a sufficient condition only
+    pub fn struct_imag(&self) -> bool {
+        self.t.sz.all_imag
     }
     pub fn as_rational(&self) -> Option<Rational> {
         if self.t.is_empty() {
@@ -2468,6 +2684,106 @@ impl Konst {
         Some(groups)
     }
 
+    /// S1 C-1 minor items (regressions review m1): whether this constant is a nonconstant function
+    /// of the free parameters, so that for generic complex values of them it avoids any given
+    /// half-line or segment (the set of values where it meets one has no interior). Accepted: a
+    /// polynomial in the parameters with a decided nonzero coefficient of a nonconstant monomial
+    /// (the zero test's groups, as `position` decided before), and a Laurent polynomial in one
+    /// kernel k that depends on a parameter, with no parameter as a factor of its own, k
+    /// nonconstant (`KData::gnc`) and a decided nonzero coefficient of some k^e, e != 0 (a
+    /// nonconstant rational function of a nonconstant analytic function is nonconstant). A sum of
+    /// two such kernels is not accepted: `sin(y)^2 + cos(y)^2` is constant. `full`: a coefficient
+    /// is decided nonzero by the zero test (`zero_status`, which may read enclosures); otherwise
+    /// by its structural part only (`struct_nonzero`, for the flag of a new kernel). The cost: a
+    /// polynomial in the parameters is grouped by `indet_groups` (charged there before its walk).
+    /// Otherwise the walk that finds the one kernel runs first and is not charged: it reads each
+    /// factor of each term once and allocates nothing, so it is linear in the size of the constant
+    /// (a constant term whose construction was charged, or a new kernel's argument, whose key
+    /// was), and it returns false without a charge at a parameter factor or a second kernel with
+    /// a parameter. The grouping by the kernel's exponent after it is charged as `indet_groups`
+    /// (two copies of the terms and the sort's comparisons) before it runs (S1 C-1 minors check,
+    /// m2: the doc said that the whole test was charged so).
+    pub fn generic_nonconstant(&self, full: bool) -> bool {
+        if !self.t.sz.any_indet {
+            return false;
+        }
+        let nz = |g: &Konst| {
+            if full {
+                g.zero_status() == ZS::NonZero
+            } else {
+                g.struct_nonzero()
+            }
+        };
+        if !self.t.sz.nonindet_dep {
+            return match self.indet_groups() {
+                Some(groups) => groups.iter().any(|(m, g)| !m.is_empty() && nz(g)),
+                None => false,
+            };
+        }
+        let mut k0: Option<&Kernel> = None;
+        for (m, _) in self.t.iter() {
+            for (k, _) in m {
+                if k.0.class == KClass::Indet {
+                    return false;
+                }
+                if k.0.has_indet {
+                    match k0 {
+                        None => k0 = Some(k),
+                        Some(k1) if k1 == k => {}
+                        Some(_) => return false,
+                    }
+                }
+            }
+        }
+        let k = match k0 {
+            Some(k) if k.0.gnc => k.clone(),
+            _ => return false,
+        };
+        let tt = self.t.len() as u64;
+        if !charge(
+            2u64.saturating_mul(copy_units(self))
+                .saturating_add(2u64.saturating_mul(search_units(self.t.sz.excess, tt))),
+        ) {
+            return false;
+        }
+        // (exponent of k, the term without k), sorted, then cut into groups by the exponent
+        let mut v: Vec<(i64, Term)> = Vec::with_capacity(self.t.len());
+        for (m, q) in self.t.iter() {
+            let mut e = 0i64;
+            let mut rest: Mono = Vec::with_capacity(m.len());
+            for (kk, ee) in m {
+                if *kk == k {
+                    e = *ee;
+                } else {
+                    rest.push((kk.clone(), *ee));
+                }
+            }
+            v.push((e, (rest, q.clone())));
+        }
+        v.sort_unstable_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1 .0.cmp(&b.1 .0)));
+        let mut it = v.into_iter().peekable();
+        while let Some((e, t0)) = it.next() {
+            let mut g: Vec<Term> = vec![t0];
+            while matches!(it.peek(), Some((e2, _)) if *e2 == e) {
+                g.push(it.next().unwrap().1);
+            }
+            if e != 0 && nz(&Konst::from_sorted(g)) {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// the structural part of the zero test of a constant free of indeterminates (no
+    /// enclosure): one term without an opaque kernel, or A + B*I in one named constant
+    fn struct_nonzero(&self) -> bool {
+        match self.t.len() {
+            0 => false,
+            1 => !self.t.sz.any_opaque,
+            _ => self.t.sz.one_named_imag,
+        }
+    }
+
     /// zero test for a constant free of indeterminates
     fn const_status(&self) -> ZS {
         if self.t.is_empty() {
@@ -2536,6 +2852,48 @@ impl Konst {
         (Konst::from_sorted(a), Konst::from_sorted(b))
     }
 
+    /// S1 finish under the narrowed bar (review 6, semantics lens, m3): the exact inverse of
+    /// c = A + B*I (A, B free of the kernel I, `split_imag`). (A + B*I)(A - B*I) = A^2 + B^2 in any
+    /// field where I^2 = -1, so when N = A^2 + B^2 is decided nonzero, 1/c = (A - B*I) * (1/N),
+    /// and c is nonzero; for A = 0, 1/c = -I * (1/B). N and B are free of I, so their inverses are
+    /// rationals, exact monomials, or kernels 1/N0 that have a real ball enclosure when A and B
+    /// have one. Before, 1/c was the kernel 1/(A + B*I), which has no enclosure when it is complex:
+    /// `1/(x + 1/(1+I) - (1-I)/2)` at 0 was `UndecidedZero` although the constant is 0. `None`
+    /// when N is not decided nonzero (the kernel 1/c, as before). The caller takes this path only
+    /// for a constant without free parameters: for `a + I` with a parameter a, (a - I)/(a^2 + 1)
+    /// would add the exceptional point a = I, where 1/(a + I) is defined.
+    #[inline(never)]
+    fn gaussian_inverse(&self, strict: bool) -> Result<Option<Konst>, SErr> {
+        let ik = self.t.keys().find_map(|m| {
+            m.iter()
+                .find(|(k, _)| k.0.class == KClass::Imag)
+                .map(|(k, _)| k.clone())
+        });
+        let Some(ik) = ik else {
+            return Ok(None);
+        };
+        let (a, b) = self.split_imag();
+        check()?;
+        if b.is_zero() {
+            return Ok(None);
+        }
+        let i = Konst::kernel(ik);
+        if a.is_zero() {
+            let r = b.inverse_src(strict, None)?.mul(&i).neg();
+            check()?;
+            return Ok(Some(r));
+        }
+        let n = a.mul(&a).add(&b.mul(&b));
+        check()?;
+        if n.zero_status() != ZS::NonZero {
+            check()?;
+            return Ok(None);
+        }
+        let r = a.sub(&b.mul(&i)).mul(&n.inverse_src(true, None)?);
+        check()?;
+        Ok(Some(r))
+    }
+
     /// Inverse. `strict`: the constant must be decided nonzero (a derived leading
     /// coefficient). Otherwise (a constant the input itself divides by) an Unknown
     /// constant is inverted as a kernel 1/P, under the convention that the input is defined.
@@ -2552,6 +2910,19 @@ impl Konst {
         let st = self.zero_status();
         if st == ZS::Zero {
             return Err(SErr::DivisionByZero("division by the constant 0".into()));
+        }
+        // S1 finish under the narrowed bar (review 6, semantics lens, m3): a small multi-term
+        // constant with the kernel I and no free parameter is inverted exactly
+        // (`gaussian_inverse`), before the zero test of `strict` (A^2 + B^2 decided nonzero
+        // proves the constant nonzero)
+        if self.t.len() >= 2
+            && self.t.len() <= GAUSSIAN_INVERSE_TERMS
+            && self.t.sz.any_imag
+            && !self.t.sz.any_indet
+        {
+            if let Some(r) = self.gaussian_inverse(strict)? {
+                return Ok(r);
+            }
         }
         if strict && st == ZS::Unknown {
             return Err(undecided(self));
@@ -3019,6 +3390,9 @@ fn fault_kernel() -> Kernel {
         depth: 1,
         unary: None,
         tree: 1,
+        kcls: KCLS_UNKNOWN,
+        kpos: false,
+        gnc: false,
     }))
 }
 pub fn mk_kernel_full(
@@ -3098,6 +3472,13 @@ fn mk_kernel_inner(
     // has_indet from the normal forms (an OR over the kernels' flags), never by a tree walk
     let has_indet = class == KClass::Indet || args.iter().any(|a| a.t.sz.any_indet);
     intern(key, |id| {
+        // S1 request C-1: the class of a new kernel, once per kernel. It may read an enclosure of
+        // an argument, which costs about the size of the argument's expression (charged); the
+        // positive kernels (`kpos`) spare it for chains of positive constants
+        let kcls = kernel_struct_class(kind, class, args);
+        let kpos = kcls == KCLS_REAL && kernel_struct_pos(kind, class, args);
+        // S1 C-1 minor items (regressions review m1): only a kernel with a parameter can vary
+        let gnc = has_indet && kernel_generic_nonconstant(kind, class, args);
         // a new kernel: its expression (sharing the sub-kernels' expressions) is charged first;
         // an input node is shared, not built (revision 5)
         let eu: u64 = match src_units {
@@ -3115,8 +3496,295 @@ fn mk_kernel_inner(
             depth,
             unary,
             tree,
+            kcls,
+            kpos,
+            gnc,
         }
     })
+}
+
+/// S1 request C-1: a constant that is a positive real number by its structure: a positive
+/// rational, or a nonnegative rational plus terms with positive rational coefficients whose
+/// factors (to any integer power) are positive kernels (`KData::kpos`: pi, e, radicals n^(1/d)
+/// with n > 1, exp and cosh of a real constant, sqrt and c^a of a positive c, log of a c > 1,
+/// ...). No enclosure. S1 C-1 minor items (regressions review m4, m7): it walks the factors of
+/// every term, so its cost is linear in them (C-1 accepted one term of pi, e and radicals).
+pub fn struct_positive(c: &Konst) -> bool {
+    struct_lower(c).is_some_and(|(r, more)| {
+        let s = r.numerator().signum();
+        s > 0 || (more && s >= 0)
+    })
+}
+
+/// S1 C-1 minor items (regressions review m4): a constant that is a real number > 1 by the
+/// structure of `struct_positive` (a rational part r >= 1 plus positive terms, at least one of
+/// them when r = 1); log and arccosh of it are positive
+pub fn struct_gt1(c: &Konst) -> bool {
+    let one = Rational::from_integer(Integer::from(1));
+    struct_lower(c).is_some_and(|(r, more)| r > one || (more && r >= one))
+}
+
+/// the rational part r of c and whether c has other terms, when every other term has a positive
+/// rational coefficient and positive kernels as factors (so c >= r, and c > r when it has one)
+fn struct_lower(c: &Konst) -> Option<(Rational, bool)> {
+    let mut r = Rational::zero();
+    let mut more = false;
+    for (m, q) in c.t.iter() {
+        if m.is_empty() {
+            r = q.clone();
+        } else if q.numerator().signum() > 0 && m.iter().all(|(k, _)| k.0.kpos) {
+            more = true;
+        } else {
+            return None;
+        }
+    }
+    Some((r, more))
+}
+
+/// S1 C-1 minor items (regressions review m4): whether a new kernel's value is a positive real
+/// number by its structure (it is real: `kernel_struct_class` gave `KCLS_REAL`): pi and e, a
+/// radical n^(1/d) (n > 1), a positive float, 1/P and P^a (a real) of a positive P, exp and cosh
+/// of a real constant, sqrt, sinh, tanh, arctan, arcsinh, erf, gamma and factorial of a positive
+/// constant, log and arccosh of a constant > 1
+fn kernel_struct_pos(kind: &str, class: KClass, args: &[&Konst]) -> bool {
+    if class == KClass::Named || kind.starts_with("root") {
+        return true;
+    }
+    if kind.len() == 17 && kind.starts_with('r') && args.is_empty() {
+        return u64::from_str_radix(&kind[1..], 16).is_ok_and(|b| f64::from_bits(b) > 0.0);
+    }
+    match (kind, args) {
+        ("inv", [p]) => struct_positive(p),
+        ("^", [c, a]) => struct_positive(c) && a.t.sz.all_real,
+        ("Exp" | "Cosh", [c]) => c.t.sz.all_real,
+        ("Sqrt" | "Sinh" | "Tanh" | "Arctan" | "Arcsinh" | "Erf" | "Gamma" | "Factorial", [c]) => {
+            struct_positive(c)
+        }
+        ("Log" | "Arccosh", [c]) => struct_gt1(c),
+        _ => false,
+    }
+}
+
+/// S1 C-1 minor items (regressions review m1): the functions whose kernel f(c) is a nonconstant
+/// function of the parameters when c is one (each is analytic and nonconstant on every open set
+/// of its domain, principal branches included); abs, sign, mod and the named functions are not
+/// in it
+const GENERIC_ANALYTIC: [&str; 19] = [
+    "Exp",
+    "Log",
+    "Sqrt",
+    "Sin",
+    "Cos",
+    "Tan",
+    "Sinh",
+    "Cosh",
+    "Tanh",
+    "Arcsin",
+    "Arccos",
+    "Arctan",
+    "Arcsinh",
+    "Arccosh",
+    "Arctanh",
+    "Gamma",
+    "Factorial",
+    "Erf",
+    "Zeta",
+];
+
+/// S1 C-1 minor items (regressions review m1): whether a new kernel with a parameter is a
+/// nonconstant function of the parameters: a parameter itself; 1/P of a nonconstant P; c^a of a
+/// nonconstant c with a nonzero rational a, or of a rational c other than 0 and 1 with a
+/// nonconstant a; f(c) of a nonconstant c for f in `GENERIC_ANALYTIC`. The argument's test is
+/// the structural one (`Konst::generic_nonconstant(false)`)
+fn kernel_generic_nonconstant(kind: &str, class: KClass, args: &[&Konst]) -> bool {
+    if class == KClass::Indet {
+        return true;
+    }
+    let nonzero_rat = |c: &Konst| c.as_rational().is_some_and(|q| !q.is_zero());
+    match (kind, args) {
+        ("inv", [p]) => p.generic_nonconstant(false),
+        ("^", [c, a]) => {
+            (nonzero_rat(a) && c.generic_nonconstant(false))
+                || (c.as_rational().is_some_and(|q| !q.is_zero() && !q.is_one())
+                    && a.generic_nonconstant(false))
+        }
+        (op, [c]) if GENERIC_ANALYTIC.contains(&op) => c.generic_nonconstant(false),
+        _ => false,
+    }
+}
+
+/// S1 request C-1: the structural class of a kernel's value from its kind and the classes of
+/// its arguments. `KCLS_REAL` for pi, e, radicals, floats, a real function (exp, sin, cos, sinh,
+/// cosh, tan, tanh, arctan, arcsinh, erf, abs, sign, gamma, factorial, zeta) of a real constant,
+/// a mod b of real constants, log and sqrt of a structurally positive constant, arcsin and
+/// arccos of a rational in [-1, 1], arctanh of one in (-1, 1), arccosh of one >= 1 or of a
+/// structural c > 1 (`struct_gt1`, C-1 minor items), a power c^a
+/// of a positive c with a real a or of a real c with an integer a, and 1/P of a real P;
+/// `KCLS_IMAG` for I, sqrt of a negative rational, c^a for a negative rational c and a
+/// half-integer a, an odd function (sin, sinh, tan, tanh, erf) of an imaginary constant, arctan
+/// of i t and arcsinh of i t for a rational |t| < 1 (resp. <= 1), an odd power of an imaginary
+/// constant and 1/P of an imaginary P (cos and cosh of an imaginary constant are real). For log,
+/// sqrt, the inverse functions and c^a of a real constant c that is not rational, the sign or
+/// range of c is read from its enclosures (`ball_range_class`, `ball_sign_of`; charged, once per
+/// kernel, about the size of c's expression each time, so a chain of n kernels that each need it
+/// costs about n^2: `struct_positive` and `KData::kpos` spare it for chains of positive constants):
+/// `log(sin(1))` and `(1 + sinh(1/2)^2)^(-1/2)` are real. Everything else is
+/// `KCLS_UNKNOWN`: sound, not complete (`log(-1)` is not real, and unknown; a named function
+/// f(1) is unknown).
+fn kernel_struct_class(kind: &str, class: KClass, args: &[&Konst]) -> u8 {
+    match class {
+        KClass::Imag => return KCLS_IMAG,
+        KClass::Named => return KCLS_REAL,
+        KClass::Indet => return KCLS_UNKNOWN,
+        _ => {}
+    }
+    if kind.starts_with("root") {
+        return KCLS_REAL;
+    }
+    // a float leaf: kind r{16 hex digits}, no argument
+    if kind.len() == 17 && kind.starts_with('r') && args.is_empty() {
+        return KCLS_REAL;
+    }
+    let real = |c: &Konst| c.t.sz.all_real;
+    let imag = |c: &Konst| c.t.sz.all_imag;
+    let rat = |c: &Konst| c.as_rational();
+    let one = Rational::from_integer(Integer::from(1));
+    let abs_q = |q: &Rational| {
+        if q.numerator().signum() < 0 {
+            -q.clone()
+        } else {
+            q.clone()
+        }
+    };
+    match (kind, args) {
+        // a mod b of real constants is real
+        ("%", [a, b]) if real(a) && real(b) => KCLS_REAL,
+        ("inv", [p]) => {
+            if real(p) {
+                KCLS_REAL
+            } else if imag(p) {
+                KCLS_IMAG
+            } else {
+                KCLS_UNKNOWN
+            }
+        }
+        ("^", [c, a]) => {
+            let int_a = rat(a).filter(|q| q.denominator().is_one());
+            if let Some(n) = int_a {
+                // c^n for an integer n: real for a real c; for an imaginary c by the parity of n
+                if real(c) {
+                    return KCLS_REAL;
+                }
+                if imag(c) {
+                    let odd = n.numerator().is_odd();
+                    return if odd { KCLS_IMAG } else { KCLS_REAL };
+                }
+                return KCLS_UNKNOWN;
+            }
+            if struct_positive(c) && real(a) {
+                return KCLS_REAL;
+            }
+            let half_int = rat(a).is_some_and(|q| q.denominator() == &Integer::from(2));
+            match rat(c) {
+                Some(cq) if cq.numerator().signum() < 0 && half_int => KCLS_IMAG,
+                Some(_) => KCLS_UNKNOWN,
+                // a real c whose sign the structure does not show: its enclosure
+                None if real(c) && real(a) => match ball_sign_of(c) {
+                    Some(1) => KCLS_REAL,
+                    Some(-1) if half_int => KCLS_IMAG,
+                    _ => KCLS_UNKNOWN,
+                },
+                None => KCLS_UNKNOWN,
+            }
+        }
+        (op, [c]) => {
+            if real(c) {
+                match op {
+                    "Exp" | "Sin" | "Cos" | "Sinh" | "Cosh" | "Tan" | "Tanh" | "Arctan"
+                    | "Arcsinh" | "Erf" | "Abs" | "Sign" | "Gamma" | "Factorial" | "Zeta" => {
+                        KCLS_REAL
+                    }
+                    "Log" if struct_positive(c) => KCLS_REAL,
+                    "Sqrt" if struct_positive(c) || c.is_zero() => KCLS_REAL,
+                    "Sqrt" if rat(c).is_some_and(|q| q.numerator().signum() < 0) => KCLS_IMAG,
+                    "Arcsin" | "Arccos" if rat(c).is_some_and(|q| abs_q(&q) <= one) => KCLS_REAL,
+                    "Arctanh" if rat(c).is_some_and(|q| abs_q(&q) < one) => KCLS_REAL,
+                    "Arccosh" if rat(c).is_some_and(|q| q >= one) => KCLS_REAL,
+                    // S1 C-1 minor items (regressions review m4): a structural c > 1, no enclosure
+                    "Arccosh" if struct_gt1(c) => KCLS_REAL,
+                    "Log" | "Sqrt" | "Arcsin" | "Arccos" | "Arctanh" | "Arccosh"
+                        if rat(c).is_none() =>
+                    {
+                        ball_range_class(op, c)
+                    }
+                    _ => KCLS_UNKNOWN,
+                }
+            } else if imag(c) {
+                // c = i t with t real; t rational when c is a rational multiple of I alone
+                let t = imag_rational(c);
+                match op {
+                    "Sin" | "Sinh" | "Tan" | "Tanh" | "Erf" => KCLS_IMAG,
+                    "Cos" | "Cosh" | "Abs" => KCLS_REAL,
+                    "Arctan" if t.as_ref().is_some_and(|q| abs_q(q) < one) => KCLS_IMAG,
+                    "Arcsinh" if t.as_ref().is_some_and(|q| abs_q(q) <= one) => KCLS_IMAG,
+                    _ => KCLS_UNKNOWN,
+                }
+            } else if op == "Abs" {
+                KCLS_REAL
+            } else {
+                KCLS_UNKNOWN
+            }
+        }
+        _ => KCLS_UNKNOWN,
+    }
+}
+
+/// S1 request C-1: the sign of a real constant by its enclosures (`series_ball::real_sign`,
+/// charged; a constant with I or a free parameter has none)
+fn ball_sign_of(c: &Konst) -> Option<i32> {
+    if !c.t.sz.real_free {
+        return None;
+    }
+    crate::series_ball::real_sign(c)
+}
+
+/// S1 request C-1: the class of log, sqrt, arcsin, arccos, arctanh or arccosh of a real constant c
+/// that is not rational, from the enclosures of c (and of c - 1, c + 1): real inside the real
+/// domain of the function, purely imaginary for sqrt of a negative c, else unknown. Run once per
+/// kernel, when it is made (charged as the zero test's enclosures are)
+fn ball_range_class(op: &str, c: &Konst) -> u8 {
+    let s0 = || ball_sign_of(c);
+    let s_minus_1 = || ball_sign_of(&c.sub(&Konst::int(1)));
+    let s_plus_1 = || ball_sign_of(&c.add(&Konst::int(1)));
+    let real = match op {
+        "Log" => s0() == Some(1),
+        "Sqrt" => match s0() {
+            Some(1) | Some(0) => true,
+            Some(-1) => return KCLS_IMAG,
+            _ => false,
+        },
+        "Arcsin" | "Arccos" => {
+            matches!(s_minus_1(), Some(-1) | Some(0)) && matches!(s_plus_1(), Some(1) | Some(0))
+        }
+        "Arctanh" => s_minus_1() == Some(-1) && s_plus_1() == Some(1),
+        "Arccosh" => matches!(s_minus_1(), Some(1) | Some(0)),
+        _ => false,
+    };
+    if real {
+        KCLS_REAL
+    } else {
+        KCLS_UNKNOWN
+    }
+}
+
+/// S1 request C-1: t when c = t*I for a rational t (one term, the kernel I alone)
+fn imag_rational(c: &Konst) -> Option<Rational> {
+    match c.t.as_slice() {
+        [(m, q)] if m.len() == 1 && m[0].0 .0.class == KClass::Imag && m[0].1 == 1 => {
+            Some(q.clone())
+        }
+        _ => None,
+    }
 }
 
 fn pure_indet_nonconstant(c: &Konst) -> bool {
@@ -3636,7 +4304,7 @@ pub fn set_var_shadow(var: &Symbol) {
 pub fn var_is_named_pi() -> bool {
     VAR_SHADOW.with(|c| c.get() & 1 != 0)
 }
-fn var_is_named_i() -> bool {
+pub fn var_is_named_i() -> bool {
     VAR_SHADOW.with(|c| c.get() & 2 != 0)
 }
 
@@ -4707,7 +5375,7 @@ mod tests {
 
     /// S1 fix-up round 5 (review 5, B1): the per-occurrence model (`TextBound::total` of the root)
     /// is at least the fold work of `simplify` on a copy of the tree with no shared node, which is
-    /// what a consumer that rebuilds the tree (`substitute`, `expand`) hands to `simplify`; and the
+    /// what `substitute` hands to `simplify` (`expand` distributes, so it hands more); and the
     /// distinct model (`TextMemo::work`) of the copy equals its per-occurrence model. The same
     /// 3000 seeded random trees and chains as above (their pools share subtrees).
     #[test]
@@ -4830,6 +5498,92 @@ mod tests {
         }
         let cap_secs = worst * MAX_RESULT_FOLD_WORK as f64 / 1e9;
         eprintln!("worst {worst:.2} ns/unit: MAX_RESULT_FOLD_WORK is about {cap_secs:.1} s");
+        assert!(cap_secs < 10.0, "{cap_secs} s at the cap");
+    }
+
+    /// S1 finish, fix-up round 1 (fin1 resources B3), the calibration of `MAX_RESULT_PARSE_WORK`
+    /// (release): the parser's whole time per unit of `TextBound::parse` on trees whose printed
+    /// numbers dominate: balanced quotients of 10^5-digit integers (the reviewer's q4 and q5
+    /// coefficients), a printed `/` of two integers with a large common factor (which the parser
+    /// reduces), an unbalanced quotient, and long integers alone. The text of 2 000 quotients of
+    /// 10^3-digit integers, whose characters dominate (`MAX_RESULT_TEXT` and `MAX_RESULT_TREE`
+    /// count them), and a text of small literals are printed for comparison. Run with
+    /// `cargo test --release -p rustmath-symbolic --lib parse_work_calibration -- --ignored
+    /// --nocapture`.
+    #[test]
+    #[ignore = "release measurement"]
+    fn parse_work_calibration() {
+        let pw = |b: u32, e: u32| Integer::from(b).pow(e);
+        let ten = |e: u32| pw(10, e);
+        let int = |n: Integer| Arc::new(Expr::Integer(n));
+        let q = |p: Integer, d: Integer| {
+            Arc::new(Expr::Rational(
+                Rational::new(p, d).expect("a nonzero denominator"),
+            ))
+        };
+        let sum =
+            |items: Vec<Arc<Expr>>| (*balanced_arc(items, BinaryOp::Add).expect("terms")).clone();
+        let rep = |e: Arc<Expr>, k: usize| sum(vec![e; k]);
+        let q4 = q((ten(100) - Integer::from(1)).pow(1050), pw(7, 120_000));
+        let q5 = q((ten(150) - Integer::from(1)).pow(1050), pw(7, 180_000));
+        let div = Arc::new(Expr::Binary(
+            BinaryOp::Div,
+            int(pw(3, 200_000)),
+            int(pw(3, 100_000) * Integer::from(2)),
+        ));
+        let small: Vec<Arc<Expr>> = (1..2001u32)
+            .map(|j| q(ten(1000) + Integer::from(j), pw(3, 2000) + Integer::from(j)))
+            .collect();
+        // one shared node, named 400 000 times
+        let third_x = Arc::new(Expr::Binary(
+            BinaryOp::Add,
+            q(Integer::from(1), Integer::from(3)),
+            Arc::new(Expr::Symbol(crate::symbol::Symbol::new("x"))),
+        ));
+        // (row, its tree, whether its numbers dominate)
+        let rows: Vec<(&str, Expr, bool)> = vec![
+            ("q4 p/q x 4", rep(q4, 4), true),
+            ("q5 p/q x 2", rep(q5, 2), true),
+            ("3^200000 / (2*3^100000) x 2", rep(div, 2), true),
+            (
+                "(10^200000+1)/7 x 4",
+                rep(q(ten(200_000) + Integer::from(1), Integer::from(7)), 4),
+                true,
+            ),
+            (
+                "10^300000-1 x 4",
+                rep(int(ten(300_000) - Integer::from(1)), 4),
+                true,
+            ),
+            ("2000 quotients of 10^3 digits", sum(small), false),
+            ("1/3 + x, 400 000 times", rep(third_x, 400_000), false),
+        ];
+        let mut worst = 0f64;
+        for (what, e, numbers) in rows {
+            let text = e.to_string();
+            let mut memo = TextMemo::default();
+            let units = tree_bound(&e, &mut memo).parse;
+            let t = std::time::Instant::now();
+            let back = crate::parser::parse(&text).expect("the text parses");
+            let secs = t.elapsed().as_secs_f64();
+            drop(back);
+            let ns = secs * 1e9 / units.max(1) as f64;
+            if numbers {
+                worst = worst.max(ns);
+            }
+            eprintln!(
+                "{what}: {} bytes, model {:.3e} units, parse {secs:.3} s, {ns:.3} ns/unit{}",
+                text.len(),
+                units as f64,
+                if numbers {
+                    ""
+                } else {
+                    " (characters dominate)"
+                }
+            );
+        }
+        let cap_secs = worst * MAX_RESULT_PARSE_WORK as f64 / 1e9;
+        eprintln!("worst {worst:.3} ns/unit: MAX_RESULT_PARSE_WORK is about {cap_secs:.1} s");
         assert!(cap_secs < 10.0, "{cap_secs} s at the cap");
     }
 }

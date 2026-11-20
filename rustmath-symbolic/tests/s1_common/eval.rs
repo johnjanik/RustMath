@@ -197,6 +197,13 @@ pub fn eval(root: &Expr) -> Result<Num, String> {
     Ok(memo.remove(&(root as *const Expr)).expect("root evaluated"))
 }
 
+/// S1 request C-1: z = t*I with t < -1 (a zero real part, `canon` makes it +0)
+fn on_lower_imaginary_cut(a: &Num) -> bool {
+    let z = zero().real_part();
+    let m1 = from_rational(&Rational::from(-1)).real_part();
+    a.real_part() == z && a.imag_part() < m1
+}
+
 /// A unary operation on a plain value.
 fn unary(op: &UnaryOp, a: Num) -> Result<Num, String> {
     let v = match op {
@@ -217,6 +224,15 @@ fn unary(op: &UnaryOp, a: Num) -> Result<Num, String> {
         UnaryOp::Sqrt => a.sqrt(),
         UnaryOp::Arcsin => below_cut_above_one(&a).asin(),
         UnaryOp::Arccos => below_cut_above_one(&a).acos(),
+        // S1 request C-1: on the lower cut (an imaginary argument below -I) gp's principal
+        // formulas are the limit from Re < 0, MPC's with a +0 real part the limit from Re > 0:
+        // the odd extension -f(-z) of the upper cut gives gp's value (gp 2.15.4,
+        // realprecision 40: `atan(-3*I)` = -1.5707963267948966192 - 0.34657359027997265471*I,
+        // `asinh(-2*I)` = -1.3169578969248167086 - 1.5707963267948966192*I; MPC gives
+        // 1.5707963267948966192 - 0.34657359027997265471*I and 1.3169578969248167086 -
+        // 1.5707963267948966192*I). On the upper cut and off the cuts both agree.
+        UnaryOp::Arctan if on_lower_imaginary_cut(&a) => -(canon(-a).atan()),
+        UnaryOp::Arcsinh if on_lower_imaginary_cut(&a) => -(canon(-a).asinh()),
         UnaryOp::Arctan => a.atan(),
         UnaryOp::Arcsinh => a.asinh(),
         UnaryOp::Arccosh => a.acosh(),
