@@ -4,18 +4,32 @@ Date: 2026-11-14. Written for a RustMath session that starts cold. Read `docs/HA
 `CLAUDE.md` first, as usual; this file is the brief for one workstream.
 
 The reference data, the Python reference implementation and the paper live in the public
-repository `johnjanik/M23`, branch `claude/blissful-knuth-qla7ym`, pinned here at commit
-`d05475b`. In this file every path that does not start with `rustmath-`, `docs/` or
+repository `johnjanik/M23`. Its default branch is `main`; `claude/blissful-knuth-qla7ym` is the
+work branch. This file is pinned at commit `e0d25b8` of the work branch, the commit of the
+requests (`docs/RUSTMATH_REQUESTS.md` there, `docs/workstreams/m23_golay/REQUESTS.md` here) and
+of `data/a8_frobenius_predictions.json`. It descends from `main` `2d11038`, which holds the WP-F
+data and the paper that RustMath tests against; `data/zeta_X.json`, `data/zeta_L.json` and
+`paper/` are the same at both commits. On 2026-11-20 `main` is at `afc452e`, the merge of PR #3
+of `johnjanik/M23`. That merge brings `5752301` (`m23golay/curve.py` no longer claims absolute
+irreducibility when the bidegrees share a factor; no stored row changes), which `e0d25b8`
+already has. The requests and the a8 file are still only on the work branch. The first pin was
+`d05475b`; a section that uses it says so. In this file a path that starts with `wpf/`, `wpp/`,
+`steiner/` or `c57/` is in `docs/workstreams/m23_golay/` here (the records of the work
+packages). Every other path that does not start with `rustmath-`, `docs/` or
 `PROJECT_TRACKER.md` is relative to a checkout of that repository. Fetch it outside the RustMath
 tree:
 
 ```bash
-git clone --branch claude/blissful-knuth-qla7ym https://github.com/johnjanik/M23 ../M23
+git clone https://github.com/johnjanik/M23 ../M23
+git -C ../M23 checkout e0d25b8
 ```
 
-Nothing from it is vendored into RustMath yet. When a work package starts, copy the JSON files it
-tests against into that crate's `tests/data/` with a note of the source commit. The same file is
-kept in the M23 repository as `docs/RUSTMATH_HANDOFF.md`; this copy is the one to edit.
+When a work package starts, copy the JSON files it tests against into that crate's
+`tests/data/` with a note of the source commit and the sha256. Vendored so far: the WP-F files in
+`rustmath-curves/tests/data/m23/` (Section 3, Status), the Steiner labelling files in
+`rustmath-galois/tests/data/m23/` and the WP-P files in `rustmath-groups/tests/data/m23/` (Status
+blocks of Sections 6 and 4), each with a README. The same file is kept in the M23 repository as
+`docs/RUSTMATH_HANDOFF.md`; this copy is the one to edit.
 
 Three things are wanted from RustMath. Each has reference values computed independently
 (Python/FLINT, cross-checked with PARI and GAP), so each is a test of RustMath as much as a
@@ -48,7 +62,10 @@ Read `paper/golay_m23.pdf` Sections 1, 2 and 4 for the full statements. The mini
   `{2,3,23}`. This is the paper at the owner's main `2d11038`; at `d05475b` it said
   `{2,3,5,23}`. The prime 5 left the set because X has good reduction at 5, by Lemma 9.1 of
   the paper (checked by the owner's classifier and by WP-F: Section 3, Status). Complex
-  conjugation acts as a transvection. No polynomial for `K_W` is known.
+  conjugation acts as a transvection. No polynomial for `K_W` is known. REQUESTS 1.1 (not yet
+  in the paper) strengthens Theorem 4.8: the image of Galois on all of `Jac(X)[2]` is the
+  stabilizer `2^10 : A8` of `W`, so `W` is the only Galois-stable subspace other than 0 and
+  `Jac(X)[2]`.
 - **Conventions.** Permutations act on the right: `x^(gh) = (x^g)^h`. Products are read left
   to right, as in MAGMA and GAP. Published cycles are 1-based; the Python library is 0-based.
   `23A`, `23B` are the classes of the published `g2`, `g3`. Class names of other split pairs
@@ -78,7 +95,10 @@ At the owner's main `2d11038` the two zeta files carry his corrected rows (p = 5
 and, on each row, the singular points found by his classifier (`m23golay/curve.py`). Two files
 are new there: `data/rustmath_wpf_tables.json` (RustMath's WP-F rows as he recorded them) and
 `data/rustmath_crosscheck.json` (his recount of RustMath's rows at 83, 97 and 107). See Section
-3, Status.
+3, Status. At `e0d25b8` the work branch adds `scripts/jac2_frobenius_orbits.py`,
+`scripts/a8_frobenius_predictions.py` and `data/a8_frobenius_predictions.json` (the 14 classes of
+`GL_4(2)` and the predictions of REQUESTS 1.2). The `--json` file of the example `m23_zeta`
+(REQUESTS C-7, Section 3, Status) replaces the hand transcription `data/rustmath_wpf_tables.json`.
 
 External data, not vendored:
 
@@ -340,8 +360,12 @@ Facade, broken or missing at `6e03987`:
   `function_field/function_field_polymod.rs:156`, orders `order_polymod.rs:190` (`count_points`
   `:334` returns `q^n + 1`), Jacobians `jacobian_base.rs:159` (the Frobenius polynomial is a string),
   zeta function `function_field_rational.rs:339` [all facade].
-- Point counts, zeta functions and L-polynomials of curves of genus >= 2: absent. The only point
-  count is the genus 1 routine `EllipticCurve::compute_a_p` (`rustmath-ellipticcurves/src/curve.rs:328`).
+- Point counts, zeta functions and L-polynomials of curves of genus >= 2: only for curves in
+  `P^1 x P^1` with fibre degree 2 to 4, odd `p < 2^16`, `k <= 8` and `p^k < 2^63` (WP-F:
+  `normalization_point_counts` and `FrobeniusPolynomial`, Section 3, Status). Absent for any other
+  curve. The only other point count is the genus 1 routine `EllipticCurve::compute_a_p`
+  (`rustmath-ellipticcurves/src/curve.rs:328`). No class group: what is known of `Jac(F_q)` comes
+  from `P` (its order `P(1)`, and bounds on `Jac[2]`, Section 3, Status).
 - Character tables: tables exist only for `C_n` and `S_3` (`rustmath-groups/src/representation.rs:494`,
   [partial]) and for M23 as data (`m23/atlas.rs:272`, Usable as is). There is no Dixon-Schneider.
   The inner products of T-215 are fixed (Usable as is).
@@ -435,7 +459,7 @@ The pieces that do not exist yet, per package (Section 6 says where they go):
 
 ## 3. WP-F: the Frobenius table
 
-### Status (2026-11-15)
+### Status (2026-11-20)
 
 The WP-F core is done (Section 8, step 1). The owner decided the follow-ups on 2026-11-15:
 F-9 is done (Lemma 9.1 of his paper is the reduction certificate, and the delta-sum certificate
@@ -445,11 +469,22 @@ Of the extensions of 3.3 (see below), 3 and 5 are done; 1 is done by the delta-s
 (no recount on a second model); 2 is done for p = 5, and p = 3 moves to WP-A A0 (F-1). The code
 is on branch `claude/m23-wpf` (base `origin/main` `0d277f0`).
 
+Requests C-5 and C-7 (`REQUESTS.md`) are done (2026-11-20, on `claude/m23-wpf` at `main`
+`88f9174`, not yet committed when this block was written). C-5: the order of Frobenius on
+`Jac[2]` from the rank rule of REQUESTS 1.2 over every useful `k`, with the Weil pairing, the
+type at the eigenvalue 1 and the class on `W` (below). C-7: the example writes one JSON object
+per row (`--json`), which the owner's scripts read unchanged; this is follow-up F-10. C-6 is done
+by the docs step of the same change (the opening paragraph, Section 2, 5.2, 5.3 and 5.7). PR #582
+(`claude/m23-steiner` into `claude/m23-wpf`) needs no closing: it was merged as `b1e09df`.
+
 The records are in `docs/workstreams/m23_golay/wpf/` (its README lists them): the WP-F design,
 reviews, implementation report, docs check and minor fixes in `design/` and `impl/`, and the
 F-9 design, design review, implementation report, code review and the check of its minor fixes
-in `followup_f9/`. The PARI/GP scripts behind the small-curve and F-9 tests, with their output,
-are in `wpf/gp/`.
+in `followup_f9/`. The C-5/C-7 design, its review, the report, the two code reviews and the
+check of the minor fixes are in `docs/workstreams/m23_golay/c57/` (`design/`, `impl/`, with a
+README). The PARI/GP scripts behind the small-curve and F-9 tests, with their output, are in
+`wpf/gp/`; the PARI/GP and GAP scripts of C-5 are vendored with their outputs in
+`rustmath-curves/tests/data/two_torsion/`.
 
 Code:
 
@@ -459,14 +494,26 @@ Code:
   `singular_locus`, `local.rs:200` the local classifier, `irreducible.rs:481`
   `absolute_irreducibility`, `certify.rs:231` `certify` and `:449` `normalization_point_counts`,
   `form.rs:183` `reduce_primitive`.
-- `rustmath-curves/src/weil.rs:112` `FrobeniusPolynomial::from_point_counts`, `:281` `is_weil`
-  (exact, by Sturm sequences), `:347` `reciprocal_halves_mod2`, `:398`
-  `two_torsion_frobenius_order`.
+- `rustmath-curves/src/weil.rs:133` `FrobeniusPolynomial::from_point_counts`, `:276` `is_weil`
+  (exact, by Sturm sequences), `:342` `reciprocal_halves_mod2`, `:394` `base_change` (the
+  Frobenius polynomial over `F_(p^k)`), `:404` `jacobian_order` and `:410`
+  `twisted_jacobian_order` (`#Jac(F_(p^k)) = Res(P, x^k - 1)` and its quadratic twist), `:430`
+  `two_torsion_analysis`, `:455` `two_torsion_frobenius_order` (C-5).
+- `rustmath-curves/src/weil/two_torsion.rs:539` `analyse` (C-5): the module types of `Jac[2]`
+  over `F_2[x]` allowed by the rank bounds `dim ker(F^k -+ 1) <= v_2 Res(P, x^k -+ 1)` for every
+  `k | N_max` (computed modulo `2^128`, `:492`) and by the Weil pairing (S1, S2, `:305`); `:749`
+  `lagrangian_types`, the types of an `F`-stable Lagrangian by the Littlewood-Richardson
+  criterion (coefficients from `rustmath-symmetricfunctions`). The M23 layer
+  (`rustmath-curves/tests/common/m23.rs`, shared with the example): `:898` `jac2_of` (the order,
+  the types at 1, the class on `W` in `GL_4(2)`), `:1265` `row_json`, `:1443` `table_json`.
 - Tests: `rustmath-curves/tests/m23_zeta.rs`, `rustmath-curves/tests/biprojective_small_curves.rs`,
-  `rustmath-finitefields/tests/small_field.rs`. Data: `rustmath-curves/tests/data/m23/`
+  `rustmath-finitefields/tests/small_field.rs`, and for C-5 `rustmath-curves/tests/two_torsion.rs`
+  with the unit tests of `weil.rs` and `weil/two_torsion.rs`. Data: `rustmath-curves/tests/data/m23/`
   (`zeta_X.json` and `zeta_L.json` from the owner's main `2d11038`, with his corrected rows,
-  `h62.json` from `d05475b`, and Le Lay's CC0 form G, with a README). `polynomial_F.m` and
-  `polynomial_calF.m` are read only from `$M23ISGALOIS`.
+  `h62.json` from `d05475b`, `a8_frobenius_predictions.json` from `e0d25b8`, and Le Lay's CC0
+  form G, with a README) and `rustmath-curves/tests/data/two_torsion/` (PARI/GP and GAP scripts
+  with their outputs, README with sha256). `polynomial_F.m` and `polynomial_calF.m` are read only
+  from `$M23ISGALOIS`.
 
 The counts of X run on G, which is F after a Moebius change of `V`. The test
 `env_f_equals_g_by_mobius` checks `F o M = c G` exactly. Two more integral models, G7 and G13, are
@@ -483,6 +530,12 @@ Reproduced (against the owner's main `2d11038`):
 - The anchor at 53: 45, 52, 57, all three Decided (`env_anchor_53`).
 - The owner's recount of RustMath's rows at 83, 97 and 107 (`data/rustmath_crosscheck.json`;
   `full_x_owner_recount_83_97_107`, release; the four `full_` tests take about 7 min together).
+- The owner's predictions at `e0d25b8` (`data/a8_frobenius_predictions.json`, C-5): on the 29 X
+  rows `#Jac(F_p) = P(1)`, its 2-adic valuation, the pair `Q, Q^rev`, every order his rule
+  decides, and the cycle types on `W` (equal to his, except at 107 and 109, where RustMath's
+  set is a part of his; `c5_matches_the_owners_predictions`). His scripts `crosscheck_rustmath.py` and
+  `a8_frobenius_predictions.py` read the C-7 file with no change: EQUAL at 5, 7, 11, 13, 17, 19,
+  and the a8 JSON they write equals his committed one.
 - The derived checks of 3.1 step 6 on every counted row: the exact Weil test,
   `P(chi(p)) = P(chi(p) p) = 0 mod 23` and `P mod 2 = Q Q^rev`
   (`reference_polynomials_pass_the_derived_checks` on the reference rows; `full_x_table_k4`,
@@ -535,8 +588,59 @@ The full tables, with times, are in `wpf/impl/WPF.md` Section 3 (counts) and
 `wpf/followup_f9/F9_impl.md` Section 3 (statuses after F-9, with the irreducibility witness and
 the owner's singular-point labels of every row). The counts did not change.
 
-Order of Frobenius on `Jac(X)[2]` (3.3 item 5): 15 and Decided at X for p = 11, 31, 79, 97 and at
-L for (53, 41), (67, 15). Elsewhere only bounds (`weil.rs:398`, `two_torsion_orders`).
+Order of Frobenius on `Jac(X)[2]` (3.3 item 5; REQUESTS C-5, done). The rule of REQUESTS 1.2,
+`dim ker(F^k - 1 on J[2]) <= v_2(#Jac(F_(p^k)))`, is applied for every `k` dividing the largest
+possible order `N_max`, with the same bound for the quadratic twist (`F^k + 1`,
+`v_2(#Jac'(F_(p^k)))`) and the constraints of the Weil pairing. `P` decides a value only when
+every `F_2[x]`-module type of `J[2]` allowed by all of them gives the same value. Every counted
+row is Decided (Lemma 9.1), so a decided order is Decided for the curve; the genus 4 is a trusted
+input, and the columns on `W` rest on the trusted hypothesis `H_W` (an `F`-stable Lagrangian
+with characteristic polynomial `Q` or `Q^rev`, HJLPPZ Theorem 4.8), written into every JSON row.
+
+- X, Decided: 15 at 11, 31, 79, 97 (`P mod 2` squarefree, unchanged); 14 at 17, 73, 127, 12 at
+  43, 103, 113 and 8 at 89 (`v2 #Jac(F_p) = 1`, the seven values of C-5); 10 at 59, 67, 71
+  (`v2 #Jac(F_p^5) = 4`) and 8 at 109 (`v2 #Jac'(F_p^4) = 6`), beyond REQUESTS 1.2.
+- X, Unresolved, with the candidates: 7 or 14 at 5, 7, 13, 19, 29, 37, 47, 83; 6 or 12 at 41,
+  53, 61, 131; 3, 6 or 12 at 101; 4 or 8 at 107 (`v2 #Jac'(F_p^2) = 6` removes 1 and 2).
+- The class on `W`, as in REQUESTS 1.2: `2 6` at 43, 103, 113 and `1^2 2 4` at 89 Decided;
+  `1 7`, `3 5`, `1^3 5` wherever `Q` forces them. No class is decided beyond 1.2. At 109 it is
+  `1^2 2 4` or `4^2` (order 4 on `W` either way), at 107 one of `1^2 2 4`, `1^4 2^2`, `2^4`,
+  `4^2` (not the identity). Which of `Q`, `Q^rev` is the polynomial on `W` stays open (F-7).
+- At 17, 73, 127 the type of `J[2]` at the eigenvalue 1 is one Jordan block of size 2, as
+  REQUESTS 1.1 step 2 needs.
+- L, Decided: 15 at (53, 41), (67, 15); 14 at (103, 93); 12 at (47, 13); 8 at (53, 21),
+  (79, 46) (`v2 #Jac(F_p) = 1`) and at (41, 8), (89, 69) (`v2 #Jac'(F_p^4) = 6`). The other 17
+  counted L rows are Unresolved, with their candidates.
+- The constraints of the Weil pairing never change the set of possible orders (a lemma of design
+  review 1), and on these 54 rows they change no class on `W` either (measured). They only
+  shorten the lists of types of `J[2]` at 1, on 16 rows.
+
+The table of 5.2 is REQUESTS 1.2 regenerated from this run, with the changes marked. Every row,
+with its bounds and types, X and L: `c57/impl/C57.md` Section 4. Classes of result
+(REQUESTS 4): the seven values of C-5 and every value of 1.2 are reproduced from reference (the
+owner's `a8_frobenius_predictions.json`); the decisions beyond 1.2 and the two narrowings (X 107,
+L (127, 74)) are new and verified by two methods (the Rust code against the design's prototype
+on all 54 rows, design review 1's computation from the classes of `Sp(8, 2)`, and every
+valuation equal to PARI/GP's). Their input `P` is reproduced from reference at X 59, 67, 71, 107
+and L (41, 8), and comes from RustMath's own counts (derived checks, Decided by Lemma 9.1) at
+X 109, L (89, 69) and L (127, 74). Soundness is tested on 3098 hyperelliptic curves with known
+`Jac[2]` and on every class of `Sp(2n, 2)`, `2n <= 8`.
+Not used: the `Z_2[F]`-lattices of `Q_2[x]/(P)`, so some open rows may still be decidable from
+`P` (follow-up C5-1 below). Code: `weil.rs:455`, `weil/two_torsion.rs:539`.
+
+The JSON file (C-7): `--json <file>` writes, at the top, the format `rustmath-m23-zeta/1`, the
+commit and the state of the tree when the run started, the command and the exact `argv`, the
+profile, the models and the trusted hypotheses, and `complete` (false until the last row); then
+one object per row, under `X` or `L`, with every key of the owner's `zeta_X.json` (and
+`zeta_L.json`, with `s0`), and `model`, `rustmath_status`, `irreducibility`, `jac2` (the order
+with its status, reason and bounds, the types at 1, the classes on `W` with their cycle types on
+8 letters and on 15 points), the trusted hypotheses and the legacy keys `a`, `P_mod_2`, `Q`. A
+refused prime is a row with `status: "refused"` and the refusal. For the owner: `status` now has
+his meaning (`ok`, `refused`) and RustMath's status is `rustmath_status`; the key
+`two_torsion_order` of his transcription is replaced by `jac2`; a run writes one cover (a
+one-line merge is in `c57/impl/C57.md` Section 3). His `crosscheck_rustmath.py` reads the
+fixed path `data/rustmath_wpf_tables.json`, so the X file is saved under that name; no change to
+his scripts is needed.
 
 Extensions of 3.3:
 
@@ -548,15 +652,23 @@ Extensions of 3.3:
    waits for the model of WP-A step A0 (F-1).
 3. More primes: X to 131, L to 127.
 4. Q versus Q^rev: not attempted (WP-A, F-7).
-5. Done as above.
+5. Done as above, with the rank rule of C-5.
 
 Follow-ups (`wpf/impl/WPF.md`, Section 7, and `wpf/followup_f9/F9_impl.md`, Section 7): F-1
 p = 3 on the model of WP-A step A0; F-2 Le Lay's model as a cross-check; F-4 a faster quartic
 root count above p = 131; F-5 closed (p = 23 refused for good, the owner's decision);
 F-6 a CC0 route for the L covers; F-7 Q versus Q^rev; F-8 done by the owner at `2d11038` (data
-and paper); F-9 done; F-10 JSON output of the example; F-11 a test of an ordinary m-fold point
-over a residue field of degree > 1 (the `A_k` part is closed: degree-3 nodes, A3 at a degree-2
-place and A15, in both branch classes, `biprojective_small_curves.rs`).
+and paper); F-9 done; F-10 (JSON output of the example) done by C-7; F-11 a test of an ordinary
+m-fold point over a residue field of degree > 1 (the `A_k` part is closed: degree-3 nodes, A3 at
+a degree-2 place and A15, in both branch classes, `biprojective_small_curves.rs`).
+
+Follow-ups of C-5 and C-7 (`c57/impl/C57.md`, Sections 9 and 10.3): C5-1 the exact
+constraint from `P`, the `Z_2[F]`-stable lattices of `Q_2[x]/(P)` (design 2.8), which may decide
+more rows; C5-2 `Jac[4]` or the 2-Sylow subgroup of `Jac(F_(p^k))`, which needs more than `P`
+(a class group computation); C5-3 a Rust computation of the 54 rows from the classes of
+`Sp(8, 2)` (design review 1, m3; review 1's script did it and agrees); C5-4 in the text output
+the order column of an Unresolved row reads `for every k | 14`, whose ` | ` is also the column
+separator (the check of the minor fixes, o1; the JSON is unaffected). Q versus `Q^rev` stays F-7.
 
 The six minor items of the code review (`wpf/impl/WPF.review1.md`, Section 3) are fixed
 (`wpf/impl/WPF_minors.md`): a test of the Unclassified path (`unclassified_e6_points`), the cost
@@ -568,21 +680,28 @@ Frobenius on `Jac[2]` above `u64::MAX` (possible from genus 64 on) panics; neith
 
 Commands:
 
-- `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 10 s);
+- `cargo test -p rustmath-curves --test m23_zeta` (fast set, debug, about 11 s; the eight C-5 and
+  C-7 tests among them);
+- `cargo test -p rustmath-curves --test two_torsion` (debug, about 2 s) and
+  `cargo test -p rustmath-curves --lib weil` (the unit tests of `weil.rs` and
+  `weil/two_torsion.rs`), and `cargo test --release -p rustmath-curves --lib -- --ignored
+  weil::two_torsion` (the Littlewood-Richardson checks to size 8, about 3 s);
 - `cargo test -p rustmath-curves --test biprojective_small_curves` (debug, about 2 s), and
   `cargo test --release -p rustmath-curves --test biprojective_small_curves -- --ignored`
   (`node_of_degree_3_up_to_k6`, about 2 s);
 - `cargo test --release -p rustmath-curves --test m23_zeta -- --ignored full_`;
 - `M23ISGALOIS=<checkout of shaowuz/m23isgalois> cargo test --release -p rustmath-curves --test m23_zeta -- --ignored env_`;
 - `cargo run --release -p rustmath-curves --example m23_zeta -- <pmin> <pmax> <kmax>`, with
-  `--cover L` for the covers over L and `--reference-rule` for the counts of the
-  assumed-unibranch rule (never certified).
+  `--cover L` for the covers over L, `--reference-rule` for the counts of the
+  assumed-unibranch rule (never certified), and `--json <file>` for the JSON file of C-7. With
+  `kmax >= 4` each row also prints the order on `Jac[2]` with its status and reason (for an open
+  order, the bounds tried), the types of `J[2]` and of `W` at 1, and the cycle types on `W`
+  (8 letters, 15 points). The run of this change: `5 131 4` (X, 40 min with 2 threads under
+  load) and `5 127 4 --cover L` (34 min).
 
-Three older lines of this file are now out of date. The JSON files are vendored (the opening
-paragraph says nothing is). WP-F uses the owner's main `2d11038` for `data/zeta_X.json`,
-`data/zeta_L.json` and the paper, not the pinned `d05475b`. Section 2's "Point counts, zeta
-functions and L-polynomials of curves of genus >= 2: absent" no longer holds for curves in
-`P^1 x P^1` with fibre degree 2 to 4, odd `p < 2^16`, `k <= 8` and `p^k < 2^63`.
+The three older lines that this block listed as out of date are corrected (REQUESTS C-6): the
+opening paragraph (the pin, the clone line, what is vendored) and the line of Section 2 on point
+counts.
 
 ### 3.1 Specification
 
@@ -690,8 +809,10 @@ Published anchor: at 53 the three degree-one primes give 45, 57, 52 points over 
 4. **Resolve `Q` versus `Q^rev`.** The table gives the characteristic polynomial of Frobenius
    on `W` only up to reversal. It is decided by WP-A (the degree 15 polynomial distinguishes
    points from hyperplanes).
-5. **Order of Frobenius on all of `Jac(X)[2]`.** Needed to choose the working prime in WP-A.
-   When `P_p mod 2` is squarefree (p = 11, 31, 79) the order is 15.
+5. **Order of Frobenius on all of `Jac(X)[2]`.** (Status: done, with the rank rule of REQUESTS
+   C-5; Decided at 15 of the 29 primes of X, Section 3, Status, and table 5.2.) Needed to choose
+   the working prime in WP-A. When `P_p mod 2` is squarefree (p = 11, 31, 79, 97) the order is
+   15.
 
 Suggested home: a new module `rustmath-curves/src/nodal_biprojective.rs` (point counts on a
 nodal curve in P^1 x P^1 given by a bihomogeneous form) and `rustmath-curves/src/weil.rs`
@@ -1063,41 +1184,70 @@ Whatever route is used, the result is a monic `g8` in `Z[x]` of degree 8 (and `g
 such that:
 
 1. `g8` is irreducible with square discriminant, and its factorization mod p has the cycle type
-   in the last column of the table below for every p listed. Cycle types `1 7` and `3 5` at two
-   primes, together with the square discriminant, prove that the group is A8 (the only maximal
-   subgroup of A8 containing an element of order 15 is `(A5 x 3):2`, of order 360).
+   in the column "on 8 letters" of the table below for every p listed (one of the types where the
+   column gives several). Cycle types `1 7` and `3 5` at two primes, together with the square
+   discriminant, prove that the group is A8 (the only maximal subgroup of A8 containing an
+   element of order 15 is `(A5 x 3):2`, of order 360).
 2. `g8` has no real root (complex conjugation is a transvection, cycle type `2^4`).
 3. The field discriminant of `g8` is divisible only by primes in `{2, 3, 23}` (5 is a prime of
    good reduction of X: Section 3, Status).
 4. `g15 mod p` has the factorization type of the matching element of `GL_4(2)` on the 15
-   hyperplanes of `F_2^4`.
+   hyperplanes of `F_2^4` (the column "on 15"; the type on hyperplanes equals the type on points).
 
-Frobenius on `W`: characteristic polynomial `Q_p` up to reversal, and cycle type on 8 letters.
+Frobenius on `J[2]` and on `W` at the 29 primes from 5 to 131 other than 23 (all of good
+reduction, Lemma 9.1). This is the table of REQUESTS 1.2 (p = 5 added, primes to 131; it
+replaces the 18 rows of `d05475b`), regenerated from the X file of the C-7 run
+(`c57/impl/C57.md` Section 4.3; the column `v` equals 1.2 on every row). `Q_p` is the smaller
+of `Q` and `Q^rev`; which of the two is the characteristic polynomial on `W` is open
+(3.3 item 4). `v = v_2(#Jac(X)(F_p)) = v_2(P_p(1))`. Bold: decided by the rank rule (REQUESTS
+1.2 and C-5; Section 3, Status). "RM": a row counted by RustMath only. The last column gives
+RustMath's status and the bound that decides it (`v2 #Jac(F_p^5) = 4` is the 2-adic valuation
+of `#Jac(X)(F_(p^5))`, `#Jac'` the quadratic twist), and marks where it decides more than 1.2:
+the order 10 at 59, 67, 71 and 8 at 109, and the narrowed classes at 107 and 109. Where 1.2 says
+"open" at 41, 53, 61, 101 and 131, the column gives the set that the same rule allows. Every row
+is Decided (Lemma 9.1), the genus is a trusted input, and the classes on `W` rest on `H_W`
+(Section 3, Status).
 
-| p | Q_p (one of the two) | order of the semisimple part | cycle type on 8 letters |
-|---:|---|---:|---|
-| 7 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 11 | `x^4+x+1` | 15 | `3 5` |
-| 13 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 17 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 19 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 29 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 31 | `x^4+x+1` | 15 | `3 5` |
-| 37 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 41 | `x^4+x^3+x+1` | 3 | `1^2 3^2 or 2 6` |
-| 43 | `x^4+x^3+x+1` | 3 | `1^2 3^2 or 2 6` |
-| 47 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 53 | `x^4+x^3+x+1` | 3 | `1^2 3^2 or 2 6` |
-| 59 | `x^4+x^3+x^2+x+1` | 5 | `1^3 5` |
-| 61 | `x^4+x^3+x+1` | 3 | `1^2 3^2 or 2 6` |
-| 67 | `x^4+x^3+x^2+x+1` | 5 | `1^3 5` |
-| 71 | `x^4+x^3+x^2+x+1` | 5 | `1^3 5` |
-| 73 | `x^4+x^2+x+1` | 7 | `1 7` |
-| 79 | `x^4+x+1` | 15 | `3 5` |
+| p | `Q_p` up to reversal | `v` | order on `J[2]` | on 8 letters | on 15 points or hyperplanes | rows | RustMath (C-5): the order on `J[2]` |
+|---:|---|---:|---:|---|---|---|---|
+| 5 | `(x+1)(x^3+x^2+1)` | 2 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 7 | `(x+1)(x^3+x^2+1)` | 5 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 11 | `x^4+x+1` | 0 | 15 | `3 5` | `15` | both | Decided (`P mod 2` squarefree) |
+| 13 | `(x+1)(x^3+x^2+1)` | 2 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 17 | `(x+1)(x^3+x^2+1)` | 1 | **14** | `1 7` | `1 7^2` | both | Decided (`v2 #Jac(F_p) = 1`) |
+| 19 | `(x+1)(x^3+x^2+1)` | 2 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 29 | `(x+1)(x^3+x^2+1)` | 3 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 31 | `x^4+x+1` | 0 | 15 | `3 5` | `15` | both | Decided (`P mod 2` squarefree) |
+| 37 | `(x+1)(x^3+x^2+1)` | 3 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 41 | `(x+1)^2(x^2+x+1)` | 2 | 6 or 12 | `1^2 3^2` or `2 6` | `1^3 3^4` or `1 2 3^2 6` | both | Unresolved (1.2: open) |
+| 43 | `(x+1)^2(x^2+x+1)` | 1 | **12** | **`2 6`** | **`1 2 3^2 6`** | both | Decided (`v2 #Jac(F_p) = 1`) |
+| 47 | `(x+1)(x^3+x^2+1)` | 2 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 53 | `(x+1)^2(x^2+x+1)` | 2 | 6 or 12 | `1^2 3^2` or `2 6` | `1^3 3^4` or `1 2 3^2 6` | both | Unresolved (1.2: open) |
+| 59 | `x^4+x^3+x^2+x+1` | 0 | **10** | `1^3 5` | `5^3` | both | Decided (`v2 #Jac(F_p^5) = 4`); **beyond 1.2** (5 or 10) |
+| 61 | `(x+1)^2(x^2+x+1)` | 3 | 6 or 12 | `1^2 3^2` or `2 6` | `1^3 3^4` or `1 2 3^2 6` | both | Unresolved (1.2: open) |
+| 67 | `x^4+x^3+x^2+x+1` | 0 | **10** | `1^3 5` | `5^3` | both | Decided (`v2 #Jac(F_p^5) = 4`); **beyond 1.2** (5 or 10) |
+| 71 | `x^4+x^3+x^2+x+1` | 0 | **10** | `1^3 5` | `5^3` | both | Decided (`v2 #Jac(F_p^5) = 4`); **beyond 1.2** (5 or 10) |
+| 73 | `(x+1)(x^3+x^2+1)` | 1 | **14** | `1 7` | `1 7^2` | both | Decided (`v2 #Jac(F_p) = 1`) |
+| 79 | `x^4+x+1` | 0 | 15 | `3 5` | `15` | both | Decided (`P mod 2` squarefree) |
+| 83 | `(x+1)(x^3+x^2+1)` | 2 | 7 or 14 | `1 7` | `1 7^2` | both | Unresolved |
+| 89 | `(x+1)^4` | 1 | **8** | **`1^2 2 4`** | **`1 2 4^3`** | RM | Decided (`v2 #Jac(F_p) = 1`) |
+| 97 | `x^4+x+1` | 0 | 15 | `3 5` | `15` | both | Decided (`P mod 2` squarefree) |
+| 101 | `(x+1)^2(x^2+x+1)` | 4 | 3, 6 or 12 | `1^2 3^2` or `2 6` | `1^3 3^4` or `1 2 3^2 6` | RM | Unresolved (1.2: open) |
+| 103 | `(x+1)^2(x^2+x+1)` | 1 | **12** | **`2 6`** | **`1 2 3^2 6`** | RM | Decided (`v2 #Jac(F_p) = 1`) |
+| 107 | `(x+1)^4` | 9 | 4 or 8 | `1^2 2 4`, `1^4 2^2`, `2^4` or `4^2` | `1 2 4^3`, `1^3 2^6`, `1^7 2^4` or `1^3 2^2 4^2` | both | Unresolved; **narrowed** (1.2: open, one of the 5 unipotent classes; `v2 #Jac'(F_p^2) = 6` removes the orders 1, 2 and the identity on `W`) |
+| 109 | `(x+1)^4` | 6 | **8** | `1^2 2 4` or `4^2` | `1 2 4^3` or `1^3 2^2 4^2` | RM | Decided (`v2 #Jac'(F_p^4) = 6`); **beyond 1.2** (open, one of the 5 unipotent classes); order 4 on `W` |
+| 113 | `(x+1)^2(x^2+x+1)` | 1 | **12** | **`2 6`** | **`1 2 3^2 6`** | RM | Decided (`v2 #Jac(F_p) = 1`) |
+| 127 | `(x+1)(x^3+x^2+1)` | 1 | **14** | `1 7` | `1 7^2` | RM | Decided (`v2 #Jac(F_p) = 1`) |
+| 131 | `(x+1)^2(x^2+x+1)` | 3 | 6 or 12 | `1^2 3^2` or `2 6` | `1^3 3^4` or `1 2 3^2 6` | RM | Unresolved (1.2: open) |
 
-How the last column follows from `Q_p`: irreducible quartic of order 15 gives `3 5`;
-`(x+1)(x^3+x+1)` or its reverse gives `1 7`; `x^4+x^3+x^2+x+1` gives `1^3 5`;
-`(x+1)^2(x^2+x+1)` gives `1^2 3^2` or `2 6`.
+How the class on `W` follows from `Q_p` and the type of Frobenius at the eigenvalue 1: an
+irreducible quartic of order 15 gives `3 5`; `(x+1)(x^3+x+1)` or its reverse gives `1 7`;
+`x^4+x^3+x^2+x+1` gives `1^3 5`; `(x+1)^2(x^2+x+1)` gives `1^2 3^2` (semisimple on `W`) or
+`2 6` (one Jordan block of size 2); `(x+1)^4` gives one of the five unipotent classes, by the
+Jordan type on `W`. The 14 classes of `GL_4(2)` with their cycle types are in REQUESTS 1.2 and
+in `rustmath-curves/tests/data/m23/a8_frobenius_predictions.json` (the owner's file at
+`e0d25b8`). The decided classes `2 6` at 43, 103, 113 and `1^2 2 4` at 89 are the strongest
+tests: an A8 field chosen at random matches each with probability 1/6 and 1/8 (REQUESTS E-3).
 
 A rigorous link between a candidate `g15` and `K_W` needs more than these tests; see 5.6.
 
@@ -1150,6 +1300,16 @@ Predictions that test A1 before anything else is built:
 `(x^4+x+1)(x^4+x^3+1)`, without eigenvalue 1, so it has one fixed point on `Theta` and 17 orbits
 of length 15 on the rest; 120 = 8 * 15 and 135 = 9 * 15.)
 
+A second prediction, at a prime of order 14 (REQUESTS E-4): at p = 17, 73 or 127 Frobenius has
+order 14 on `J[2]`, with one Jordan block of size 2 for the eigenvalue 1 (REQUESTS 1.1; Decided
+by C-5, Section 3, Status). Its orbits on the 120 tritangent planes then have lengths
+`1, 7^9, 14^4`: one rational plane, nine orbits of length 7 and four of length 14, so 64 planes
+are defined over `F_(p^7)` and 56 only over `F_(p^14)` (checked by
+`scripts/jac2_frobenius_orbits.py`). Order 7 on `J[2]` would give `1, 7^17`. This tests
+REQUESTS 1.1 without going through `#Jac(F_p)`. First check that the canonical quadric has rank
+4 modulo the chosen prime; if it has rank 3 there (a vanishing theta-null of the reduction), take
+another of the three primes.
+
 **A2. The octads.** Let `phi` be Frobenius, `O_1, ..., O_8` the eight orbits. `J[2]` has exactly
 two `phi`-stable subspaces of dimension 4, `U = ker(phi^4 + phi + 1)` and
 `U' = ker(phi^4 + phi^3 + 1)`, and `W` is one of them. A coset of `W` that is not `Theta_0`
@@ -1180,9 +1340,13 @@ determined mod p.
 `g15(z) = product over the 15 octads of (z - tau_B)`. Its coefficients are fixed by Frobenius, so
 they lie in `Z/p^N`.
 
-Which of `U`, `U'` is `W`: exactly one of the two block systems is stable under all of Galois
-(or both, if `J[2]` splits as a Galois module, which is not known). For the right one the
-coefficients are rational numbers; for the wrong one they are not. This is the same dichotomy,
+Which of `U`, `U'` is `W`: exactly one of the two block systems is stable under all of Galois.
+The image of Galois on `J[2]` is the whole stabilizer `2^10 : A8` of `W` in `Sp_8(F_2)`
+(REQUESTS 1.1, a deduction from the certified rows at 17, 73 and 127, not yet in the paper), so
+`W` is the only Galois-stable subspace of `J[2]` other than 0 and `J[2]`, and `J[2]` does not
+split as `W + W^dual`. The orbit lengths `1, 7^9, 14^4` of A1 at p = 17 check this on the planes
+(REQUESTS E-4). For the right block system the coefficients are rational numbers; for the wrong
+one they are not. This is the same dichotomy,
 with the same kind of proof, as the Steiner labelling of roots (paper, Proposition 5.1):
 reconstruct rationals from `Z/p^N`, increase `N` until stable, and confirm at a second prime
 (79 if the first was 31), where the computation is independent. Then reduce `g15` with polred.
@@ -1260,8 +1424,10 @@ primes. That is strong evidence, not a proof that the field is `K_W`. For a proo
   the two block systems) are there so that a wrong step fails loudly.
 - The Groebner computation in A1 is the main cost. If it is too slow over `F_p`, first project:
   eliminate to a single coordinate of the dual space and factor a degree 240 polynomial.
-- If `J[2]` is a split extension, both block systems are rational. That would be a new fact about
-  X (a second rational Lagrangian) and both give the same field `K_W`.
+- `J[2]` does not split as a Galois module (REQUESTS 1.1), so exactly one block system is
+  rational; the case of two rational block systems cannot happen. If A4 finds rational
+  coefficients for both, a step is wrong. The E-4 prediction of A1 (orbit lengths `1, 7^9, 14^4`
+  at p = 17, 73 or 127; `1, 7^17` would mean order 7 on `J[2]`) tests REQUESTS 1.1 before A4.
 - The squareness test assumes the planes are in general position with respect to the evaluation
   points; skip points where a linear form vanishes.
 
@@ -1316,7 +1482,7 @@ Code (four crates, as the design planned):
 - Data: `rustmath-galois/tests/data/m23/` with a README (sources, licences, sha256): the owner's
   `golay_resolvents.json` with its `"f"` fields removed, `frobenius_signs.json`, Le Lay's CC0
   specialization at `T = 2`, and reference values for it. f1 and f2 are read only from
-  `$M23ISGALOIS`. So the opening paragraph's "Nothing from it is vendored" is out of date here too.
+  `$M23ISGALOIS`. The opening paragraph lists this directory among the vendored data.
 
 How it decides. The roots are lifted in `GR(p^N, f)` at an inert prime (29 for f1 and f2). `T5`
 is computed for both cyclic systems. With `p^N > 2 B5` (`B5` a proven bound), exactly one
