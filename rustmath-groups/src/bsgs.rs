@@ -12,7 +12,11 @@
 //! - **order**: `|G| = ∏ᵢ |b_i^{G^{(i)}}|` (orbit–stabilizer, telescoping);
 //! - **membership**: sifting/stripping `g` through the transversals — `g ∈ G`
 //!   iff every base image lies in the level orbit and the final residue is the
-//!   identity.
+//!   identity;
+//! - **enumeration**: every element is uniquely `u_0 o u_1 o ... o u_{k-1}` with `u_i`
+//!   in the level-`i` transversal, so
+//!   [`for_each_element`](StabilizerChain::for_each_element) visits each element once
+//!   (MAGMA ch. 58, iteration over a permutation group with a BSGS).
 //!
 //! The construction here is the classical deterministic Schreier–Sims
 //! (Sims 1970; Holt–Eick–O'Brien, *Handbook of Computational Group Theory*,
@@ -309,6 +313,92 @@ impl StabilizerChain {
     pub fn degree(&self) -> usize {
         self.degree
     }
+
+    /// The number of levels of the chain (the length of the base).
+    pub fn num_levels(&self) -> usize {
+        self.levels.len()
+    }
+
+    /// The orbit `b_i^{G^{(i)}}` of level `i`, in the breadth-first order in which the
+    /// transversal was built (the base point first). An empty slice for a level out of range.
+    pub fn orbit(&self, level: usize) -> &[usize] {
+        self.levels.get(level).map_or(&[], |l| l.orbit.as_slice())
+    }
+
+    /// The transversal element `u` of level `i` with `u(b_i) = point` (image-list convention),
+    /// or `None` if `point` is not in the level orbit or the level is out of range.
+    pub fn transversal_element(&self, level: usize, point: usize) -> Option<&[usize]> {
+        self.levels.get(level)?.transversal.get(point)?.as_deref()
+    }
+
+    /// Calls `f` once on every element of the group, as an image list.
+    ///
+    /// Every element is uniquely `u_0 o u_1 o ... o u_{k-1}` (apply `u_{k-1}` first), with
+    /// `u_i` in the transversal of level `i`. This is the factorization that sifting computes
+    /// (Holt, Eick, O'Brien 2005, 4.4). The loop is an odometer over the transversals in orbit
+    /// order, with one image-list buffer per level: when level `l` advances, only the prefixes
+    /// of the levels below `l` are recomputed. Time `O(|G| n)` at worst, memory `O(k n)`.
+    /// The trivial group gives the identity once.
+    ///
+    /// ```
+    /// use rustmath_groups::bsgs::StabilizerChain;
+    ///
+    /// let s3 = StabilizerChain::new(&[vec![1, 0, 2], vec![1, 2, 0]], 3).unwrap();
+    /// let mut n = 0;
+    /// s3.for_each_element(|g| {
+    ///     assert!(s3.contains(g));
+    ///     n += 1;
+    /// });
+    /// assert_eq!(n, 6);
+    /// ```
+    pub fn for_each_element(&self, mut f: impl FnMut(&[usize])) {
+        let n = self.degree;
+        let k = self.levels.len();
+        // The transversal elements of each level, in orbit order.
+        let trans: Vec<Vec<&[usize]>> = self
+            .levels
+            .iter()
+            .map(|l| {
+                l.orbit
+                    .iter()
+                    .map(|&p| {
+                        l.transversal[p]
+                            .as_deref()
+                            .expect("orbit point has a transversal entry")
+                    })
+                    .collect()
+            })
+            .collect();
+        // prefix[l] = u_0 o ... o u_{l-1}; prefix[0] is the identity.
+        let mut prefix: Vec<Vec<usize>> = vec![(0..n).collect(); k + 1];
+        let mut idx = vec![0usize; k];
+        let mut dirty = 0usize;
+        loop {
+            for l in dirty..k {
+                let (lo, hi) = prefix.split_at_mut(l + 1);
+                let p = &lo[l];
+                let u = trans[l][idx[l]];
+                for (out, &ux) in hi[0].iter_mut().zip(u) {
+                    *out = p[ux];
+                }
+            }
+            f(&prefix[k]);
+            // Advance the odometer, the last level fastest.
+            let mut l = k;
+            loop {
+                if l == 0 {
+                    return;
+                }
+                l -= 1;
+                idx[l] += 1;
+                if idx[l] < trans[l].len() {
+                    break;
+                }
+                idx[l] = 0;
+            }
+            dirty = l;
+        }
+    }
 }
 
 /// Order of `⟨gens⟩ ≤ Sym({0,…,degree−1})` — the simple entry point.
@@ -516,5 +606,69 @@ mod tests {
         let a23: Perm = mathieu_a()[..23].to_vec();
         let b23: Perm = mathieu_b()[..23].to_vec();
         assert_eq!(ord(&[a23, b23], 23), "10200960");
+    }
+
+    /// Enumerates the group of `chain` and checks: the count is the order, the elements are
+    /// distinct, and each is a member.
+    fn check_enumeration(chain: &StabilizerChain, order: usize) {
+        let mut seen = std::collections::HashSet::new();
+        chain.for_each_element(|g| {
+            assert!(chain.contains(g), "enumerated element {g:?} is a member");
+            assert!(seen.insert(g.to_vec()), "element {g:?} enumerated twice");
+        });
+        assert_eq!(seen.len(), order);
+        assert_eq!(chain.order().to_string(), order.to_string());
+    }
+
+    #[test]
+    fn accessors_and_level_out_of_range() {
+        let s4 = StabilizerChain::new(&sn_gens(4), 4).unwrap();
+        assert_eq!(s4.num_levels(), s4.base().len());
+        let lengths: Vec<usize> = (0..s4.num_levels()).map(|i| s4.orbit(i).len()).collect();
+        assert_eq!(lengths.iter().product::<usize>(), 24);
+        for i in 0..s4.num_levels() {
+            let b = s4.base()[i];
+            assert_eq!(s4.orbit(i)[0], b, "the orbit starts at the base point");
+            for &p in s4.orbit(i) {
+                let u = s4.transversal_element(i, p).unwrap();
+                assert_eq!(u[b], p, "u(b_i) = p");
+                assert!(s4.contains(u));
+            }
+        }
+        assert!(s4.orbit(s4.num_levels()).is_empty());
+        assert!(s4.transversal_element(s4.num_levels(), 0).is_none());
+        assert!(s4.transversal_element(0, 99).is_none());
+    }
+
+    // S4 (24), A5 (60), and M11 on 11 points (7,920) with GAP's MathieuGroup(11)
+    // generators (1,...,11), (3,7,11,8)(4,10,5,6) (GAP 4.12.1: Size 7920).
+    #[test]
+    fn for_each_element_s4_a5_m11() {
+        check_enumeration(&StabilizerChain::new(&sn_gens(4), 4).unwrap(), 24);
+        check_enumeration(&StabilizerChain::new(&an_gens(5), 5).unwrap(), 60);
+        let a = cycle(11);
+        // (3,7,11,8)(4,10,5,6), 1-based, as an image list on 0..11
+        let mut b: Perm = (0..11).collect();
+        for c in [[3usize, 7, 11, 8], [4, 10, 5, 6]] {
+            for k in 0..4 {
+                b[c[k] - 1] = c[(k + 1) % 4] - 1;
+            }
+        }
+        check_enumeration(&StabilizerChain::new(&[a, b], 11).unwrap(), 7920);
+    }
+
+    #[test]
+    fn for_each_element_trivial_group() {
+        let mut calls = Vec::new();
+        StabilizerChain::new(&[], 3)
+            .unwrap()
+            .for_each_element(|g| calls.push(g.to_vec()));
+        assert_eq!(calls, vec![vec![0, 1, 2]]);
+        let mut n = 0;
+        StabilizerChain::new(&[], 0).unwrap().for_each_element(|g| {
+            assert!(g.is_empty());
+            n += 1;
+        });
+        assert_eq!(n, 1);
     }
 }

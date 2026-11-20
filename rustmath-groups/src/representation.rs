@@ -85,21 +85,151 @@ impl<F: Field> Representation<F> {
     }
 }
 
+/// Why a character inner product, or a character with class sizes, was refused.
+///
+/// The inner product `<chi1, chi2> = (1/|G|) sum_C |C| chi1(C) conj(chi2(C))` needs the class
+/// sizes `|C|` (MAGMA ch. 91, `InnerProduct`). Tracker T-215: the old product divided by the
+/// number of keys and never weighted by class size. These errors replace the plausible wrong
+/// values it returned.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CharacterError {
+    /// One character carries class sizes and the other does not.
+    SizesOnOneSide,
+    /// Both characters carry class sizes, and they differ at this key.
+    SizeMismatch {
+        /// The class where the two size maps differ (or that only one of them has).
+        key: String,
+    },
+    /// Neither character carries class sizes, and their key sets differ at this key.
+    KeyMismatch {
+        /// A key of one character that the other lacks.
+        key: String,
+    },
+    /// A size map whose keys differ from the value keys, at this key.
+    SizeKeysDiffer {
+        /// A key of one map that the other lacks.
+        key: String,
+    },
+    /// A class of size 0.
+    ZeroSize {
+        /// The class.
+        key: String,
+    },
+    /// A character without a value on a class of the table.
+    MissingValue {
+        /// The class.
+        key: String,
+    },
+    /// A character with no values at all.
+    NoValues,
+}
+
+impl fmt::Display for CharacterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CharacterError::SizesOnOneSide => {
+                write!(f, "only one of the two characters carries class sizes")
+            }
+            CharacterError::SizeMismatch { key } => {
+                write!(f, "the two characters have different class sizes at {key}")
+            }
+            CharacterError::KeyMismatch { key } => {
+                write!(
+                    f,
+                    "the two characters have different classes: {key} is on one side only"
+                )
+            }
+            CharacterError::SizeKeysDiffer { key } => {
+                write!(
+                    f,
+                    "the class sizes and the values have different keys: {key}"
+                )
+            }
+            CharacterError::ZeroSize { key } => write!(f, "class {key} has size 0"),
+            CharacterError::MissingValue { key } => {
+                write!(f, "the character has no value on class {key}")
+            }
+            CharacterError::NoValues => write!(f, "the character has no values"),
+        }
+    }
+}
+
+impl std::error::Error for CharacterError {}
+
+/// The first key of `a` missing from `b`, or of `b` missing from `a` (sorted, so the
+/// reported key does not depend on the hash order).
+fn first_key_difference<V, W>(a: &HashMap<String, V>, b: &HashMap<String, W>) -> Option<String> {
+    let mut missing: Vec<&String> = a
+        .keys()
+        .filter(|k| !b.contains_key(*k))
+        .chain(b.keys().filter(|k| !a.contains_key(*k)))
+        .collect();
+    missing.sort();
+    missing.first().map(|k| (*k).clone())
+}
+
 /// A character of a representation
 ///
-/// The character χ(g) = tr(ρ(g)) is the trace of the representation matrix
+/// The character χ(g) = tr(ρ(g)) is the trace of the representation matrix.
+///
+/// With class sizes (`with_class_sizes`) the keys are conjugacy classes and the inner product
+/// is weighted by `|C|`. Without them each key stands for one group element (the old,
+/// element-keyed reading), which is right only when the keys list the whole group.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Character {
     /// Degree of the representation
     degree: usize,
     /// Map from conjugacy class representatives to character values
     values: HashMap<String, Complex>,
+    /// Class sizes `|C|` for the keys of `values`, if known (T-215).
+    class_sizes: Option<HashMap<String, usize>>,
 }
 
 impl Character {
-    /// Create a new character
+    /// Create a new character (element-keyed, no class sizes)
     pub fn new(degree: usize, values: HashMap<String, Complex>) -> Self {
-        Character { degree, values }
+        Character {
+            degree,
+            values,
+            class_sizes: None,
+        }
+    }
+
+    /// A character on conjugacy classes with their sizes. `Err` if the keys of `sizes` differ
+    /// from those of `values`, or a size is 0.
+    ///
+    /// The keys must be all the classes of the group. Nothing checks this: with only some of
+    /// the classes, [`Character::try_inner_product`] divides by the partial sum of the sizes,
+    /// and its value is only a weighted mean over those classes, not the inner product.
+    pub fn with_class_sizes(
+        degree: usize,
+        values: HashMap<String, Complex>,
+        sizes: HashMap<String, usize>,
+    ) -> Result<Self, CharacterError> {
+        if let Some(key) = first_key_difference(&values, &sizes) {
+            return Err(CharacterError::SizeKeysDiffer { key });
+        }
+        let mut zero: Vec<&String> = sizes
+            .iter()
+            .filter(|(_, &v)| v == 0)
+            .map(|(k, _)| k)
+            .collect();
+        zero.sort();
+        if let Some(key) = zero.first() {
+            return Err(CharacterError::ZeroSize {
+                key: (*key).clone(),
+            });
+        }
+        Ok(Character {
+            degree,
+            values,
+            class_sizes: Some(sizes),
+        })
+    }
+
+    /// The class sizes, if this character carries them.
+    pub fn class_sizes(&self) -> Option<&HashMap<String, usize>> {
+        self.class_sizes.as_ref()
     }
 
     /// Create a character from a representation over rationals
@@ -119,6 +249,7 @@ impl Character {
         Character {
             degree: rep.degree(),
             values,
+            class_sizes: None,
         }
     }
 
@@ -142,39 +273,105 @@ impl Character {
         &self.values
     }
 
+    /// The inner product of two characters, or why it cannot be computed (T-215).
+    ///
+    /// | Class sizes | Result |
+    /// |---|---|
+    /// | on both sides, equal maps | `sum_C |C| chi1(C) conj(chi2(C)) / sum_C |C|` |
+    /// | on neither side, equal key sets | the mean of `chi1(g) conj(chi2(g))` over the keys (each key is one group element) |
+    /// | on neither side, different key sets | `Err(KeyMismatch)` |
+    /// | on one side only | `Err(SizesOnOneSide)` |
+    /// | on both sides, different maps | `Err(SizeMismatch)` |
+    ///
+    /// `Err(NoValues)` for characters with no values.
+    ///
+    /// With class sizes, the keys must be all the classes of the group, so that `sum_C |C|`
+    /// is `|G|`. Otherwise the value is only a weighted mean over the given classes (for the
+    /// standard character of S3 on `{e: 1, (12): 3}` it is 1).
+    pub fn try_inner_product(&self, other: &Character) -> Result<Complex, CharacterError> {
+        match (&self.class_sizes, &other.class_sizes) {
+            (Some(a), Some(b)) => {
+                if let Some(key) = first_key_difference(a, b) {
+                    return Err(CharacterError::SizeMismatch { key });
+                }
+                let mut differ: Vec<&String> = a
+                    .iter()
+                    .filter(|(k, v)| b.get(*k) != Some(v))
+                    .map(|(k, _)| k)
+                    .collect();
+                differ.sort();
+                if let Some(key) = differ.first() {
+                    return Err(CharacterError::SizeMismatch {
+                        key: (*key).clone(),
+                    });
+                }
+                if a.is_empty() {
+                    return Err(CharacterError::NoValues);
+                }
+                // with_class_sizes makes the value keys equal to the size keys on both sides.
+                let mut sum = Complex::new(0.0, 0.0);
+                let mut total = 0usize;
+                for (key, &size) in a {
+                    let v1 = &self.values[key];
+                    let v2 = &other.values[key];
+                    sum = sum + Complex::new(size as f64, 0.0) * v1.clone() * v2.conjugate();
+                    total += size;
+                }
+                Ok(sum / Complex::new(total as f64, 0.0))
+            }
+            (None, None) => {
+                if let Some(key) = first_key_difference(&self.values, &other.values) {
+                    return Err(CharacterError::KeyMismatch { key });
+                }
+                if self.values.is_empty() {
+                    return Err(CharacterError::NoValues);
+                }
+                let mut sum = Complex::new(0.0, 0.0);
+                for (element, value1) in &self.values {
+                    let value2 = &other.values[element];
+                    sum = sum + value1.clone() * value2.conjugate();
+                }
+                Ok(sum / Complex::new(self.values.len() as f64, 0.0))
+            }
+            _ => Err(CharacterError::SizesOnOneSide),
+        }
+    }
+
     /// Compute the inner product of two characters
     ///
-    /// ⟨χ₁, χ₂⟩ = (1/|G|) ∑_{g∈G} χ₁(g) χ₂(g)*
+    /// ⟨χ₁, χ₂⟩ = (1/|G|) ∑_{g∈G} χ₁(g) χ₂(g)*, weighted by the class sizes when the
+    /// characters carry them (see [`Character::try_inner_product`]).
+    ///
+    /// # Panics
+    ///
+    /// When `try_inner_product` returns `Err` (class sizes on one side only, two different
+    /// size maps, different key sets, or no values), with the error text. A character with
+    /// itself never panics unless it has no values.
     pub fn inner_product(&self, other: &Character) -> Complex {
-        let mut sum = Complex::new(0.0, 0.0);
-        let mut count = 0;
-
-        for (element, value1) in &self.values {
-            if let Some(value2) = other.values.get(element) {
-                sum = sum + value1.clone() * value2.conjugate();
-                count += 1;
-            }
-        }
-
-        if count > 0 {
-            sum / Complex::new(count as f64, 0.0)
-        } else {
-            Complex::new(0.0, 0.0)
+        match self.try_inner_product(other) {
+            Ok(v) => v,
+            Err(e) => panic!("Character::inner_product: {e}"),
         }
     }
 
     /// Check if this character is irreducible
     ///
     /// A character is irreducible if ⟨χ, χ⟩ = 1
+    /// A character with no values is not irreducible.
     pub fn is_irreducible(&self) -> bool {
-        let inner = self.inner_product(self);
-        (inner.real() - 1.0).abs() < 1e-10 && inner.imag().abs() < 1e-10
+        match self.try_inner_product(self) {
+            Ok(inner) => (inner.real() - 1.0).abs() < 1e-10 && inner.imag().abs() < 1e-10,
+            Err(_) => false,
+        }
     }
 
-    /// Compute the norm squared of the character
+    /// Compute the norm squared of the character (0 for a character with no values, the
+    /// empty sum).
     pub fn norm_squared(&self) -> f64 {
-        let inner = self.inner_product(self);
-        inner.real()
+        match self.try_inner_product(self) {
+            Ok(inner) => inner.real(),
+            Err(_) => 0.0,
+        }
     }
 }
 
@@ -190,6 +387,7 @@ impl Default for Character {
         Character {
             degree: 0,
             values: HashMap::new(),
+            class_sizes: None,
         }
     }
 }
@@ -263,6 +461,35 @@ impl CharacterTable {
         &self.irreducible_characters
     }
 
+    /// The class sizes, in the order of [`CharacterTable::conjugacy_classes`].
+    pub fn class_sizes(&self) -> &[usize] {
+        &self.class_sizes
+    }
+
+    /// `<a, b> = (1/|G|) sum_C |C| a(C) conj(b(C))` over the classes of this table, with the
+    /// table's class sizes (T-215). `Err(MissingValue)` if `a` or `b` has no value on a class
+    /// of the table; `Err(SizeMismatch)` if a character carries class sizes that differ from
+    /// the table's.
+    pub fn inner_product(&self, a: &Character, b: &Character) -> Result<Complex, CharacterError> {
+        for chi in [a, b] {
+            if let Some(sizes) = chi.class_sizes() {
+                for (class, &size) in self.conjugacy_classes.iter().zip(&self.class_sizes) {
+                    if sizes.get(class) != Some(&size) {
+                        return Err(CharacterError::SizeMismatch { key: class.clone() });
+                    }
+                }
+            }
+        }
+        let mut sum = Complex::new(0.0, 0.0);
+        for (class, &size) in self.conjugacy_classes.iter().zip(&self.class_sizes) {
+            let missing = || CharacterError::MissingValue { key: class.clone() };
+            let va = a.value(class).ok_or_else(missing)?;
+            let vb = b.value(class).ok_or_else(missing)?;
+            sum = sum + Complex::new(size as f64, 0.0) * va.clone() * vb.conjugate();
+        }
+        Ok(sum / Complex::new(self.order as f64, 0.0))
+    }
+
     /// Create the character table for the cyclic group Z/nZ
     pub fn cyclic_group(n: usize) -> Self {
         let conjugacy_classes: Vec<String> = (0..n).map(|i| format!("g^{}", i)).collect();
@@ -270,6 +497,8 @@ impl CharacterTable {
 
         let mut irreducible_characters = Vec::new();
 
+        let sizes: HashMap<String, usize> =
+            conjugacy_classes.iter().map(|c| (c.clone(), 1)).collect();
         for k in 0..n {
             let mut values = HashMap::new();
             for j in 0..n {
@@ -278,7 +507,10 @@ impl CharacterTable {
                 let value = Complex::new(angle.cos(), angle.sin());
                 values.insert(format!("g^{}", j), value);
             }
-            irreducible_characters.push(Character::new(1, values));
+            irreducible_characters.push(
+                Character::with_class_sizes(1, values, sizes.clone())
+                    .expect("the classes of C_n have size 1"),
+            );
         }
 
         CharacterTable {
@@ -293,6 +525,15 @@ impl CharacterTable {
     pub fn symmetric_group_s3() -> Self {
         let conjugacy_classes = vec!["e".to_string(), "(12)".to_string(), "(123)".to_string()];
         let class_sizes = vec![1, 3, 2];
+        let sizes: HashMap<String, usize> = conjugacy_classes
+            .iter()
+            .cloned()
+            .zip(class_sizes.iter().copied())
+            .collect();
+        let with_sizes = |degree: usize, values: HashMap<String, Complex>| {
+            Character::with_class_sizes(degree, values, sizes.clone())
+                .expect("the S3 values are given on its three classes")
+        };
 
         let mut irreducible_characters = Vec::new();
 
@@ -301,21 +542,21 @@ impl CharacterTable {
         trivial.insert("e".to_string(), Complex::new(1.0, 0.0));
         trivial.insert("(12)".to_string(), Complex::new(1.0, 0.0));
         trivial.insert("(123)".to_string(), Complex::new(1.0, 0.0));
-        irreducible_characters.push(Character::new(1, trivial));
+        irreducible_characters.push(with_sizes(1, trivial));
 
         // Sign representation
         let mut sign = HashMap::new();
         sign.insert("e".to_string(), Complex::new(1.0, 0.0));
         sign.insert("(12)".to_string(), Complex::new(-1.0, 0.0));
         sign.insert("(123)".to_string(), Complex::new(1.0, 0.0));
-        irreducible_characters.push(Character::new(1, sign));
+        irreducible_characters.push(with_sizes(1, sign));
 
         // Standard representation
         let mut standard = HashMap::new();
         standard.insert("e".to_string(), Complex::new(2.0, 0.0));
         standard.insert("(12)".to_string(), Complex::new(0.0, 0.0));
         standard.insert("(123)".to_string(), Complex::new(-1.0, 0.0));
-        irreducible_characters.push(Character::new(2, standard));
+        irreducible_characters.push(with_sizes(2, standard));
 
         CharacterTable {
             order: 6,
@@ -700,6 +941,144 @@ mod tests {
             assert!((val.real() - 1.0).abs() < 1e-10);
             assert!(val.imag().abs() < 1e-10);
         }
+    }
+
+    // T-215. The tracker's failure case: the S3 standard character (2, 0, -1) on classes of
+    // sizes 1, 3, 2 has <chi, chi> = (4 + 0 + 2) / 6 = 1; the old unweighted mean gave
+    // (4 + 0 + 1) / 3 = 1.667. Reference: the S3 table of
+    // GAP 4.12.1 (Irr(CharacterTable(SymmetricGroup(3))), SizesConjugacyClasses [1, 3, 2]).
+    #[test]
+    fn t215_s3_standard_character_is_irreducible() {
+        let table = CharacterTable::symmetric_group_s3();
+        let standard = &table.irreducible_characters()[2];
+        let ip = standard.inner_product(standard);
+        assert!(
+            (ip.real() - 1.0).abs() < 1e-12 && ip.imag().abs() < 1e-12,
+            "{ip:?}"
+        );
+        assert!(standard.is_irreducible());
+        assert!((standard.norm_squared() - 1.0).abs() < 1e-12);
+        let ip = table.inner_product(standard, standard).unwrap();
+        assert!((ip.real() - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn t215_s3_rows_are_orthonormal() {
+        let table = CharacterTable::symmetric_group_s3();
+        let chars = table.irreducible_characters();
+        for (i, a) in chars.iter().enumerate() {
+            for (j, b) in chars.iter().enumerate() {
+                let want = if i == j { 1.0 } else { 0.0 };
+                let ip = a.try_inner_product(b).unwrap();
+                assert!(
+                    (ip.real() - want).abs() < 1e-12 && ip.imag().abs() < 1e-12,
+                    "{i} {j}"
+                );
+                let ip = table.inner_product(a, b).unwrap();
+                assert!(
+                    (ip.real() - want).abs() < 1e-12 && ip.imag().abs() < 1e-12,
+                    "{i} {j}"
+                );
+            }
+        }
+        // trivial and sign are orthogonal
+        let ip = chars[0].inner_product(&chars[1]);
+        assert!(ip.real().abs() < 1e-12);
+    }
+
+    fn s3_values(v: [f64; 3]) -> HashMap<String, Complex> {
+        ["e", "(12)", "(123)"]
+            .iter()
+            .zip(v)
+            .map(|(k, x)| (k.to_string(), Complex::new(x, 0.0)))
+            .collect()
+    }
+
+    fn s3_sizes(v: [usize; 3]) -> HashMap<String, usize> {
+        ["e", "(12)", "(123)"]
+            .iter()
+            .zip(v)
+            .map(|(k, x)| (k.to_string(), x))
+            .collect()
+    }
+
+    #[test]
+    fn t215_try_inner_product_edge_cases() {
+        let sized =
+            Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), s3_sizes([1, 3, 2]))
+                .unwrap();
+        let unsized_char = Character::new(2, s3_values([2.0, 0.0, -1.0]));
+        assert_eq!(
+            sized.try_inner_product(&unsized_char),
+            Err(CharacterError::SizesOnOneSide)
+        );
+        assert_eq!(
+            unsized_char.try_inner_product(&sized),
+            Err(CharacterError::SizesOnOneSide)
+        );
+        let other_sizes =
+            Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), s3_sizes([1, 2, 3]))
+                .unwrap();
+        assert!(matches!(
+            sized.try_inner_product(&other_sizes),
+            Err(CharacterError::SizeMismatch { .. })
+        ));
+        // review 2, n3: different key sets without sizes are refused
+        let mut fewer = s3_values([2.0, 0.0, -1.0]);
+        fewer.remove("(123)");
+        let fewer = Character::new(2, fewer);
+        assert_eq!(
+            unsized_char.try_inner_product(&fewer),
+            Err(CharacterError::KeyMismatch {
+                key: "(123)".to_string()
+            })
+        );
+        // the element-keyed reading with equal keys is the old mean
+        let ip = unsized_char.try_inner_product(&unsized_char).unwrap();
+        assert!((ip.real() - 5.0 / 3.0).abs() < 1e-12);
+        assert_eq!(
+            Character::default().try_inner_product(&Character::default()),
+            Err(CharacterError::NoValues)
+        );
+        assert!(!Character::default().is_irreducible());
+    }
+
+    #[test]
+    fn t215_with_class_sizes_refuses_bad_maps() {
+        let mut sizes = s3_sizes([1, 3, 2]);
+        sizes.remove("(12)");
+        assert_eq!(
+            Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), sizes),
+            Err(CharacterError::SizeKeysDiffer {
+                key: "(12)".to_string()
+            })
+        );
+        assert_eq!(
+            Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), s3_sizes([1, 0, 2])),
+            Err(CharacterError::ZeroSize {
+                key: "(12)".to_string()
+            })
+        );
+        let table = CharacterTable::symmetric_group_s3();
+        let mut partial = s3_values([1.0, 1.0, 1.0]);
+        partial.remove("e");
+        let partial = Character::new(1, partial);
+        assert_eq!(
+            table.inner_product(&partial, &table.irreducible_characters()[0]),
+            Err(CharacterError::MissingValue {
+                key: "e".to_string()
+            })
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "different class sizes")]
+    fn t215_inner_product_panics_on_two_size_maps() {
+        let a = Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), s3_sizes([1, 3, 2]))
+            .unwrap();
+        let b = Character::with_class_sizes(2, s3_values([2.0, 0.0, -1.0]), s3_sizes([1, 2, 3]))
+            .unwrap();
+        let _ = a.inner_product(&b);
     }
 
     #[test]

@@ -13,6 +13,7 @@ pub mod transitive24;
 pub mod transitive23;
 pub mod perm_predicates;
 pub mod bsgs;
+pub mod m23;
 pub mod ksubset_orbits;
 pub mod pgalois;
 pub mod galois_resolvent;
@@ -88,7 +89,7 @@ pub use indexed_free_group::{IndexedGroup, IndexedFreeGroup, IndexedFreeGroupEle
 pub use kernel_subgroup::{KernelSubgroup, KernelSubgroupElement};
 pub use misc_groups::{klein_four_group, quaternion_group, dicyclic_group, trivial_group, group_of_order, GroupCatalog};
 pub use pari_group::{PariGroup, symmetric_pari_group, alternating_pari_group, dihedral_pari_group, cyclic_pari_group};
-pub use representation::{Representation, Character, CharacterTable, direct_sum, tensor_product};
+pub use representation::{Representation, Character, CharacterError, CharacterTable, direct_sum, tensor_product};
 pub use semimonomial_transformation::{SemimonomialTransformation, Automorphism, action_on_vector, action_on_matrix, compose};
 pub use semimonomial_transformation_group::{SemimonomialTransformationGroup, SemimonomialActionVec, SemimonomialActionMat, group_order};
 pub use libgap_wrapper::{ElementLibGAP, ParentLibGAP, GenericElementWrapper, GenericParentWrapper};

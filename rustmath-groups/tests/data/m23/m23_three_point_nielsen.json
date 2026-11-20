@@ -1,0 +1,689 @@
+{
+"description": "inner Nielsen classes of generating triples of M23 for the rational three-point class vectors; 'real' = classes fixed by complex conjugation",
+"passports": [
+{
+"type": "rational",
+"classes": [
+"2A",
+"8A",
+"8A"
+],
+"genus23": 0,
+"structure_constant": "491/8",
+"size": 28,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"4A",
+"8A"
+],
+"genus23": 0,
+"structure_constant": "441/2",
+"size": 54,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"5A",
+"5A"
+],
+"genus23": 0,
+"structure_constant": "1310/3",
+"size": 30,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"5A",
+"6A"
+],
+"genus23": 0,
+"structure_constant": "863/3",
+"size": 70,
+"real": 4
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"5A",
+"8A"
+],
+"genus23": 1,
+"structure_constant": "476",
+"size": 170,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"6A",
+"6A"
+],
+"genus23": 0,
+"structure_constant": "1757/4",
+"size": 120,
+"real": 16
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"6A",
+"8A"
+],
+"genus23": 1,
+"structure_constant": "634",
+"size": 350,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"3A",
+"8A",
+"8A"
+],
+"genus23": 2,
+"structure_constant": "889",
+"size": 568,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"4A",
+"5A"
+],
+"genus23": 0,
+"structure_constant": "909",
+"size": 104,
+"real": 2
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"4A",
+"6A"
+],
+"genus23": 0,
+"structure_constant": "1713/2",
+"size": 192,
+"real": 14
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"4A",
+"8A"
+],
+"genus23": 1,
+"structure_constant": "1170",
+"size": 568,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"5A",
+"5A"
+],
+"genus23": 1,
+"structure_constant": "1936",
+"size": 396,
+"real": 4
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"5A",
+"6A"
+],
+"genus23": 1,
+"structure_constant": "1757",
+"size": 776,
+"real": 22
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"5A",
+"8A"
+],
+"genus23": 2,
+"structure_constant": "2712",
+"size": 1484,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"6A",
+"6A"
+],
+"genus23": 1,
+"structure_constant": "8691/4",
+"size": 1220,
+"real": 56
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"6A",
+"8A"
+],
+"genus23": 2,
+"structure_constant": "6615/2",
+"size": 2534,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"4A",
+"8A",
+"8A"
+],
+"genus23": 3,
+"structure_constant": "10305/2",
+"size": 4208,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"5A",
+"5A"
+],
+"genus23": 2,
+"structure_constant": "61058/15",
+"size": 972,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"5A",
+"6A"
+],
+"genus23": 2,
+"structure_constant": "3836",
+"size": 2178,
+"real": 24
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"5A",
+"8A"
+],
+"genus23": 3,
+"structure_constant": "5504",
+"size": 3288,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"6A",
+"6A"
+],
+"genus23": 2,
+"structure_constant": "14417/3",
+"size": 3416,
+"real": 90
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"6A",
+"8A"
+],
+"genus23": 3,
+"structure_constant": "7140",
+"size": 5666,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"5A",
+"8A",
+"8A"
+],
+"genus23": 4,
+"structure_constant": "10680",
+"size": 8816,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"6A",
+"6A",
+"6A"
+],
+"genus23": 2,
+"structure_constant": "69737/12",
+"size": 4860,
+"real": 114
+},
+{
+"type": "rational",
+"classes": [
+"6A",
+"6A",
+"8A"
+],
+"genus23": 3,
+"structure_constant": "8590",
+"size": 7940,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"6A",
+"8A",
+"8A"
+],
+"genus23": 4,
+"structure_constant": "13335",
+"size": 12584,
+"real": 0
+},
+{
+"type": "rational",
+"classes": [
+"8A",
+"8A",
+"8A"
+],
+"genus23": 5,
+"structure_constant": "18720",
+"size": 17760,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2A",
+"7A",
+"7B"
+],
+"genus23": 0,
+"structure_constant": "43/2",
+"size": 0,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2A",
+"11A",
+"11B"
+],
+"genus23": 2,
+"structure_constant": "31",
+"size": 22,
+"real": 4
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2A",
+"14A",
+"14B"
+],
+"genus23": 2,
+"structure_constant": "43/2",
+"size": 17,
+"real": 3
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2A",
+"15A",
+"15B"
+],
+"genus23": 2,
+"structure_constant": "27",
+"size": 24,
+"real": 2
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"2A",
+"23A",
+"23B"
+],
+"genus23": 4,
+"structure_constant": "7",
+"size": 7,
+"real": 3
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3A",
+"7A",
+"7B"
+],
+"genus23": 2,
+"structure_constant": "349",
+"size": 100,
+"real": 8
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3A",
+"11A",
+"11B"
+],
+"genus23": 4,
+"structure_constant": "466",
+"size": 344,
+"real": 18
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3A",
+"14A",
+"14B"
+],
+"genus23": 4,
+"structure_constant": "349",
+"size": 303,
+"real": 15
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3A",
+"15A",
+"15B"
+],
+"genus23": 4,
+"structure_constant": "830/3",
+"size": 264,
+"real": 20
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"3A",
+"23A",
+"23B"
+],
+"genus23": 6,
+"structure_constant": "134",
+"size": 134,
+"real": 16
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4A",
+"7A",
+"7B"
+],
+"genus23": 3,
+"structure_constant": "1951",
+"size": 995,
+"real": 21
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4A",
+"11A",
+"11B"
+],
+"genus23": 5,
+"structure_constant": "2772",
+"size": 2390,
+"real": 58
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4A",
+"14A",
+"14B"
+],
+"genus23": 5,
+"structure_constant": "1951",
+"size": 1879,
+"real": 55
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4A",
+"15A",
+"15B"
+],
+"genus23": 5,
+"structure_constant": "1496",
+"size": 1480,
+"real": 54
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"4A",
+"23A",
+"23B"
+],
+"genus23": 7,
+"structure_constant": "660",
+"size": 660,
+"real": 42
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5A",
+"7A",
+"7B"
+],
+"genus23": 4,
+"structure_constant": "3756",
+"size": 1994,
+"real": 22
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5A",
+"11A",
+"11B"
+],
+"genus23": 6,
+"structure_constant": "5658",
+"size": 4874,
+"real": 54
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5A",
+"14A",
+"14B"
+],
+"genus23": 6,
+"structure_constant": "3756",
+"size": 3627,
+"real": 37
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5A",
+"15A",
+"15B"
+],
+"genus23": 6,
+"structure_constant": "16982/5",
+"size": 3381,
+"real": 43
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"5A",
+"23A",
+"23B"
+],
+"genus23": 8,
+"structure_constant": "1422",
+"size": 1422,
+"real": 32
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6A",
+"7A",
+"7B"
+],
+"genus23": 4,
+"structure_constant": "4371",
+"size": 3470,
+"real": 40
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6A",
+"11A",
+"11B"
+],
+"genus23": 6,
+"structure_constant": "7056",
+"size": 6750,
+"real": 96
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6A",
+"14A",
+"14B"
+],
+"genus23": 6,
+"structure_constant": "4371",
+"size": 4328,
+"real": 102
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6A",
+"15A",
+"15B"
+],
+"genus23": 6,
+"structure_constant": "11668/3",
+"size": 3859,
+"real": 103
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"6A",
+"23A",
+"23B"
+],
+"genus23": 8,
+"structure_constant": "1632",
+"size": 1632,
+"real": 72
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8A",
+"7A",
+"7B"
+],
+"genus23": 5,
+"structure_constant": "5908",
+"size": 4848,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8A",
+"11A",
+"11B"
+],
+"genus23": 7,
+"structure_constant": "10080",
+"size": 9648,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8A",
+"14A",
+"14B"
+],
+"genus23": 7,
+"structure_constant": "5908",
+"size": 5888,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8A",
+"15A",
+"15B"
+],
+"genus23": 7,
+"structure_constant": "5424",
+"size": 5424,
+"real": 0
+},
+{
+"type": "conjugate_pair",
+"classes": [
+"8A",
+"23A",
+"23B"
+],
+"genus23": 9,
+"structure_constant": "2272",
+"size": 2272,
+"real": 0
+}
+]
+}
