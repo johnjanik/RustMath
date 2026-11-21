@@ -5,25 +5,55 @@
 //! ```text
 //! cargo run --release -p rustmath-curves --example m23_zeta -- 5 127 4
 //! M23ISGALOIS=/path/to/m23isgalois cargo run --release -p rustmath-curves --example m23_zeta -- 5 127 4 --cover L
+//! cargo run --release -p rustmath-curves --example m23_zeta -- 5 131 4 --json x.json
 //! ```
 //!
 //! Options: `--cover L` (the covers over L at their degree-one primes; needs `M23ISGALOIS`),
 //! `--model F` (X from HJLPPZ's F instead of the CC0 models; needs `M23ISGALOIS`),
 //! `--reference-rule` (also print the counts of the reference rule of `curve.py` at `d05475b`,
-//! every non-nodal point counted once: `reference rule N = [..]`, not certified), `--threads N`.
+//! every non-nodal point counted once: `reference rule N = [..]`, not certified), `--threads N`,
+//! `--json <file>` (REQUESTS C-7: one object per row in the keys of the owner's `zeta_X.json`,
+//! with the commit and the command; written before the first row with `"complete": false`,
+//! rewritten after each row, and `"complete": true` at the end).
 //! Without options X is counted on the CC0 models `[G, G7, G13]` (vendored, Le Lay).
 //!
 //! Each row prints its status: `Decided: nodal (62 nodes)` or
 //! `Decided: delta-sum, Lemma 9.1 (..)` (Lemma 9.1 of the owner's paper, with the evidence of
 //! absolute irreducibility and the singular points in the owner's labels), an `Unresolved`
-//! status, or the refusal of every model.
+//! status, or the refusal of every model. With `kmax >= 4` it also prints the order of Frobenius
+//! on `Jac[2]` with its status and reason (for an open order, the rank bounds tried), the types
+//! of `Jac[2]` and of the Golay Lagrangian `W` at the eigenvalue 1, and the cycle types of
+//! Frobenius on `W` (8 letters through `GL_4(2) = A_8`, 15 points) (REQUESTS C-5, design C57).
+//! The W columns rest on the hypothesis `H_W`, printed in a header line.
 
 #[path = "../tests/common/m23.rs"]
 mod m23;
 
 use m23::*;
 use rustmath_curves::nodal_biprojective::{normalization_point_counts, BranchRule, CountOptions};
+use std::path::PathBuf;
 use std::time::Instant;
+
+/// The `--json` file of a run: rewritten after each row.
+struct JsonOut {
+    path: PathBuf,
+    prov: Provenance,
+    rows: Vec<serde_json::Value>,
+}
+
+impl JsonOut {
+    fn write(&self, complete: bool) {
+        let v = table_json(&self.prov, &self.rows, complete);
+        let text = serde_json::to_string_pretty(&v).expect("JSON") + "\n";
+        std::fs::write(&self.path, text)
+            .unwrap_or_else(|e| panic!("cannot write {}: {e}", self.path.display()));
+    }
+
+    fn push(&mut self, row: &Row, secs: f64) {
+        self.rows.push(row_json(row, Some(secs)));
+        self.write(false);
+    }
+}
 
 /// The row, with the reference-rule counts appended when asked.
 fn line(row: &Row, reference_rule: bool) -> String {
@@ -54,6 +84,30 @@ fn main() {
         opts.threads = Some(t);
     }
     let total = Instant::now();
+    let json_path = value("--json").map(PathBuf::from);
+    let model_names: Vec<String> = if cover_l {
+        vec!["calF".into()]
+    } else if model_name.as_deref() == Some("F") {
+        vec!["F".into()]
+    } else {
+        vec!["G".into(), "G7".into(), "G13".into()]
+    };
+    let external = (cover_l || model_name.as_deref() == Some("F")).then(require_m23isgalois);
+    let mut json_out = json_path.map(|path| {
+        let out = JsonOut {
+            path,
+            prov: Provenance::collect(
+                if cover_l { "L" } else { "X" },
+                model_names,
+                (pmin, pmax, kmax),
+                opts.threads,
+                external.as_deref(),
+            ),
+            rows: Vec::new(),
+        };
+        out.write(false);
+        out
+    });
     if cover_l {
         let dir = require_m23isgalois();
         let calf = model_calf(&dir);
@@ -61,6 +115,9 @@ fn main() {
             "# covers over L at degree-one primes (p, s - s0), calF from {}",
             dir.display()
         );
+        if kmax as usize >= GENUS {
+            println!("# the W columns assume H_W = {H_W}");
+        }
         for p in pmin..=pmax {
             if p < 3 || !rustmath_integers::prime::is_prime_u64(p) {
                 continue;
@@ -76,11 +133,11 @@ fn main() {
                     model: "calF".into(),
                     result,
                 };
-                println!(
-                    "{} [{:.1} s]",
-                    line(&row, reference_rule),
-                    t.elapsed().as_secs_f64()
-                );
+                let secs = t.elapsed().as_secs_f64();
+                println!("{} [{secs:.1} s]", line(&row, reference_rule));
+                if let Some(j) = json_out.as_mut() {
+                    j.push(&row, secs);
+                }
             }
         }
     } else {
@@ -90,18 +147,25 @@ fn main() {
         };
         let names: Vec<&str> = models.iter().map(|m| m.0).collect();
         println!("# X, models {names:?}");
+        if kmax as usize >= GENUS {
+            println!("# the W columns assume H_W = {H_W}");
+        }
         for p in pmin..=pmax {
             if p < 3 || !rustmath_integers::prime::is_prime_u64(p) {
                 continue;
             }
             let t = Instant::now();
             let row = x_row(&models, p, kmax, &opts);
-            println!(
-                "{} [{:.1} s]",
-                line(&row, reference_rule),
-                t.elapsed().as_secs_f64()
-            );
+            let secs = t.elapsed().as_secs_f64();
+            println!("{} [{secs:.1} s]", line(&row, reference_rule));
+            if let Some(j) = json_out.as_mut() {
+                j.push(&row, secs);
+            }
         }
+    }
+    if let Some(j) = &json_out {
+        j.write(true);
+        println!("# wrote {}", j.path.display());
     }
     println!("# total {:.1} s", total.elapsed().as_secs_f64());
 }

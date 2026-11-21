@@ -22,6 +22,10 @@ rustmath-groups = { path = "../rustmath-groups" }
 rustmath-quadraticforms = { path = "../rustmath-quadraticforms" }
 rustmath-numberfields = { path = "../rustmath-numberfields" }
 rustmath-numerical = { path = "../rustmath-numerical" }
+# Partitions and Schur-function products (Littlewood-Richardson coefficients) for the
+# Frobenius module Jac[2] (src/weil/two_torsion.rs).
+rustmath-combinatorics = { path = "../rustmath-combinatorics" }
+rustmath-symmetricfunctions = { path = "../rustmath-symmetricfunctions" }
 num-bigint = { workspace = true }
 num-rational = { workspace = true }
 num-traits = { workspace = true }

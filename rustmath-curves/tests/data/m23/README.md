@@ -11,6 +11,13 @@ is `docs/workstreams/m23_golay/HANDOFF.md`, Section 3.
 | `zeta_X.json` | `johnjanik/M23`, `data/zeta_X.json`, commit `2d11038` (main) | the owner's repository, copied as the brief allows | `77fdf78ee48071b84f7ab20c2fb475eb18db89a1d40d7712989572be9a039e56` |
 | `zeta_L.json` | `johnjanik/M23`, `data/zeta_L.json`, commit `2d11038` (main) | as above | `d2bae9ef107ca6cfd9f507551583e07521aa7f0b3bd42f76dff2f8bb069b19d8` |
 | `h62.json` | `johnjanik/M23`, `data/h62.json`, commit `d05475b` (unchanged at `2d11038`) | as above | `f7ebdf75335d9f05c11e351663448e6fc902845592cc30c242b31f47ae9b4441` |
+| `a8_frobenius_predictions.json` | `johnjanik/M23`, `data/a8_frobenius_predictions.json`, commit `e0d25b8` (branch `claude/blissful-knuth-qla7ym`), written by `scripts/a8_frobenius_predictions.py` there | as above | `505b25ea9ff292a8c9047dd5616c29ecfb15e6987bc5656e9ddf077c9c436162` |
+
+`a8_frobenius_predictions.json` holds the owner's 14 classes of `GL_4(2) = A_8` and, for the 29
+X rows of REQUESTS 1.2, `#Jac(F_p)`, its 2-adic valuation, the order on `Jac[2]` where his rule
+decides it, and the allowed cycle types. It is the reference of `c5_matches_the_owners_predictions`
+(C-5). At `e0d25b8`, `zeta_X.json` and `zeta_L.json` are byte-identical to the vendored files of
+`2d11038`.
 
 The files are copied unchanged. `zeta_X.json` and `zeta_L.json` were first vendored from
 `d05475b` (sha256 `a854d316...90e19f4` and `ed639be2...c0da7f`). After WP-F the owner corrected

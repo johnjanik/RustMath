@@ -18,8 +18,11 @@ The records of work package WP-F (the Frobenius table of the M23 curve X). The b
 | `followup_f9/F9.minorscheck1.md` | The independent check of those three fixes (approved, no regression; two cosmetic notes c1 and c2, fixed in the docs step that copied these records) |
 | `gp/` | The PARI/GP scripts behind the reference values of `rustmath-curves/tests/biprojective_small_curves.rs`, of the overflow test in `rustmath-curves/src/weil.rs` and of the F-9 tests, each with its output (`*.out.txt`, PARI/GP 2.15.4) |
 
-The reports are copied unchanged from the session that wrote them. Line numbers in `impl/WPF.md`,
-the reviews and the docs check refer to commit `a62da12`; the minor fixes moved some of them.
+The reports are copied unchanged from the session that wrote them, with one exception: the
+column "2-torsion order" of the tables of `impl/WPF.md` Section 3 (and its Section 7, item 5)
+gives the values after C-5, as the note below its table description says. Line numbers in
+`impl/WPF.md`, the reviews and the docs check refer to commit `a62da12`; the minor fixes moved
+some of them.
 `impl/WPF_minors.md` lists the new lines of the main items (its last section gives those moved
 again by the fix-up), and the Status block of `../HANDOFF.md` is current. Paths of the form
 `scratchpad/m23/...` name that session's scratch directory, which is not kept.
@@ -32,6 +35,9 @@ script), `f9/review1/...`, `f9/rev1/...` and `f9/minors1/...` (the reviews' and 
 runs), `f9/owner/...` (copies of the owner's files at `2d11038`), `f9/lemma_9_1.tex` (Lemma 9.1
 and the text around it, from `paper/golay_m23.tex` at `2d11038`) and `f9/owner_decisions.md`.
 Line numbers in the F-9 records refer to the F-9 change on top of `d91f880`, as reviewed.
+
+The records of requests C-5 and C-7 (`../REQUESTS.md`; C-7 is follow-up F-10) are in
+`../c57/`, with their own README.
 
 The PARI/GP scripts and raw outputs of the scratch directories are not copied, except the
 small-curve scripts and the F-9 scripts in `gp/`. Some of the others hold the coefficients of

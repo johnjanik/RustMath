@@ -27,6 +27,18 @@
 //! - The 2-torsion: `P mod 2` is the characteristic polynomial of Frobenius on
 //!   `Jac[2] = T_2 Jac / 2` (J. Tate, *Endomorphisms of abelian varieties over finite fields*,
 //!   1966, Thm. 1 and its proof; \[HJLPPZ\] and `docs/workstreams/m23_golay/HANDOFF.md` 3.1).
+//!   The module structure of `Jac[2]` as far as `P` decides it, from the 2-ranks of the
+//!   Jacobian and of its quadratic twists over `F_(q^k)` and the Weil pairing, is in
+//!   [`two_torsion`] (design C57; REQUESTS C-5).
+//! - Base change: `P^(k)(T) = prod (T - alpha_i^k)` is the Frobenius polynomial over `F_(q^k)`
+//!   (MAGMA `LPolynomial(C, k)`, reversed), and `#Jac(F_(q^k)) = P^(k)(1) = Res(P, x^k - 1)`.
+
+mod two_torsion;
+
+pub use two_torsion::{
+    LagrangianType, ModuleType, PrimaryFactor, RankBound, TwoTorsionAnalysis, TwoTorsionError,
+    MAX_BASE_CHANGE_DEGREE, MAX_CANDIDATES, MAX_LR_SIZE,
+};
 
 use rustmath_integers::Integer;
 use rustmath_polynomials::{fp_factor, real_roots, zx};
@@ -70,17 +82,26 @@ impl fmt::Display for WeilError {
 
 impl std::error::Error for WeilError {}
 
-/// The order of Frobenius on `Jac[2]` as far as `P mod 2` decides it.
+/// The order of Frobenius on `Jac[2]` as far as `P` decides it (design C57 2.6). Every variant
+/// is a statement about `P`: it is the order on `Jac[2]` of the curve only when `P` is certified
+/// to be its Frobenius polynomial.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TwoTorsionOrder {
     /// `P mod 2` is squarefree: Frobenius is semisimple on `Jac[2]` and its order is the lcm of
-    /// the orders of `x` modulo the irreducible factors. This is a statement about `P`: it is the
-    /// order on `Jac[2]` of the curve only when `P` is certified to be its Frobenius polynomial.
+    /// the orders of `x` modulo the irreducible factors.
     DeterminedByP(u64),
-    /// `P mod 2` has a repeated factor: Frobenius may have a unipotent part. Its order is a
-    /// multiple of `semisimple_order` (the lcm over the distinct factors) and divides `divides`
-    /// (`semisimple_order * 2^ceil(log2 e_max)`, `e_max` the largest multiplicity).
-    Unresolved { semisimple_order: u64, divides: u64 },
+    /// `P mod 2` has a repeated factor and every module type allowed by the rank bounds and the
+    /// Weil pairing has this order. `bounds` is a minimal set of rank bounds that decides it on
+    /// its own ([`TwoTorsionAnalysis::decisive_bounds`]).
+    DeterminedByTwoRank { order: u64, bounds: Vec<RankBound> },
+    /// Several orders remain: `candidates`, sorted, each a multiple of `semisimple_order` (the
+    /// lcm over the distinct factors) dividing `divides` (`semisimple_order * 2^ceil(log2
+    /// e_max)`, `e_max` the largest multiplicity).
+    Unresolved {
+        semisimple_order: u64,
+        divides: u64,
+        candidates: Vec<u64>,
+    },
 }
 
 /// The characteristic polynomial of Frobenius of a curve of genus `g` over `F_p`.
@@ -183,7 +204,8 @@ impl FrobeniusPolynomial {
         })
     }
 
-    /// The prime `p`.
+    /// The size `q` of the base field: the prime `p` for the curves here, `q^k` after
+    /// [`Self::base_change`]`(k)`.
     pub fn p(&self) -> &Integer {
         &self.p
     }
@@ -207,35 +229,8 @@ impl FrobeniusPolynomial {
     /// `N_1, ..., N_kmax` predicted by `P`: `N_k = p^k + 1 - s_k` with `s_k` from Newton's
     /// identities (`e_i = 0` for `i > 2g`).
     pub fn point_counts(&self, kmax: usize) -> Vec<Integer> {
-        let two_g = 2 * self.genus;
-        // e_i = (-1)^i * coeffs[i]
-        let e: Vec<Integer> = (0..=two_g)
-            .map(|i| {
-                if i % 2 == 0 {
-                    self.coeffs[i].clone()
-                } else {
-                    -self.coeffs[i].clone()
-                }
-            })
-            .collect();
-        let mut s: Vec<Integer> = Vec::with_capacity(kmax);
-        for k in 1..=kmax {
-            // s_k = sum_{i=1}^{k-1} (-1)^(i-1) e_i s_(k-i) + (-1)^(k-1) k e_k
-            let mut acc = Integer::zero();
-            for i in 1..k {
-                if i > two_g {
-                    break;
-                }
-                let t = e[i].clone() * s[k - i - 1].clone();
-                acc = if (i - 1) % 2 == 0 { acc + t } else { acc - t };
-            }
-            if k <= two_g {
-                let t = int(k as i64) * e[k].clone();
-                acc = if (k - 1) % 2 == 0 { acc + t } else { acc - t };
-            }
-            s.push(acc);
-        }
-        s.into_iter()
+        self.power_sums(kmax)
+            .into_iter()
             .enumerate()
             .map(|(k, sk)| self.p.pow(k as u32 + 1) + Integer::one() - sk)
             .collect()
@@ -382,20 +377,95 @@ impl FrobeniusPolynomial {
         sols
     }
 
-    /// The order of Frobenius on `Jac[2]` as far as `P mod 2` decides it (see
-    /// [`TwoTorsionOrder`]).
+    /// `P^(k)(T) = prod (T - alpha_i^k)`: the Frobenius polynomial over `F_(q^k)` (MAGMA
+    /// `LPolynomial(C, k)`, reversed). The power sums `s_1..s_(2gk)` of the `alpha_i` by Newton's
+    /// identities, keeping only the last `2g` and the `s_(jk)` (those of the `alpha_i^k`), then
+    /// the coefficients with exact division. Its [`Self::p`] is `q^k`.
     ///
-    /// Cost: for each irreducible factor of `P mod 2`, of degree `d`, the order of `x` is the
-    /// least divisor of `2^d - 1` that works. The divisors are found by trial division up to
-    /// `2^(d/2)`, so about `2^31` steps near `d = 62`. For genus 4 (`d <= 8`) this is instant.
+    /// Cost: `s_m` has about `m log2(q) / 2` bits. Each of the `2gk` steps multiplies `2g`
+    /// coefficients of `P` by such sums, so the time grows like `g^4 k^2 (log2 q)^2` (quadratic
+    /// in `k`) and the memory like `g^2 k log2 q` bits, the size of the result (genus 12,
+    /// `k = 4094`, `q = 10^9 + 7`: 33 s and 13 MB in a release build). The analysis of `Jac[2]`
+    /// does not use this function.
     ///
     /// # Panics
     ///
-    /// Panics if `P mod 2` has an irreducible factor of degree above 62, which is possible from
-    /// genus 32 on (`deg P = 2g`), or if the order or the bound `divides` does not fit in a
+    /// Panics if `k == 0` or `k > MAX_BASE_CHANGE_DEGREE` (4096).
+    pub fn base_change(&self, k: u32) -> FrobeniusPolynomial {
+        assert!(
+            (1..=MAX_BASE_CHANGE_DEGREE).contains(&k),
+            "base_change: k = {k} outside 1..={MAX_BASE_CHANGE_DEGREE}"
+        );
+        self.base_change_by_power_sums(k as usize)
+    }
+
+    /// `#Jac(F_(q^k)) = P^(k)(1) = Res(P, x^k - 1)` (MAGMA `ClassNumber` of the constant field
+    /// extension of degree `k`). Same panics as [`Self::base_change`].
+    pub fn jacobian_order(&self, k: u32) -> Integer {
+        self.base_change(k).eval_at_sign(false)
+    }
+
+    /// The order of the quadratic twist of `Jac` over `F_(q^k)` (Frobenius `-F^k`):
+    /// `P^(k)(-1) = Res(P, x^k + 1)`. Same panics as [`Self::base_change`].
+    pub fn twisted_jacobian_order(&self, k: u32) -> Integer {
+        self.base_change(k).eval_at_sign(true)
+    }
+
+    /// The module `Jac[2]` over `F_2[x]` as far as `P` decides it (design C57 2.6; see
+    /// [`TwoTorsionAnalysis`]): the types allowed by the Weil pairing (S1, S2) and by the rank
+    /// bounds `dim ker(F^k -+ 1) <= v_2(P^(k)(+-1))` for every `k | N_max`.
+    ///
+    /// Hypothesis: `P` is the Frobenius polynomial of a principally polarized abelian variety
+    /// over `F_q`, `q` odd (a Jacobian). For any other `P` with the functional equation the
+    /// result is about a hypothetical variety; an empty set of types is `Err(Inconsistent)`.
+    ///
+    /// Errors: `EvenCharacteristic` (`q` even), `TooManyCandidates` (more than
+    /// [`MAX_CANDIDATES`] types), `TooLarge` (`N_max` above [`MAX_BASE_CHANGE_DEGREE`]),
+    /// `Inconsistent`.
+    ///
+    /// # Panics
+    ///
+    /// As [`Self::two_torsion_frobenius_order`]: a factor of `P mod 2` of degree above 62, or an
+    /// order that does not fit in a `u64`.
+    pub fn two_torsion_analysis(&self) -> Result<TwoTorsionAnalysis, TwoTorsionError> {
+        two_torsion::analyse(self)
+    }
+
+    /// The order of Frobenius on `Jac[2]` as far as `P` decides it (see [`TwoTorsionOrder`]):
+    /// [`Self::two_torsion_analysis`]`.order()`. When the analysis is not made
+    /// (`TooManyCandidates`, `TooLarge`) or finds no type (`Inconsistent`, a `P` that is not the
+    /// Frobenius polynomial of a principally polarized abelian variety), it returns the bound of
+    /// `P mod 2` alone, `Unresolved` with the candidates `S 2^t`, `0 <= t <= ceil(log2 e_max)`:
+    /// a true statement about any operator with characteristic polynomial `P mod 2`.
+    ///
+    /// Cost: for each irreducible factor of `P mod 2`, of degree `d`, the order of `x` is the
+    /// least divisor of `2^d - 1` that works. The divisors are found by trial division up to
+    /// `2^(d/2)`, so about `2^31` steps near `d = 62`. The rank bounds take `O(g^2 log k + g^3)`
+    /// operations on 128-bit words for each `k | N_max`, whatever the size of `q` (genus 12 with
+    /// `N_max = 4094` over `q = 10^9 + 7`: 0.02 s in a debug build). The types are at most
+    /// [`MAX_CANDIDATES`]. For genus 4 (`d <= 8`) the whole analysis takes milliseconds.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `q` is even (`P mod 2` is then not the characteristic polynomial of Frobenius
+    /// on `Jac[2]`), if `P mod 2` has an irreducible factor of degree above 62, which is possible
+    /// from genus 32 on (`deg P = 2g`), or if the order or the bound `divides` does not fit in a
     /// `u64`, which is possible from genus 64 on (the order is below `2^(g + 1)`). It never
     /// returns a wrapped value.
     pub fn two_torsion_frobenius_order(&self) -> TwoTorsionOrder {
+        match self.two_torsion_analysis() {
+            Ok(a) => a.order(),
+            Err(TwoTorsionError::EvenCharacteristic) => panic!(
+                "two_torsion_frobenius_order: q is even, so P mod 2 is not the characteristic \
+                 polynomial of Frobenius on Jac[2]"
+            ),
+            Err(_) => self.mod2_bound(),
+        }
+    }
+
+    /// The bound of `P mod 2` alone: `Unresolved` with every `S 2^t` (`DeterminedByP` when
+    /// `P mod 2` is squarefree).
+    fn mod2_bound(&self) -> TwoTorsionOrder {
         let fac = self.factor_mod(2);
         let mut s = 1u64;
         let mut emax = 1u32;
@@ -404,17 +474,19 @@ impl FrobeniusPolynomial {
             emax = emax.max(*e);
         }
         if emax == 1 {
-            TwoTorsionOrder::DeterminedByP(s)
-        } else {
-            // a unipotent block of size <= emax has order 2^ceil(log2 emax)
-            let mut two = 1u64;
-            while two < emax as u64 {
-                two *= 2;
-            }
-            TwoTorsionOrder::Unresolved {
-                semisimple_order: s,
-                divides: s.checked_mul(two).expect(ORDER_OVERFLOW),
-            }
+            return TwoTorsionOrder::DeterminedByP(s);
+        }
+        // a unipotent block of size <= emax has order 2^ceil(log2 emax)
+        let mut two = 1u64;
+        let mut candidates = vec![s];
+        while two < emax as u64 {
+            two *= 2;
+            candidates.push(s.checked_mul(two).expect(ORDER_OVERFLOW));
+        }
+        TwoTorsionOrder::Unresolved {
+            semisimple_order: s,
+            divides: s.checked_mul(two).expect(ORDER_OVERFLOW),
+            candidates,
         }
     }
 }
@@ -459,7 +531,7 @@ fn gcd(a: u64, b: u64) -> u64 {
     }
 }
 
-const ORDER_OVERFLOW: &str = "two_torsion_frobenius_order: the order does not fit in a u64";
+const ORDER_OVERFLOW: &str = "the order of Frobenius on Jac[2] does not fit in a u64";
 
 fn lcm(a: u64, b: u64) -> u64 {
     (a / gcd(a, b)).checked_mul(b).expect(ORDER_OVERFLOW)
@@ -591,16 +663,522 @@ mod tests {
                 TwoTorsionOrder::DeterminedByP(15)
             );
         }
-        // p = 7: (x+1)^2 (x^3+x+1)(x^3+x^2+1): semisimple order 7, divides 14.
+        // p = 7: (x+1)^2 (x^3+x+1)(x^3+x^2+1): semisimple order 7, divides 14; both orders are
+        // possible (v2 #Jac(F_7) = 5, design C57 Section 4.1).
         let fp =
             FrobeniusPolynomial::from_point_counts(&int(7), &ints(&[11, 69, 383, 2433])).unwrap();
         assert_eq!(
             fp.two_torsion_frobenius_order(),
             TwoTorsionOrder::Unresolved {
                 semisimple_order: 7,
-                divides: 14
+                divides: 14,
+                candidates: vec![7, 14],
             }
         );
+        // p = 17: #Jac(F_17) = P(1) = 98714 = 2 * 49357 (REQUESTS 1.1; PARI keyvals_pari.txt), so
+        // one Jordan block of size 2 at the eigenvalue 1: order 14 (REQUESTS C-5).
+        let fp = FrobeniusPolynomial::from_point_counts(&int(17), &ints(&[21, 285, 4923, 82985]))
+            .unwrap();
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::DeterminedByTwoRank {
+                order: 14,
+                bounds: vec![RankBound {
+                    k: 1,
+                    twisted: false,
+                    v2: 1
+                }],
+            }
+        );
+    }
+
+    #[test]
+    fn base_change_predicts_the_counts() {
+        // P^(k) is the Frobenius polynomial over F_(p^k): its N_1 is N_k of the curve, and the
+        // N_1, N_2 of P^(2) are N_2, N_4 (zeta_X.json counts).
+        for &(p, n, _) in X_ROWS {
+            let fp = FrobeniusPolynomial::from_point_counts(&int(p), &ints(&n)).unwrap();
+            for k in 1..=4u32 {
+                let b = fp.base_change(k);
+                assert_eq!(b.p(), &int(p).pow(k), "p = {p}, k = {k}");
+                assert_eq!(b.genus(), 4);
+                assert_eq!(
+                    b.point_counts(1),
+                    ints(&[n[k as usize - 1]]),
+                    "p = {p}, k = {k}"
+                );
+            }
+            assert_eq!(
+                fp.base_change(2).point_counts(2),
+                ints(&[n[1], n[3]]),
+                "p = {p}"
+            );
+            assert_eq!(fp.base_change(1), fp);
+        }
+    }
+
+    #[test]
+    fn jacobian_orders_match_the_owner() {
+        // order_of_Jac_Fp of data/a8_frobenius_predictions.json (johnjanik/M23 at e0d25b8,
+        // vendored in tests/data/m23/) for the X_ROWS primes.
+        let owner: &[(i64, i64)] = &[
+            (7, 4640),
+            (11, 20399),
+            (13, 21988),
+            (17, 98714),
+            (19, 120548),
+            (29, 818984),
+            (31, 968461),
+            (37, 2200520),
+            (41, 2916676),
+            (43, 3567354),
+            (47, 4938100),
+            (53, 7876756),
+            (59, 15011295),
+            (61, 14341736),
+            (67, 24064691),
+            (71, 24046799),
+            (73, 32795286),
+            (79, 37849713),
+        ];
+        for &(p, n, _) in X_ROWS {
+            let fp = FrobeniusPolynomial::from_point_counts(&int(p), &ints(&n)).unwrap();
+            let o = owner.iter().find(|r| r.0 == p).expect("owner row").1;
+            assert_eq!(fp.jacobian_order(1), int(o), "p = {p}");
+        }
+        // PARI/GP (tests/data/two_torsion/keyvals.gp, keyvals_pari.txt): P(-1),
+        // Res(P, x^4 + 1) and Res(P, x^5 - 1) at 17 and 59.
+        let row = |p: i64| X_ROWS.iter().find(|r| r.0 == p).unwrap();
+        let big = |s: &str| Integer::from_decimal_str(s).unwrap();
+        for (p, tw1, tw4, j5) in [
+            (
+                17,
+                "69230",
+                "48975933951329703300",
+                "4069914032622861116386154",
+            ),
+            (
+                59,
+                "10004415",
+                "21553097128538527354887445681",
+                "261272374040302192032654432854223600",
+            ),
+        ] {
+            let fp = FrobeniusPolynomial::from_point_counts(&int(p), &ints(&row(p).1)).unwrap();
+            assert_eq!(fp.twisted_jacobian_order(1), big(tw1), "p = {p}");
+            assert_eq!(fp.twisted_jacobian_order(4), big(tw4), "p = {p}");
+            assert_eq!(fp.jacobian_order(5), big(j5), "p = {p}");
+        }
+    }
+
+    /// The descending coefficients of a product of polynomials given descending.
+    fn mul_desc(a: &[Integer], b: &[Integer]) -> Vec<Integer> {
+        let mut r = vec![Integer::zero(); a.len() + b.len() - 1];
+        for (i, x) in a.iter().enumerate() {
+            for (j, y) in b.iter().enumerate() {
+                r[i + j] = r[i + j].clone() + x.clone() * y.clone();
+            }
+        }
+        r
+    }
+
+    /// `(T^2 + q)^g`: a Weil polynomial (roots `+-i sqrt q`) with `P mod 2 = (x + 1)^(2g)`.
+    fn t2_plus_q_pow(q: i64, g: usize) -> FrobeniusPolynomial {
+        let base = ints(&[1, 0, q]);
+        let mut c = ints(&[1]);
+        for _ in 0..g {
+            c = mul_desc(&c, &base);
+        }
+        FrobeniusPolynomial::from_coefficients(&int(q), c).unwrap()
+    }
+
+    #[test]
+    fn degenerate_genus_0_and_1() {
+        // Genus 0: P = 1, Jac[2] = 0.
+        let fp = FrobeniusPolynomial::from_coefficients(&int(5), ints(&[1])).unwrap();
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::DeterminedByP(1)
+        );
+        let a = fp.two_torsion_analysis().unwrap();
+        assert_eq!(a.candidates, vec![ModuleType(vec![])]);
+        assert!(a.bounds.is_empty());
+        assert_eq!(a.eigenvalue_one_types(), None);
+        let w = a.lagrangian_types(&[1]).unwrap();
+        assert_eq!(w.len(), 1);
+        assert!(w[0].parts.is_empty());
+        assert_eq!(w[0].eigenvalue_one(), Vec::<u32>::new());
+        assert_eq!(w[0].order(), 1);
+        // Elliptic curves (PARI/GP ellcard, factormod; tests/data/two_torsion/elliptic.gp and
+        // elliptic_pari.txt). y^2 = x^3 + 3x + 5 over F_7: a = 1, the cubic is irreducible.
+        let fp = poly_from_desc(7, &[1, -1, 7]);
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::DeterminedByP(3)
+        );
+        // y^2 = x^3 + x + 1 over F_5: #E = 9, a = -3.
+        let fp = poly_from_desc(5, &[1, 3, 5]);
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::DeterminedByP(3)
+        );
+        // y^2 = x^3 + 1 over F_5: #E = 6 (one root of the cubic, E[2](F_5) of order 2),
+        // P = T^2 + 5: one block of size 2, order 2.
+        let fp = poly_from_desc(5, &[1, 0, 5]);
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::DeterminedByTwoRank {
+                order: 2,
+                bounds: vec![RankBound {
+                    k: 1,
+                    twisted: false,
+                    v2: 1
+                }],
+            }
+        );
+        let a = fp.two_torsion_analysis().unwrap();
+        assert_eq!(a.eigenvalue_one_types(), Some(vec![vec![2]]));
+        // y^2 = x^3 - x over F_5: #E = 8, P = T^2 + 2T + 5, P(-1) = 4; three roots, so the true
+        // order is 1, but P alone allows 1 and 2: Unresolved, never a guess.
+        let fp = poly_from_desc(5, &[1, 2, 5]);
+        assert_eq!(fp.jacobian_order(1), int(8));
+        assert_eq!(fp.twisted_jacobian_order(1), int(4));
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::Unresolved {
+                semisimple_order: 1,
+                divides: 2,
+                candidates: vec![1, 2],
+            }
+        );
+        let a = fp.two_torsion_analysis().unwrap();
+        assert_eq!(a.eigenvalue_one_types(), Some(vec![vec![2], vec![1, 1]]));
+    }
+
+    #[test]
+    fn symplectic_filter() {
+        // Design C57 2.4, S2: at the eigenvalue 1 every odd part has even multiplicity.
+        // P mod 2 = (x + 1)^4: [3, 1] is removed (one of the five partitions).
+        let a = t2_plus_q_pow(5, 2).two_torsion_analysis().unwrap();
+        assert_eq!(a.symplectic_removed, 1);
+        let one = a.eigenvalue_one_types().unwrap();
+        assert!(!one.contains(&vec![3, 1]));
+        // (x + 1)^8: 8 of the 22 partitions are removed (7 1, 5 3, 5 2 1, 5 1^3, 4 3 1, 3 2^2 1,
+        // 3 2 1^3, 3 1^5).
+        let a = t2_plus_q_pow(5, 4).two_torsion_analysis().unwrap();
+        assert_eq!(a.symplectic_removed, 8);
+        let one = a.eigenvalue_one_types().unwrap();
+        for t in [vec![7, 1], vec![5, 3], vec![5, 2, 1], vec![3, 2, 1, 1, 1]] {
+            assert!(!one.contains(&t), "{t:?}");
+        }
+    }
+
+    #[test]
+    fn too_many_candidates_and_errors() {
+        // (T^2 + 5)^40: P mod 2 = (x + 1)^80 has p(80) = 15796476 types (above 10^6).
+        let fp = t2_plus_q_pow(5, 40);
+        assert_eq!(
+            fp.two_torsion_analysis(),
+            Err(TwoTorsionError::TooManyCandidates { count: 15796476 })
+        );
+        // The fallback is the bound of P mod 2 alone, a true statement.
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::Unresolved {
+                semisimple_order: 1,
+                divides: 128,
+                candidates: vec![1, 2, 4, 8, 16, 32, 64, 128],
+            }
+        );
+        // C57 review 1, m1: (T^2 + 5)^210, (x + 1)^420, p(420) = 22755290216580025259 (PARI/GP
+        // numbpart(420)) is above u64::MAX; the count once went through partition_count, which
+        // panics there. Above multiplicity 1000 the count saturates.
+        let fp = t2_plus_q_pow(5, 210);
+        assert_eq!(
+            fp.two_torsion_analysis(),
+            Err(TwoTorsionError::TooManyCandidates {
+                count: 22755290216580025259
+            })
+        );
+        assert_eq!(
+            fp.two_torsion_frobenius_order(),
+            TwoTorsionOrder::Unresolved {
+                semisimple_order: 1,
+                divides: 512,
+                candidates: vec![1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
+            }
+        );
+        let fp = t2_plus_q_pow(5, 501);
+        assert_eq!(
+            fp.two_torsion_analysis(),
+            Err(TwoTorsionError::TooManyCandidates { count: u128::MAX })
+        );
+        // q even: P mod 2 is not the characteristic polynomial of Frobenius on Jac[2].
+        let fp = poly_from_desc(4, &[1, 0, 4]);
+        assert_eq!(
+            fp.two_torsion_analysis(),
+            Err(TwoTorsionError::EvenCharacteristic)
+        );
+        // A w with w w^rev != P mod 2.
+        let fp =
+            FrobeniusPolynomial::from_point_counts(&int(7), &ints(&[11, 69, 383, 2433])).unwrap();
+        let a = fp.two_torsion_analysis().unwrap();
+        assert_eq!(
+            a.lagrangian_types(&[1, 1, 0, 0, 1]),
+            Err(TwoTorsionError::NotAReciprocalHalf)
+        );
+        // C57 review 1, m2: multiplicity 8 is the largest for lagrangian_types; (x + 1)^10 is
+        // refused (w = (x + 1)^5 = 1 + x + x^4 + x^5).
+        let a = t2_plus_q_pow(5, 4).two_torsion_analysis().unwrap();
+        assert!(a.lagrangian_types(&[1, 0, 0, 0, 1]).is_ok());
+        let a = t2_plus_q_pow(5, 5).two_torsion_analysis().unwrap();
+        assert!(matches!(
+            a.lagrangian_types(&[1, 1, 0, 0, 1, 1]),
+            Err(TwoTorsionError::TooLarge(_))
+        ));
+    }
+
+    #[test]
+    fn zero_group_orders_give_no_bound() {
+        // P = (T - 1)(T - 3) satisfies the functional equation over q = 3 but has the root 1, so
+        // #Jac(F_3) = P(1) = 0 and #Jac(F_9) = 0: those bounds are skipped (design review 1,
+        // m1), never v_2(0). The twisted bounds stay: P(-1) = 8, P^(2)(-1) = 20.
+        let fp = poly_from_desc(3, &[1, -4, 3]);
+        let a = fp.two_torsion_analysis().unwrap();
+        assert_eq!(a.skipped_bounds, vec![(1, false), (2, false)]);
+        assert_eq!(
+            a.bounds,
+            vec![
+                RankBound {
+                    k: 1,
+                    twisted: true,
+                    v2: 3
+                },
+                RankBound {
+                    k: 2,
+                    twisted: true,
+                    v2: 2
+                }
+            ]
+        );
+        assert_eq!(a.orders(), vec![1, 2]);
+    }
+
+    /// A `P` of genus `g` with the functional equation over `q` whose reduction mod 2 is the
+    /// palindromic `bits` (descending, `2g + 1` entries): `c_i = bits_i` for `i <= g` and
+    /// `c_(2g - i) = q^(g - i) c_i` (C57 review 1). It need not be a Weil polynomial: the
+    /// analysis of `Jac[2]` does not use the Riemann hypothesis.
+    fn synthetic(q: &Integer, bits: &[i64]) -> FrobeniusPolynomial {
+        let g = (bits.len() - 1) / 2;
+        let mut c: Vec<Integer> = bits.iter().map(|&b| int(b)).collect();
+        for i in 0..g {
+            c[2 * g - i] = q.pow((g - i) as u32) * c[i].clone();
+        }
+        FrobeniusPolynomial::from_coefficients(q, c).unwrap()
+    }
+
+    /// `(x + 1)^2 f f*` with `f = x^11 + x^2 + 1` (descending bits, genus 12): `x` has order
+    /// 2047 modulo `f`, so `N_max = 4094`.
+    fn large_n_max_bits() -> Vec<i64> {
+        // ascending: f = 1 + x^2 + x^11, f* = 1 + x^9 + x^11, (x + 1)^2 = 1 + x^2
+        let f: Vec<i64> = (0..12)
+            .map(|i| i64::from([0, 2, 11].contains(&i)))
+            .collect();
+        let fr: Vec<i64> = f.iter().rev().cloned().collect();
+        let prod = fp_factor::mul(&fp_factor::mul(&f, &fr, 2), &[1, 0, 1], 2);
+        assert_eq!(prod.len(), 25);
+        prod.iter().rev().cloned().collect()
+    }
+
+    /// `f()` on its own thread; fails the test if it takes more than `secs` seconds.
+    fn within<T: Send + 'static>(secs: u64, f: impl FnOnce() -> T + Send + 'static) -> T {
+        use std::sync::mpsc::{channel, RecvTimeoutError};
+        let (tx, rx) = channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(f());
+        });
+        match rx.recv_timeout(std::time::Duration::from_secs(secs)) {
+            Ok(v) => v,
+            Err(RecvTimeoutError::Timeout) => panic!("not finished after {secs} s"),
+            Err(RecvTimeoutError::Disconnected) => panic!("the computation panicked"),
+        }
+    }
+
+    #[test]
+    fn large_n_max_bounds_are_cheap() {
+        // C57 review 1, B1. Genus 12, P mod 2 = (x + 1)^2 f f*, f = x^11 + x^2 + 1: N_max = 4094
+        // (k | 4094: 1, 2, 23, 46, 89, 178, 2047, 4094). The bounds once came from the
+        // 2g N_max = 98256 power sums of P at full precision: at q = 3 5.7 s and 558 MB (debug),
+        // at q = 10^9 + 7 about 10 GB (the process aborted at a 3 GB cap after 72 s). Reference
+        // values: PARI/GP, v_2 of norm(Mod(x, P)^k -+ 1) (tests/data/two_torsion/large_nmax.gp,
+        // large_nmax_pari.txt).
+        // (q, [(k, v2 untwisted, v2 twisted) for k | 4094])
+        type Case = (&'static str, [(u64, u32, u32); 8]);
+        let cases: [Case; 2] = [
+            (
+                "3",
+                [
+                    (1, 4, 3),
+                    (2, 7, 2),
+                    (23, 4, 3),
+                    (46, 7, 2),
+                    (89, 4, 3),
+                    (178, 7, 2),
+                    (2047, 26, 25),
+                    (4094, 51, 24),
+                ],
+            ),
+            (
+                "1000000007",
+                [
+                    (1, 2, 2),
+                    (2, 4, 2),
+                    (23, 2, 2),
+                    (46, 4, 2),
+                    (89, 2, 2),
+                    (178, 4, 2),
+                    (2047, 24, 24),
+                    (4094, 48, 24),
+                ],
+            ),
+        ];
+        for (q, want) in cases {
+            let fp = synthetic(&Integer::from_decimal_str(q).unwrap(), &large_n_max_bits());
+            let f2 = fp.clone();
+            let a = within(60, move || f2.two_torsion_analysis()).unwrap();
+            assert_eq!((a.semisimple_order, a.max_order), (2047, 4094), "q = {q}");
+            let expect: Vec<RankBound> = [false, true]
+                .iter()
+                .flat_map(|&twisted| {
+                    want.iter().map(move |&(k, u, t)| RankBound {
+                        k,
+                        twisted,
+                        v2: if twisted { t } else { u },
+                    })
+                })
+                .collect();
+            assert_eq!(a.bounds, expect, "q = {q}");
+            assert!(a.skipped_bounds.is_empty(), "q = {q}");
+            // lambda_(x+1) = [2] or [1, 1]: r_1 = 1 or 2, both allowed by every bound.
+            assert_eq!(a.orders(), vec![2047, 4094], "q = {q}");
+            let f2 = fp.clone();
+            assert_eq!(
+                within(60, move || f2.two_torsion_frobenius_order()),
+                TwoTorsionOrder::Unresolved {
+                    semisimple_order: 2047,
+                    divides: 4094,
+                    candidates: vec![2047, 4094],
+                },
+                "q = {q}"
+            );
+        }
+    }
+
+    #[test]
+    fn bounds_equal_the_exact_valuations() {
+        // The bounds of the analysis (valuations computed modulo 2^128) equal the 2-adic
+        // valuations of the exact group orders of base_change (power sums, a second method) at
+        // every k | N_max, on the X_ROWS rows with a repeated factor mod 2, (T^2 + q)^g and
+        // the genus-12 P of large_n_max_bounds_are_cheap at q = 3 for k | 178.
+        let mut cases: Vec<FrobeniusPolynomial> = X_ROWS
+            .iter()
+            .map(|&(p, n, _)| FrobeniusPolynomial::from_point_counts(&int(p), &ints(&n)).unwrap())
+            .collect();
+        cases.extend([
+            t2_plus_q_pow(5, 1),
+            t2_plus_q_pow(3, 2),
+            t2_plus_q_pow(7, 4),
+        ]);
+        let mut checked = 0;
+        for fp in &cases {
+            let a = fp.two_torsion_analysis().unwrap();
+            for b in &a.bounds {
+                let n = if b.twisted {
+                    fp.twisted_jacobian_order(b.k as u32)
+                } else {
+                    fp.jacobian_order(b.k as u32)
+                };
+                assert_eq!(n.valuation(&int(2)), b.v2, "{fp}: {b:?}");
+                checked += 1;
+            }
+            assert!(a.skipped_bounds.is_empty(), "{fp}");
+        }
+        assert!(checked >= 100, "{checked}");
+        let fp = synthetic(&int(3), &large_n_max_bits());
+        let a = fp.two_torsion_analysis().unwrap();
+        for b in a.bounds.iter().filter(|b| 178 % b.k == 0) {
+            let n = if b.twisted {
+                fp.twisted_jacobian_order(b.k as u32)
+            } else {
+                fp.jacobian_order(b.k as u32)
+            };
+            assert_eq!(n.valuation(&int(2)), b.v2, "genus 12: {b:?}");
+        }
+    }
+
+    #[test]
+    fn base_change_of_genus_12() {
+        // The exact group orders P^(k)(1) = Res(P, x^k - 1) and P^(k)(-1) = Res(P, x^k + 1) of
+        // the genus-12 P of large_n_max_bounds_are_cheap modulo 10^30, and their 2-adic
+        // valuations (PARI/GP, tests/data/two_torsion/large_nmax.gp, large_nmax_pari.txt).
+        let ten30 = int(10).pow(30);
+        let big = |s: &str| Integer::from_decimal_str(s).unwrap();
+        for (q, k, untwisted, twisted, v) in [
+            ("3", 1, "538032", "537976", (4, 3)),
+            (
+                "3",
+                23,
+                "307867245892628370137315787216",
+                "894414162359307374796230493256",
+                (4, 3),
+            ),
+            (
+                "3",
+                89,
+                "187948291803259651120252897008",
+                "706212311980273080899907610392",
+                (4, 3),
+            ),
+            (
+                "1000000007",
+                1,
+                "751646660650734509420847052348",
+                "749646660608734509126847051660",
+                (2, 2),
+            ),
+            (
+                "1000000007",
+                23,
+                "324819430060498873988995265812",
+                "320645424931915580285248254340",
+                (2, 2),
+            ),
+            (
+                "1000000007",
+                89,
+                "632307901554557974918740542668",
+                "81424749539139308662858201180",
+                (2, 2),
+            ),
+        ] {
+            let fp = synthetic(&big(q), &large_n_max_bits());
+            let n = fp.jacobian_order(k);
+            let t = fp.twisted_jacobian_order(k);
+            assert_eq!(n.modulo(&ten30), big(untwisted), "q = {q}, k = {k}");
+            assert_eq!(t.modulo(&ten30), big(twisted), "q = {q}, k = {k}");
+            assert_eq!(
+                (n.valuation(&int(2)), t.valuation(&int(2))),
+                v,
+                "q = {q}, k = {k}"
+            );
+            assert_eq!(fp.base_change(k).p(), &big(q).pow(k), "q = {q}, k = {k}");
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "q is even")]
+    fn two_torsion_order_in_even_characteristic_panics() {
+        poly_from_desc(4, &[1, 0, 4]).two_torsion_frobenius_order();
     }
 
     fn poly_from_desc(p: i64, c: &[i64]) -> FrobeniusPolynomial {

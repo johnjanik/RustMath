@@ -177,6 +177,16 @@ output: `scratchpad/m23/impl/x_out.txt`, `l_out.txt`; formatted by `scratchpad/m
 otherwise (extension item 5). Q is one of the pair `{Q, Q^rev}` (both are printed in the raw
 output). Every row with counts has `P(chi) = P(chi p) = 0 mod 23` and passes the exact Weil test.
 
+Updated 2026-11-20 by REQUESTS C-5 (records in `../../c57/`): the column "2-torsion order" now
+gives the result of `two_torsion_frobenius_order` after C-5, read from the JSON files of the C-5
+release runs (`../../c57/impl/C57.md` Section 4, which also gives the bounds, the types at the
+eigenvalue 1 and the classes on `W`). The rank bounds `v2 #Jac(F_p^k)` of the Jacobian and
+`v2 #Jac'(F_p^k)` of its quadratic twist decide more rows than `P mod 2` alone. An open order
+gives its candidates (`Unresolved: 7 or 14`). Since F-9 every counted row is Decided
+(`../followup_f9/F9_impl.md` Section 3), so every value marked Decided here is Decided for the
+curve; the status column of these tables is still that of WP-F, before F-9. The other columns
+are unchanged.
+
 Independent checks of the regenerated rows:
 - PARI/GP (`scratchpad/m23/impl/gp/check_rows.gp`, rows written by `rows.py` from the raw output):
   for every counted row, P from the counts by Newton's identities in PARI, integral, all roots of
@@ -191,36 +201,36 @@ Independent checks of the regenerated rows:
 
 | p | model | N1 | N2 | N3 | N4 | (a1, a2, a3, a4) | P mod 2 | Q (one of the pair) | Weil | mod 23 | status | 2-torsion order | reference | time |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 5 | G | 7 | 37 | 169 | 561 | (1,6,20,16) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 conjugate branches) | Unresolved (multiple of 7, divides 14) | differs: reference [8, 36, 170, 560] (not a Weil polynomial) | 0.0 |
-| 7 | G7 | 11 | 69 | 383 | 2433 | (3,14,46,138) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.1 |
-| 11 | G | 15 | 133 | 1368 | 14905 | (3,10,33,145) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided) | equal | 0.2 |
-| 13 | G13 | 11 | 161 | 2135 | 29089 | (-3,0,-12,188) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | Unresolved (multiple of 7, divides 14) | equal | 0.1 |
-| 17 | G | 21 | 285 | 4923 | 82985 | (3,2,0,-130) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.2 |
-| 19 | G | 17 | 405 | 7265 | 130913 | (-3,26,66,74) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.2 |
+| 5 | G | 7 | 37 | 169 | 561 | (1,6,20,16) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 conjugate branches) | Unresolved: 7 or 14 | differs: reference [8, 36, 170, 560] (not a Weil polynomial) | 0.0 |
+| 7 | G7 | 11 | 69 | 383 | 2433 | (3,14,46,138) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.1 |
+| 11 | G | 15 | 133 | 1368 | 14905 | (3,10,33,145) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided; P mod 2 squarefree) | equal | 0.2 |
+| 13 | G13 | 11 | 161 | 2135 | 29089 | (-3,0,-12,188) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | Unresolved: 7 or 14 | equal | 0.1 |
+| 17 | G | 21 | 285 | 4923 | 82985 | (3,2,0,-130) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | 14 (Decided; v2 #Jac(F_p) = 1) | equal | 0.2 |
+| 19 | G | 17 | 405 | 7265 | 130913 | (-3,26,66,74) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.2 |
 | 23 |  |  |  |  |  |  |  |  |  |  | refused: model degenerate at this prime: the discriminant vanishes identically mod p |  | not in the reference table | 0.0 |
-| 29 | G | 35 | 789 | 24773 | 708785 | (5,-14,16,1060) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.5 |
-| 31 | G | 33 | 993 | 29640 | 926713 | (1,16,-35,875) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | 15 (conditional on the counts) | equal | 0.6 |
-| 37 | G | 43 | 1433 | 50881 | 1881609 | (5,44,254,3156) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.9 |
-| 41 | G | 42 | 1780 | 69408 | 2827728 | (0,49,162,1692) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | Unresolved (multiple of 3, divides 12) | equal | 1.4 |
-| 43 | G | 44 | 1996 | 80192 | 3422024 | (0,73,228,3470) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | equal | 2.0 |
-| 47 | G | 47 | 2349 | 104321 | 4882281 | (-1,70,96,2934) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 2.5 |
-| 53 | G | 54 | 2804 | 148704 | 7881808 | (0,-3,-58,-2164) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | equal | 3.7 |
-| 59 | G | 72 | 3560 | 205056 | 12120780 | (12,111,648,3991) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 5, divides 10) | equal | 5.6 |
-| 61 | G | 64 | 3740 | 226852 | 13855856 | (2,11,-24,2476) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | equal | 6.5 |
-| 67 | G | 80 | 4460 | 302192 | 20163724 | (12,57,584,8759) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 5, divides 10) | equal | 10.0 |
-| 71 | G | 68 | 5048 | 358256 | 25432076 | (-4,11,92,4679) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 5, divides 10) | equal | 13.4 |
-| 73 | G | 83 | 5541 | 390089 | 28393065 | (9,146,1428,12030) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | Unresolved (multiple of 7, divides 14) | equal | 14.1 |
-| 79 | G | 77 | 6369 | 491636 | 38964585 | (-3,68,-663,7335) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided) | equal | 19.5 |
-| 83 | G | 91 | 6885 | 574375 | 47483041 | (7,22,902,12258) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 23.8 |
-| 89 | G | 104 | 7942 | 707906 | 62766210 | (14,108,1576,22324) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 31.5 |
-| 97 | G | 101 | 9385 | 910820 | 88546849 | (3,-8,-651,2563) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided) | new | 40.8 |
-| 101 | G | 114 | 10456 | 1030926 | 104090928 | (12,199,2020,28200) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 47.6 |
-| 103 | G | 96 | 10648 | 1092594 | 112536824 | (-8,51,-282,-2198) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 43.5 |
-| 107 | G | 116 | 11482 | 1226360 | 131139882 | (8,48,652,19390) | `(x+1)^8` | `x^4+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | Unresolved (multiple of 1, divides 8) | new | 73.8 |
-| 109 | G | 104 | 11986 | 1294118 | 141216370 | (-6,70,-652,18718) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 103.5 |
-| 113 | G | 128 | 13016 | 1444142 | 163058328 | (14,221,2594,29766) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 80.8 |
-| 127 | G | 127 | 16501 | 2047933 | 260199313 | (-1,186,-336,31116) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 118.0 |
-| 131 | G | 144 | 17064 | 2246976 | 294472176 | (12,23,-672,-12864) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 117.1 |
+| 29 | G | 35 | 789 | 24773 | 708785 | (5,-14,16,1060) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.5 |
+| 31 | G | 33 | 993 | 29640 | 926713 | (1,16,-35,875) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | 15 (Decided; P mod 2 squarefree) | equal | 0.6 |
+| 37 | G | 43 | 1433 | 50881 | 1881609 | (5,44,254,3156) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.9 |
+| 41 | G | 42 | 1780 | 69408 | 2827728 | (0,49,162,1692) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | Unresolved: 6 or 12 | equal | 1.4 |
+| 43 | G | 44 | 1996 | 80192 | 3422024 | (0,73,228,3470) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 12 (Decided; v2 #Jac(F_p) = 1) | equal | 2.0 |
+| 47 | G | 47 | 2349 | 104321 | 4882281 | (-1,70,96,2934) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 2.5 |
+| 53 | G | 54 | 2804 | 148704 | 7881808 | (0,-3,-58,-2164) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 6 or 12 | equal | 3.7 |
+| 59 | G | 72 | 3560 | 205056 | 12120780 | (12,111,648,3991) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 10 (Decided; v2 #Jac(F_p^5) = 4) | equal | 5.6 |
+| 61 | G | 64 | 3740 | 226852 | 13855856 | (2,11,-24,2476) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 6 or 12 | equal | 6.5 |
+| 67 | G | 80 | 4460 | 302192 | 20163724 | (12,57,584,8759) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 10 (Decided; v2 #Jac(F_p^5) = 4) | equal | 10.0 |
+| 71 | G | 68 | 5048 | 358256 | 25432076 | (-4,11,92,4679) | `(x^4+x^3+x^2+x+1)^2` | `x^4+x^3+x^2+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 10 (Decided; v2 #Jac(F_p^5) = 4) | equal | 13.4 |
+| 73 | G | 83 | 5541 | 390089 | 28393065 | (9,146,1428,12030) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A2) | 14 (Decided; v2 #Jac(F_p) = 1) | equal | 14.1 |
+| 79 | G | 77 | 6369 | 491636 | 38964585 | (-3,68,-663,7335) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided; P mod 2 squarefree) | equal | 19.5 |
+| 83 | G | 91 | 6885 | 574375 | 47483041 | (7,22,902,12258) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 23.8 |
+| 89 | G | 104 | 7942 | 707906 | 62766210 | (14,108,1576,22324) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac(F_p) = 1) | new | 31.5 |
+| 97 | G | 101 | 9385 | 910820 | 88546849 | (3,-8,-651,2563) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided; P mod 2 squarefree) | new | 40.8 |
+| 101 | G | 114 | 10456 | 1030926 | 104090928 | (12,199,2020,28200) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 3 or 6 or 12 | new | 47.6 |
+| 103 | G | 96 | 10648 | 1092594 | 112536824 | (-8,51,-282,-2198) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 12 (Decided; v2 #Jac(F_p) = 1) | new | 43.5 |
+| 107 | G | 116 | 11482 | 1226360 | 131139882 | (8,48,652,19390) | `(x+1)^8` | `x^4+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | Unresolved: 4 or 8 | new | 73.8 |
+| 109 | G | 104 | 11986 | 1294118 | 141216370 | (-6,70,-652,18718) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac'(F_p^4) = 6) | new | 103.5 |
+| 113 | G | 128 | 13016 | 1444142 | 163058328 | (14,221,2594,29766) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 12 (Decided; v2 #Jac(F_p) = 1) | new | 80.8 |
+| 127 | G | 127 | 16501 | 2047933 | 260199313 | (-1,186,-336,31116) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | 14 (Decided; v2 #Jac(F_p) = 1) | new | 118.0 |
+| 131 | G | 144 | 17064 | 2246976 | 294472176 | (12,23,-672,-12864) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 6 or 12 | new | 117.1 |
 
 p = 3: refused by every model (discriminant vanishes identically mod 3; `x_at_3_and_23_refused`).
 p = 23: refused likewise.
@@ -230,34 +240,34 @@ p = 23: refused likewise.
 | p | s0 | N1 | N2 | N3 | N4 | (a1, a2, a3, a4) | P mod 2 | Q (one of the pair) | Weil | mod 23 | status | 2-torsion order | reference | time |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 5 | 3 |  |  |  |  |  |  |  |  |  | refused: model degenerate at this prime: the discriminant vanishes identically mod p |  | refused (BadFibre('fibre polynomial vanishes identically')) | 0.0 |
-| 7 | 5 | 7 | 45 | 343 | 2545 | (-1,-2,2,38) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.1 |
+| 7 | 5 | 7 | 45 | 343 | 2545 | (-1,-2,2,38) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.1 |
 | 11 | 2 |  |  |  |  |  |  |  |  |  | refused: model degenerate at this prime: the discriminant vanishes identically mod p |  | refused (BadFibre('fibre polynomial vanishes identically')) | 0.0 |
-| 19 | 3 | 15 | 413 | 6849 | 130169 | (-5,38,-152,650) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 0.1 |
+| 19 | 3 | 15 | 413 | 6849 | 130169 | (-5,38,-152,650) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 0.1 |
 | 23 | 5 |  |  |  |  |  |  |  |  |  | refused: model degenerate at this prime: the discriminant vanishes identically mod p |  | not in the reference table | 0.0 |
 | 23 | 15 |  |  |  |  |  |  |  |  |  | refused: model degenerate at this prime: the discriminant vanishes identically mod p |  | not in the reference table | 0.0 |
-| 31 | 12 | 43 | 1017 | 30265 | 923729 | (11,88,682,4438) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (ordinary 3-fold point [1, 2]; A3 conjugate branches) | Unresolved (multiple of 7, divides 14) | differs: reference [44, 1014, 30266, 923726] | 0.4 |
-| 41 | 8 | 40 | 1790 | 68866 | 2828954 | (-2,56,-128,2402) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | equal | 1.1 |
-| 43 | 15 | 43 | 1829 | 78799 | 3422769 | (-1,-10,-226,1278) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | equal | 1.3 |
-| 47 | 13 | 54 | 2316 | 104076 | 4889096 | (6,71,438,5270) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 1.7 |
-| 53 | 21 | 52 | 2862 | 150562 | 7889314 | (-2,28,508,-1024) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 2.7 |
-| 53 | 36 | 57 | 2925 | 147507 | 7890353 | (3,62,-280,512) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 3.0 |
-| 53 | 41 | 45 | 2885 | 147972 | 7888001 | (-9,78,-761,4593) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided) | new | 2.8 |
-| 61 | 52 | 51 | 3909 | 226185 | 13840033 | (-11,154,-1516,12108) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 5.0 |
-| 67 | 15 | 71 | 4661 | 302150 | 20149585 | (3,90,723,5045) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided) | new | 7.6 |
-| 67 | 42 | 62 | 4614 | 301154 | 20166970 | (-6,80,-278,6274) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 7.6 |
-| 71 | 37 | 56 | 5114 | 358256 | 25415418 | (-16,164,-1144,7086) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 9.5 |
-| 71 | 67 | 78 | 5210 | 358566 | 25433810 | (6,102,758,11934) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 9.4 |
-| 79 | 15 | 94 | 6510 | 493546 | 38940122 | (14,232,2502,23582) | `(x+1)^8` | `x^4+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | Unresolved (multiple of 1, divides 8) | new | 14.5 |
-| 79 | 40 | 82 | 6316 | 494788 | 38952656 | (2,39,658,2568) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 14.5 |
-| 79 | 46 | 70 | 6334 | 492232 | 38966242 | (-10,96,-896,10508) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 14.3 |
-| 89 | 57 | 94 | 8088 | 707974 | 62746864 | (4,91,1344,9280) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 3, divides 12) | new | 23.2 |
-| 89 | 69 | 94 | 8090 | 705808 | 62734682 | (4,92,626,3438) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 23.2 |
-| 97 | 76 | 103 | 9497 | 913861 | 88569977 | (5,56,634,13668) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 36.3 |
-| 101 | 74 | 109 | 10305 | 1024111 | 104049033 | (7,76,-1646,-14600) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 37.8 |
-| 101 | 98 | 115 | 10117 | 1027081 | 104049377 | (13,42,-1260,-18212) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 38.3 |
-| 103 | 93 | 117 | 10897 | 1091211 | 112578169 | (13,228,1726,23860) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | Unresolved (multiple of 7, divides 14) | new | 53.4 |
-| 127 | 63 | 135 | 16457 | 2050377 | 260132721 | (7,188,1866,19142) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 7, divides 14) | new | 100.2 |
-| 127 | 74 | 130 | 16210 | 2047378 | 260120418 | (2,42,-254,-5846) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved (multiple of 1, divides 8) | new | 99.0 |
+| 31 | 12 | 43 | 1017 | 30265 | 923729 | (11,88,682,4438) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (ordinary 3-fold point [1, 2]; A3 conjugate branches) | Unresolved: 7 or 14 | differs: reference [44, 1014, 30266, 923726] | 0.4 |
+| 41 | 8 | 40 | 1790 | 68866 | 2828954 | (-2,56,-128,2402) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac'(F_p^4) = 6) | equal | 1.1 |
+| 43 | 15 | 43 | 1829 | 78799 | 3422769 | (-1,-10,-226,1278) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | equal | 1.3 |
+| 47 | 13 | 54 | 2316 | 104076 | 4889096 | (6,71,438,5270) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | 12 (Decided; v2 #Jac(F_p) = 1) | new | 1.7 |
+| 53 | 21 | 52 | 2862 | 150562 | 7889314 | (-2,28,508,-1024) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac(F_p) = 1) | new | 2.7 |
+| 53 | 36 | 57 | 2925 | 147507 | 7890353 | (3,62,-280,512) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 3.0 |
+| 53 | 41 | 45 | 2885 | 147972 | 7888001 | (-9,78,-761,4593) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided; P mod 2 squarefree) | new | 2.8 |
+| 61 | 52 | 51 | 3909 | 226185 | 13840033 | (-11,154,-1516,12108) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 5.0 |
+| 67 | 15 | 71 | 4661 | 302150 | 20149585 | (3,90,723,5045) | `(x^4+x+1)(x^4+x^3+1)` | `x^4+x^3+1` | true | (0,0) | Decided: Nodal (62 nodes) | 15 (Decided; P mod 2 squarefree) | new | 7.6 |
+| 67 | 42 | 62 | 4614 | 301154 | 20166970 | (-6,80,-278,6274) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 4 or 8 | new | 7.6 |
+| 71 | 37 | 56 | 5114 | 358256 | 25415418 | (-16,164,-1144,7086) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 4 or 8 | new | 9.5 |
+| 71 | 67 | 78 | 5210 | 358566 | 25433810 | (6,102,758,11934) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 4 or 8 | new | 9.4 |
+| 79 | 15 | 94 | 6510 | 493546 | 38940122 | (14,232,2502,23582) | `(x+1)^8` | `x^4+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | Unresolved: 2 or 4 or 8 | new | 14.5 |
+| 79 | 40 | 82 | 6316 | 494788 | 38952656 | (2,39,658,2568) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 6 or 12 | new | 14.5 |
+| 79 | 46 | 70 | 6334 | 492232 | 38966242 | (-10,96,-896,10508) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac(F_p) = 1) | new | 14.3 |
+| 89 | 57 | 94 | 8088 | 707974 | 62746864 | (4,91,1344,9280) | `(x+1)^4(x^2+x+1)^2` | `x^4+x^3+x+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 3 or 6 or 12 | new | 23.2 |
+| 89 | 69 | 94 | 8090 | 705808 | 62734682 | (4,92,626,3438) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | 8 (Decided; v2 #Jac'(F_p^4) = 6) | new | 23.2 |
+| 97 | 76 | 103 | 9497 | 913861 | 88569977 | (5,56,634,13668) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 36.3 |
+| 101 | 74 | 109 | 10305 | 1024111 | 104049033 | (7,76,-1646,-14600) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 37.8 |
+| 101 | 98 | 115 | 10117 | 1027081 | 104049377 | (13,42,-1260,-18212) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 38.3 |
+| 103 | 93 | 117 | 10897 | 1091211 | 112578169 | (13,228,1726,23860) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Unresolved: DeltaSumCertified (A3 rational branches) | 14 (Decided; v2 #Jac(F_p) = 1) | new | 53.4 |
+| 127 | 63 | 135 | 16457 | 2050377 | 260132721 | (7,188,1866,19142) | `(x+1)^2(x^3+x+1)(x^3+x^2+1)` | `x^4+x^3+x^2+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 7 or 14 | new | 100.2 |
+| 127 | 74 | 130 | 16210 | 2047378 | 260120418 | (2,42,-254,-5846) | `(x+1)^8` | `x^4+1` | true | (0,0) | Decided: Nodal (62 nodes) | Unresolved: 4 or 8 | new | 99.0 |
 
 ## 4. API
 
@@ -419,7 +429,7 @@ files: the crates are not fmt-clean at the base). Zero `unsafe`; no em-dashes in
 | 1. Remove the D flags at 13, 31, 41, 73 | The non-nodal point is classified exactly: an ordinary cusp (A2, delta 1, one branch) on `T = 0`, with 61 nodes; delta-sum 62. The reference counts are the exact counts. | Not removed under the project rule: the rows are `Unresolved (DeltaSumCertified)`. Le Lay's (8,23) model cannot help: its fibre degree is 8 (the certificate needs 2 to 4, and the other ruling has degree 23), and it has two non-nodal points over Q, so it is never Nodal (design F-2). Promotion: F-9. |
 | 2. p = 3 and 5 | p = 5: exact counts `7, 37, 169, 561` (k <= 6 checked), Weil, mod 23, mod 2; status DeltaSumCertified. p = 3: refused by every model. | 5: Unresolved pending F-9 (if promoted, X has good reduction at 5). 3: F-1. |
 | 3. More primes, about 127 | X to 131, L to 127 (Section 3). | New results; statuses per row. |
-| 5. Order of Frobenius on `Jac[2]` | `two_torsion_frobenius_order`; 15 where `P mod 2` is squarefree. | Decided (15) at X: 11, 79, 97 and at the covers (53, 41), (67, 15) (all Decided rows); 15 "conditional on the counts" at X: 31; bounds elsewhere. |
+| 5. Order of Frobenius on `Jac[2]` | `two_torsion_frobenius_order`; 15 where `P mod 2` is squarefree. | Decided (15) at X: 11, 79, 97 and at the covers (53, 41), (67, 15) (all Decided rows); 15 "conditional on the counts" at X: 31; bounds elsewhere. Since C-5 (2026-11-20, `../../c57/`): Decided at 15 rows of X and 8 over L (4 of the X rows, 11, 31, 79, 97, and 2 of the L rows, (53, 41), (67, 15), by `P mod 2` squarefree, the rule of WP-F; the rest by the rank bounds); the tables of Section 3 give the new values. |
 | 4. Q versus Q^rev | not attempted (WP-A). | F-7. |
 
 Follow-ups (with the reason):
