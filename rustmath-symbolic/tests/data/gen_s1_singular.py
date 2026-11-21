@@ -73,6 +73,10 @@
 #       value folded in round 4 (NotLaurent for c + x, the value or DivisionByZero for c), and the
 #       exact values round 5 adds (arcsin(+-1/2), arccos(+-1/2), arccosh(+-1/2), arcsinh(+-i/2),
 #       arctanh(+-i)) inverted at 0, and divided into x minus the value (DivisionByZero).
+#   (h) S1 finish under the narrowed bar (review 6, semantics lens, m2), after the (g) rows: two
+#       truncated-constant arguments per pair, c*(1+x)/(1+x) and c + (sin(x)^2+cos(x)^2-1) at 0
+#       (for c = 0, (1+x)/(1+x) - 1 and sin(x)^2+cos(x)^2-1): PrecisionExhausted, never a value,
+#       NotLaurent or DivisionByZero.
 import sys
 import os
 sys.dont_write_bytecode = True
@@ -334,6 +338,30 @@ def main():
         f = 'x/(%s - (%s))' % (fc, value)
         rows.append(['g:%s:zero' % cid, f, '0', 2, 'err DivisionByZero', None, 'Unknown',
                      'the divisor is the exact zero f(c) - %s: DivisionByZero' % value])
+    # (h) S1 finish under the narrowed bar (review 6, semantics lens, m2), after every other row so
+    # that no id changes: the third case a branch point meets, a truncated constant. For every
+    # pair, the argument c*(1+x)/(1+x) (for c = 0, (1+x)/(1+x) - 1) and c + (sin(x)^2+cos(x)^2-1)
+    # at 0. Each is the constant c, but its series is c + O(h^P), not exact (the inverse of 1 + x
+    # is truncated), so whether the argument is the branch point is undecided: the integrand (or
+    # log, the root, the power of the base) asks for precision and the driver never decides,
+    # PrecisionExhausted (a bounded search, section 2.1), never a value, NotLaurent or
+    # DivisionByZero. gp's outcome is in the note: it reads (1+x)/(1+x) as the rational function
+    # 1 and expands f(c), or fails on an O-term ("impossible inverse", "domain error").
+    for tmpl, points in FUNCS:
+        fn = fname(tmpl)
+        for (c, val, rational) in points:
+            if c == '0':
+                args = ['(1+x)/(1+x) - 1', 'sin(x)^2+cos(x)^2-1']
+            else:
+                args = [scaled(c, '((1+x)/(1+x))'), '%s + (sin(x)^2+cos(x)^2-1)' % c]
+            for j, u in enumerate(args):
+                f = tmpl % u
+                rows.append(['h:%s@%s:trunc%d' % (fn, c, j), f, '0', 2, 'err PrecisionExhausted',
+                             None, 'Unknown',
+                             'a truncated constant argument at the branch point: a bounded '
+                             'search (PrecisionExhausted), never a value, NotLaurent or '
+                             'DivisionByZero'])
+                gp_jobs.append((len(rows) - 1, f, '0', 2))
     res = g.series_batch([(t, p, n) for (_, t, p, n) in gp_jobs])
     gp_of_row = {}
     for (i, t, p, n), r in zip(gp_jobs, res):

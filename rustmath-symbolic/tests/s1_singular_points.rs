@@ -40,6 +40,14 @@
 //!   m1), after the (e) rows: `1/(3 + f(c x^0))`, `1/(x + 3 + f(c x^0))`, `log(x + 3 + f(c x^0))`
 //!   and `sqrt(x + 3 + f(c x^0))` at 0. The owner's first rule asks for a value, and the sum
 //!   3 + f(c) must be decided nonzero: the values (gp on the simplified constant).
+//! - (g) values reached through folded constants (S1 fix-up round 5), after the (f) rows.
+//! - (h) two truncated-constant arguments per pair (S1 finish under the narrowed bar, review 6,
+//!   semantics lens, m2), after the (g) rows: `f(c*(1+x)/(1+x))` and
+//!   `f(c + (sin(x)^2+cos(x)^2-1))` at 0 (for c = 0, `(1+x)/(1+x) - 1` and
+//!   `sin(x)^2+cos(x)^2-1`). The argument is the constant c, but its series is `c + O(h^P)`, so
+//!   whether it is the branch point is undecided: `PrecisionExhausted` (a bounded search), never a
+//!   value, `NotLaurent` or `DivisionByZero`. This is the third case the engine meets at a branch
+//!   point, next to the exact constant (a) and the non-constant argument (b).
 //!
 //! Intended refusals (not regressions in the sense of S1_BAR (b)). On 39 rows the matrix expects a
 //! refusal where HEAD's taylor returns x (checked on HEAD: `x + 0*arctan(I*x^0)` is x). They are
@@ -184,8 +192,40 @@ fn matrix_covers_every_function_and_branch_point() {
             );
         }
     }
+    // (h), the finish of S1 (review 6, m2): two truncated-constant rows for each pair
+    for fc in [
+        "arcsin@1",
+        "arcsin@-1",
+        "arccos@1",
+        "arccos@-1",
+        "arctan@I",
+        "arctan@-I",
+        "arcsinh@I",
+        "arcsinh@-I",
+        "arccosh@1",
+        "arccosh@-1",
+        "arctanh@1",
+        "arctanh@-1",
+        "log@0",
+        "sqrt@0",
+        "pow(1/3)@0",
+        "pow(2/3)@0",
+        "pow(-1/2)@0",
+        "powpi@0",
+        "pow(x+1)@0",
+        "pow(2+sin(x))@0",
+        "powI@0",
+        "pow(1/2+I)@0",
+        "pow(-1/2+I)@0",
+    ] {
+        let n = all
+            .iter()
+            .filter(|r| r.id.starts_with(&format!("h:{fc}:trunc")))
+            .count();
+        assert_eq!(n, 2, "class h: of {fc} has {n} rows");
+    }
     // (a) is a value or DivisionByZero (a pole of the constant), or NotLaurent for 0^I only (it
-    // has no value); (b) and (d) are NotLaurent; (c) and (f) a value
+    // has no value); (b) and (d) are NotLaurent; (c) and (f) a value; (h) PrecisionExhausted
     for r in &all {
         match (&r.id[..2], &r.want) {
             ("a:", RowWant::Value(_)) | ("a:", RowWant::Refusal(Kind::DivisionByZero)) => {}
@@ -199,6 +239,7 @@ fn matrix_covers_every_function_and_branch_point() {
             ("g:", RowWant::Value(_)) if r.id.ends_with(":exact") || r.id.ends_with(":inv") => {}
             ("g:", RowWant::Refusal(Kind::DivisionByZero))
                 if r.id.ends_with(":exact") || r.id.ends_with(":zero") => {}
+            ("h:", RowWant::Refusal(Kind::PrecisionExhausted)) => {}
             _ => panic!("row {} has the expectation {:?}", r.id, r.want),
         }
     }
@@ -270,5 +311,18 @@ fn inverted_values_at_branch_points_are_decided() {
 fn values_reached_through_folded_constants() {
     let r = rows("g:");
     assert_eq!(r.len(), 32, "the (g) rows");
+    check_all(r, DIGITS, STACK);
+}
+
+/// (h), S1 finish under the narrowed bar (review 6, semantics lens, m2): a truncated-constant
+/// argument at a branch point, `f(c*(1+x)/(1+x))` and `f(c + (sin(x)^2+cos(x)^2-1))` at 0 for
+/// every pair, is `PrecisionExhausted`: the argument is c, but its series is `c + O(h^P)`, so the
+/// engine cannot decide whether it is the branch point, and a bounded search never decides. Never
+/// a value, `NotLaurent` or `DivisionByZero`. Review 6 found this outcome on 1 520 rows of its own
+/// fuzzer; no test pinned it per pair.
+#[test]
+fn truncated_constants_at_branch_points_are_undecided() {
+    let r = rows("h:");
+    assert_eq!(r.len(), 46, "the (h) rows");
     check_all(r, DIGITS, STACK);
 }

@@ -23,62 +23,72 @@ impl Expr {
     /// let expr = (x.clone() + Expr::from(1)) * y.clone();
     /// let expanded = expr.expand();
     /// ```
+    ///
+    /// The walk over the tree uses an explicit stack (S1 finish, fix-up round 1, fin1 resources
+    /// B5): the parser of S1 reads `x^-2^-2^...^-2` as `Pow(x, Neg(Pow(2, Neg(...))))`, two nodes
+    /// per level where HEAD's parser made one, and the recursive walk took a frame per node, so
+    /// `expand` of that parse aborted from 959 levels on a 2 MB debug thread (15 410 on 8 MB in
+    /// release) where HEAD's `expand` of HEAD's parse completed up to 1 439 (22 772). Each node is
+    /// built by the rules below from its expanded children, as the recursive walk did; the rules
+    /// that distribute (`expand_multiply`, `expand_power`, `distribute_negation`) still recurse
+    /// over the sums they distribute, as HEAD's did.
     pub fn expand(&self) -> Expr {
-        match self {
-            Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => self.clone(),
-
-            Expr::Binary(op, left, right) => {
-                let left_exp = left.expand();
-                let right_exp = right.expand();
-
-                match op {
-                    BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mod => {
-                        // Just recursively expand
-                        Expr::Binary(*op, Arc::new(left_exp), Arc::new(right_exp))
+        /// visit a node (its children first), or build it from its children's expansions
+        enum Step<'a> {
+            Visit(&'a Expr),
+            Build(&'a Expr),
+        }
+        let mut steps: Vec<Step<'_>> = vec![Step::Visit(self)];
+        let mut done: Vec<Expr> = Vec::new();
+        while let Some(step) = steps.pop() {
+            match step {
+                Step::Visit(e) => match e {
+                    Expr::Integer(_) | Expr::Rational(_) | Expr::Real(_) | Expr::Symbol(_) => {
+                        done.push(e.clone())
                     }
-                    BinaryOp::Mul => {
-                        // Distribute multiplication over addition
-                        expand_multiply(&left_exp, &right_exp)
+                    Expr::Binary(_, left, right) => {
+                        steps.push(Step::Build(e));
+                        steps.push(Step::Visit(right));
+                        steps.push(Step::Visit(left));
                     }
-                    BinaryOp::Div => {
-                        // Don't expand division
-                        Expr::Binary(BinaryOp::Div, Arc::new(left_exp), Arc::new(right_exp))
+                    Expr::Unary(_, inner) => {
+                        steps.push(Step::Build(e));
+                        steps.push(Step::Visit(inner));
                     }
-                    BinaryOp::Pow => {
-                        // Expand (expr)^n for small integer n
-                        if let Expr::Integer(exp) = right.as_ref() {
-                            // A large exponent stays unexpanded.
-                            if let Ok(e) = u32::try_from(exp) {
-                                if e <= 10 {
-                                    return expand_power(&left_exp, e);
-                                }
+                    Expr::Function(_, args) => {
+                        steps.push(Step::Build(e));
+                        steps.extend(args.iter().rev().map(|a| Step::Visit(a)));
+                    }
+                },
+                Step::Build(e) => {
+                    let v = match e {
+                        Expr::Binary(op, _, right) => {
+                            let right_exp = done.pop().expect("expand: the right operand");
+                            let left_exp = done.pop().expect("expand: the left operand");
+                            expand_binary(*op, left_exp, right_exp, right)
+                        }
+                        Expr::Unary(op, _) => {
+                            let inner_exp = done.pop().expect("expand: the operand");
+                            match op {
+                                // Distribute negation: -(a + b) = -a - b
+                                UnaryOp::Neg => distribute_negation(&inner_exp),
+                                _ => Expr::Unary(*op, Arc::new(inner_exp)),
                             }
                         }
-                        Expr::Binary(BinaryOp::Pow, Arc::new(left_exp), Arc::new(right_exp))
-                    }
+                        Expr::Function(name, args) => {
+                            // the expanded arguments, in order
+                            let at = done.len() - args.len();
+                            let expanded_args: Vec<Arc<Expr>> =
+                                done.drain(at..).map(Arc::new).collect();
+                            Expr::Function(name.clone(), expanded_args)
+                        }
+                        leaf => leaf.clone(),
+                    };
+                    done.push(v);
                 }
-            }
-
-            Expr::Unary(op, inner) => {
-                let inner_exp = inner.expand();
-                match op {
-                    UnaryOp::Neg => {
-                        // Distribute negation: -(a + b) = -a - b
-                        distribute_negation(&inner_exp)
-                    }
-                    _ => Expr::Unary(*op, Arc::new(inner_exp)),
-                }
-            }
-
-            Expr::Function(name, args) => {
-                // Recursively expand all arguments
-                let expanded_args: Vec<Arc<Expr>> = args
-                    .iter()
-                    .map(|arg| Arc::new(arg.expand()))
-                    .collect();
-                Expr::Function(name.clone(), expanded_args)
             }
         }
+        done.pop().expect("expand: the expansion of the root")
     }
 
     /// Collect terms with respect to a variable
@@ -133,6 +143,37 @@ impl Expr {
         }
 
         result
+    }
+}
+
+/// One binary node of `expand` from its expanded operands (`right` is the operand before its
+/// expansion: an `Integer` exponent of at most 10 expands the power).
+fn expand_binary(op: BinaryOp, left_exp: Expr, right_exp: Expr, right: &Expr) -> Expr {
+    match op {
+        BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mod => {
+            // Just recursively expand
+            Expr::Binary(op, Arc::new(left_exp), Arc::new(right_exp))
+        }
+        BinaryOp::Mul => {
+            // Distribute multiplication over addition
+            expand_multiply(&left_exp, &right_exp)
+        }
+        BinaryOp::Div => {
+            // Don't expand division
+            Expr::Binary(BinaryOp::Div, Arc::new(left_exp), Arc::new(right_exp))
+        }
+        BinaryOp::Pow => {
+            // Expand (expr)^n for small integer n
+            if let Expr::Integer(exp) = right {
+                // A large exponent stays unexpanded.
+                if let Ok(e) = u32::try_from(exp) {
+                    if e <= 10 {
+                        return expand_power(&left_exp, e);
+                    }
+                }
+            }
+            Expr::Binary(BinaryOp::Pow, Arc::new(left_exp), Arc::new(right_exp))
+        }
     }
 }
 

@@ -1,4 +1,80 @@
-# Test baseline (2026-11-15, open follow-ups round part 2)
+# Test baseline (2026-11-20, M23 units and S1)
+
+`CARGO_INCREMENTAL=0 cargo test -j 2 --workspace --no-fail-fast` at commit `1b4b450` (the merge of
+`main` at `88f9174` into `claude/gracious-gates-e6b6l7` at `fe53bf4`), rustc 1.97.0, 4-core cloud
+container shared with another build, atlas data present, incremental compilation disabled. The run
+took 66 minutes, including the rebuild of the changed crates.
+
+**Result: 15,058 passed, 0 failed, 376 ignored, across 228 test targets.**
+
+Compared with the 2026-11-15 baseline below (14,791 / 0 / 328, 203 targets), the difference is five
+units (commits `f29c492..1b4b450`): WP-F (`a62da12`, `ec17666`) and its follow-up F-9 (`b5299c0`),
+the Steiner labelling (`5874caf`) and WP-P (`0e245a7`) of the M23 workstream
+(`docs/workstreams/m23_golay/`), and S1, the series engine and literal parser of rustmath-symbolic
+(`4763f31`, `a4f7791`, `fe53bf4`; see `docs/workstreams/handoff-followups/`). They added 267 passing
+tests, 48 ignored tests and 25 test targets:
+
+| Target | Before | After | Change |
+|---|--:|--:|---|
+| `rustmath-curves` lib | 299 (+9 ignored) | 314 (+9 ignored) | WP-F +10 (`weil.rs`, nodal residues); F-9 +5 (`nodal_biprojective/irreducible.rs`) |
+| `rustmath-curves --test biprojective_small_curves` | (new) | 16 (+1 ignored) | small curves in P^1 x P^1 against PARI/GP: WP-F 12 (+1 ignored), F-9 4 |
+| `rustmath-curves --test m23_zeta` | (new) | 9 (+9 ignored) | point counts and Frobenius polynomials of the genus 4 curve X: WP-F 8 (+8 ignored), F-9 1 (+1 ignored) |
+| `rustmath-finitefields` lib | 202 | 205 | WP-F: the word-size kernel `SmallFq` (`small_field.rs`) |
+| `rustmath-finitefields --test small_field` | (new) | 4 | WP-F: `SmallFq` and `count_distinct_roots` against `FiniteField`, `fp_factor` and brute force |
+| `rustmath-finitefields --test galois_ring_frobenius` | (new) | 11 | Steiner: Frobenius matrix, traces and orbit polynomials of Galois rings against PARI/GP |
+| `rustmath-coding --test cyclic_golay` | (new) | 7 | Steiner: the two cyclic binary Golay codes of length 23 and their Steiner systems |
+| `rustmath-combinatorics --test designs_exact` | (new) | 6 | Steiner: the exact t-design test (`t_design_index`, `is_steiner_system`) |
+| `rustmath-galois` lib | 62 (+2 ignored) | 66 (+2 ignored) | Steiner: `integrality.rs` |
+| `rustmath-galois --test steiner_labelling` | (new) | 13 (+10 ignored) | Steiner: the certified labelling on Le Lay's CC0 polynomial and small inputs |
+| `rustmath-groups` lib | 548 | 558 | WP-P: BSGS enumeration, class functions, representations |
+| `rustmath-groups` doctests | 78 (+4 ignored) | 79 (+4 ignored) | WP-P: `StabilizerChain::for_each_element` |
+| `rustmath-groups --test m23_atlas` | (new) | 6 | WP-P: the ATLAS character table of M23 against GAP |
+| `rustmath-groups --test m23_classes` | (new) | 5 (+2 ignored) | WP-P: M23 on the published generators, its classes and centralizers |
+| `rustmath-groups --test m23_nielsen` | (new) | 4 (+3 ignored) | WP-P: the Nielsen classes (C, 23A, 23B), real structures, cohomology over F_2 |
+| `rustmath-groups --test m23_three_point` | (new) | 3 (+1 ignored) | WP-P: the 57 three-point class vectors |
+| `rustmath-symbolic` lib | 656 (+3 ignored) | 686 (+5 ignored) | S1: engine modules, parser, `expand`, `simplify`, `series.rs` |
+| `rustmath-symbolic` doctests | 116 (+13 ignored) | 116 (+11 ignored) | S1: two `ignore` examples of the old `series.rs` removed |
+| `rustmath-symbolic --test s1_cuts` | (new) | 16 (+2 ignored) | S1, request C-1: arguments that leave a branch cut (`a4f7791`, `fe53bf4`) |
+| `rustmath-symbolic --test s1_depth` | (new) | 14 | S1: parser and consumer depth, `limit_with_error` (review 1, finish round 1) |
+| `rustmath-symbolic --test s1_finish1` | (new) | 11 (+1 ignored) | S1: blockers of the finish reviews fin1 |
+| `rustmath-symbolic --test s1_fuzz_data` | (new) | 7 | S1: the first 60 inputs of each of review 9's eight random runs, with PARI/GP references |
+| `rustmath-symbolic --test s1_payload` | (new) | 2 (+1 ignored) | S1: review 2, result payload |
+| `rustmath-symbolic --test s1_regressions` | (new) | 26 (+2 ignored) | S1: B1, B2 and the red team's holes, written before the fixes |
+| `rustmath-symbolic --test s1_review2` | (new) | 2 | S1: review 2 minor items |
+| `rustmath-symbolic --test s1_review3` | (new) | 7 (+7 ignored) | S1: review 3 blockers and minor items |
+| `rustmath-symbolic --test s1_review4` | (new) | 4 (+2 ignored) | S1: review 4 B1 and minor items |
+| `rustmath-symbolic --test s1_review4_memory` | (new) | 1 (+1 ignored) | S1: review 4 B2 |
+| `rustmath-symbolic --test s1_review5` | (new) | 4 (+2 ignored) | S1: review 5 blockers |
+| `rustmath-symbolic --test s1_review5_memory` | (new) | 2 (+2 ignored) | S1: review 5 B2 (peak memory) |
+| `rustmath-symbolic --test s1_review6` | (new) | 4 | S1: review 6 minor items |
+| `rustmath-symbolic --test s1_singular_points` | (new) | 9 | S1: the singular-point matrix of the inverse functions |
+| `rustmath-jupyter` lib | 109 (+1 ignored) | 120 (+3 ignored) | S1: REPL `taylor` (engine, display, consumers, session memory), `expand`, LaTeX work list |
+
+The 50 new ignored tests (48 net of the two removed doctests below) are opt-in runs:
+
+- WP-F and F-9 (10, rustmath-curves): five tests of `m23_zeta` need the external `M23ISGALOIS`
+  checkout (`shaowuz/m23isgalois`); four of `m23_zeta` and one of `biprojective_small_curves` are
+  release runs (the stated times range from 2 s to 2.5 min).
+- Steiner labelling (10, `steiner_labelling`): eight need `M23ISGALOIS` in release; two are release
+  runs (the CC0 invariants at the second prime 67, the twelve inert primes below 900).
+- WP-P (6): four release runs over the whole group (`full_census`, `full_family_11`,
+  `full_c_23a_23b`, `full_57_rows`) and two dictionaries that need external checkouts
+  (`env_hjlppz_dictionary` with `M23ISGALOIS`, `env_lelay_dictionary` with `LELAY_M23`).
+- S1 (24): 18 release budget tests in the `s1_*` targets (`#[ignore = "release budget test: run
+  with --release -- --ignored --test-threads=1"]`), one release timing of the re-parse of a result
+  (`b3f1_reparse_of_a_result_within_the_bar`), two release calibrations of the work model
+  (`series_const::tests::fold_work_calibration`, `parse_work_calibration`), and three child-process
+  helpers that non-ignored tests run in a subprocess (`b2r5_memo_child`, and
+  `s1r4_variable_chain_session_child`, `s1r5_session_child` in rustmath-jupyter).
+
+Two ignored doctests went away: the S1 rewrite of `rustmath-symbolic/src/series.rs` dropped the
+`ignore` examples of the old `Expr::series` and `Expr::series_with_big_o`. By name, no other test of
+the 2026-11-15 run disappeared or changed status. In the files that existed at `f29c492`, 74 of
+the 80 removed assertion lines come back unchanged up to `&` and `*` (mechanical: `matches!(&x, ..)`,
+`**inner`), and the other six (old series tests that checked `!is_constant()` or compared with the
+old `known_series` output) are replaced by exact coefficient checks; no other assertion was removed.
+
+## Previous baseline (2026-11-15, open follow-ups round part 2)
 
 `cargo test --workspace --no-fail-fast` at commit `f29c492`, rustc 1.97.0, 4-core cloud container,
 atlas data present, incremental compilation disabled.

@@ -150,6 +150,244 @@ fn b1_nesting_depth_not_below_head() {
 }
 
 // ------------------------------------------------------------------------------------------------
+// S1 finish (review 6, resources minor 2): a text that HEAD's parser refuses is refused, never an
+// abort
+// ------------------------------------------------------------------------------------------------
+
+/// `parse` of `text` on a thread of `stack` bytes: the depth of the tree, or the parse error. A
+/// stack overflow aborts this test binary.
+fn parse_on(stack: usize, text: String) -> Result<usize, String> {
+    on_stack(stack, move || {
+        rustmath_symbolic::parse(&text)
+            .map(|e| tree_depth(&e))
+            .map_err(|e| e.to_string())
+    })
+}
+
+/// The texts of the minor (and of its class), each refused by HEAD's parser at once with a
+/// `ParseError`: HEAD reads a sign after `^` only as part of a literal (`x^-2`), at most one sign
+/// in front of an operand that is not a literal, and integer literals up to i64::MAX. The port
+/// reads them all, and then recursed into the rest of the text, so each of these aborted a 2 MB
+/// debug thread (checked with review 6's probes against HEAD's and the port's debug rlibs,
+/// `fu2/s1impl/fin/parse/`). Now each is refused with a `ParseError`, on every thread of the bar.
+fn refused_by_head(n: usize) -> Vec<(&'static str, String)> {
+    let par = format!("{}x{}", "(".repeat(300), ")".repeat(300));
+    vec![
+        ("x^-x^-...^-x", vec!["x"; n + 1].join("^-")),
+        ("-x^-x^-...^-x", format!("-{}", vec!["x"; n + 1].join("^-"))),
+        ("x^-x^-... of 100 KB", vec!["x"; 33_000].join("^-")),
+        ("x^-(x^-(...))", nested("x^-(", 300)),
+        ("--(--(...))", nested("--(", 300)),
+        ("x^-x + 300 parentheses", format!("x^-x + {par}")),
+        ("x^+2 + 300 parentheses", format!("x^+2 + {par}")),
+        ("- - -x + 300 parentheses", format!("- - -x + {par}")),
+        (
+            "a 20-digit literal + 300 parentheses",
+            format!("99999999999999999999 + {par}"),
+        ),
+    ]
+}
+
+/// The minor: `x^-x^-...` and `-x^-x^-...` from 1 500 levels, which HEAD refuses with a
+/// `ParseError` (a sign after `^`), aborted the port's parser on a 2 MB debug thread (S1_BAR (b),
+/// a regression against HEAD on an input it handled). Each text of the class is now refused, on
+/// a 2 MB thread in both profiles and on the release 8 MB thread; the same towers of 500 levels
+/// still parse.
+#[test]
+fn p6_texts_refused_by_head_are_refused_not_aborted() {
+    let stacks: &[usize] = if DEBUG { &[2 * MB] } else { &[2 * MB, 8 * MB] };
+    for &stack in stacks {
+        for (name, text) in refused_by_head(1_500) {
+            let r = parse_on(stack, text);
+            assert!(r.is_err(), "{name} on a {} MB thread: {r:?}", stack / MB);
+        }
+        for (name, text) in [
+            ("x^-x^-... 500 levels", vec!["x"; 501].join("^-")),
+            (
+                "-x^-x^-... 500 levels",
+                format!("-{}", vec!["x"; 501].join("^-")),
+            ),
+            ("x^-(x^-(...)) 60 levels", nested("x^-(", 60)),
+            ("--(--(...)) 100 levels", nested("--(", 100)),
+        ] {
+            let r = parse_on(stack, text);
+            assert!(r.is_ok(), "{name} on a {} MB thread: {r:?}", stack / MB);
+        }
+    }
+}
+
+/// The control: texts that HEAD's parser reads keep HEAD's reach. HEAD accepts `x^-2`, `--5`
+/// (a sign, then the literal -5), `- -5`, `+-5`, `x^ -5.5` and the literal i64::MAX, each before
+/// 300 nested parentheses, on the REPL's 64 MiB thread (and overflows on a 2 MB debug thread, as
+/// the port does: 300 parentheses are past both parsers' reach there). The port parses them.
+#[test]
+fn p6_texts_read_by_head_keep_their_reach() {
+    let par = format!("{}x{}", "(".repeat(300), ")".repeat(300));
+    for head in [
+        "x^-2",
+        "--5",
+        "- -5",
+        "+-5",
+        "x^ -5.5",
+        "9223372036854775807",
+    ] {
+        let r = parse_on(64 * MB, format!("{head} + {par}"));
+        assert!(r.is_ok(), "{head} + 300 parentheses: {r:?}");
+    }
+    // a sign run, a signed exponent or a long literal after the deep part does not limit it
+    for tail in ["x^-x", "---x", "99999999999999999999"] {
+        let r = parse_on(64 * MB, format!("{par} + {tail}"));
+        assert!(r.is_ok(), "300 parentheses + {tail}: {r:?}");
+    }
+    // S1 finish, fix-up round 1 (fin1 semantics B2): HEAD read -9223372036854775808 (i64::MIN)
+    // as a literal after `^` and as the second sign of an operand; the six texts of the review, at
+    // 150 levels, parse on a 2 MB thread in both profiles (HEAD's debug parser reads them at 150
+    // and 200 levels there). Before: a `ParseError` (the literal turned the depth limit on)
+    let nest = |inner: &str| format!("{}{inner}{}", "(".repeat(150), ")".repeat(150));
+    for text in [
+        format!("x^-9223372036854775808 + {}", nest("x")),
+        format!("--9223372036854775808 + {}", nest("x")),
+        format!("+-9223372036854775808 + {}", nest("x")),
+        format!("2*--9223372036854775808*{}", nest("y")),
+        nest("x^-9223372036854775808 + y"),
+        format!("x^-09223372036854775808 + {}", nest("x")),
+    ] {
+        let short: String = text.chars().take(40).collect();
+        let r = parse_on(2 * MB, text);
+        assert!(r.is_ok(), "{short}... (150 levels): {r:?}");
+    }
+    // HEAD refused one more than i64::MIN in magnitude
+    let r = parse_on(2 * MB, format!("x^-9223372036854775809 + {}", nest("x")));
+    assert!(r.is_err(), "x^-9223372036854775809 + 150 levels: {r:?}");
+}
+
+/// The tree's `Integer` leaves, by an explicit stack.
+fn integer_leaves(e: &Expr) -> Vec<rustmath_integers::Integer> {
+    let mut out = Vec::new();
+    let mut st: Vec<&Expr> = vec![e];
+    while let Some(n) = st.pop() {
+        match n {
+            Expr::Integer(i) => out.push(i.clone()),
+            Expr::Binary(_, l, r) => {
+                st.push(l);
+                st.push(r);
+            }
+            Expr::Unary(_, a) => st.push(a),
+            Expr::Function(_, a) => st.extend(a.iter().map(|c| &**c)),
+            _ => {}
+        }
+    }
+    out
+}
+
+/// S1 finish, fix-up round 1 (fin1 resources B1): HEAD's negative literal i64::MIN keeps HEAD's
+/// reach after it: `x^-N*`, `--N*` and `2/-N*` (N = 9223372036854775808) before n parentheses,
+/// `x^-N*` before n nested calls and before a tower of n carets. n = 200 parentheses (HEAD reads
+/// 215 on 2 MB debug), 150 calls (HEAD: 162) and 1 000 carets (HEAD: 1 438) in debug; 1 000 of each
+/// on 8 MB in release (HEAD: 4 124 parentheses and calls, 22 772 carets). Before: refused past 128
+/// levels (or 1 024 carets). The exponent keeps the literal: `Integer(-9223372036854775808)`.
+/// Controls: `-N*` and `N*` before 300 parentheses stay a `ParseError` (HEAD refused the literal).
+#[test]
+fn f1_head_negative_literal_keeps_head_reach() {
+    let (stack, np, nc, nt) = if DEBUG {
+        (2 * MB, 200, 150, 1_000)
+    } else {
+        (8 * MB, 1_000, 1_000, 1_000)
+    };
+    let par = |n: usize| format!("{}x{}", "(".repeat(n), ")".repeat(n));
+    let n = "9223372036854775808";
+    let min = rustmath_integers::Integer::from(i64::MIN);
+    for (name, text, has_min) in [
+        ("x^-N* parentheses", format!("x^-{n}*{}", par(np)), true),
+        ("--N* parentheses", format!("--{n}*{}", par(np)), false),
+        ("2/-N* parentheses", format!("2/-{n}*{}", par(np)), false),
+        (
+            "x^-N* calls",
+            format!("x^-{n}*{}", nested("sin(", nc)),
+            true,
+        ),
+        ("x^-N* carets", format!("x^-{n}*{}", carets(nt)), true),
+    ] {
+        let min = min.clone();
+        let r = on_stack(stack, move || {
+            rustmath_symbolic::parse(&text)
+                .map(|e| integer_leaves(&e).contains(&min))
+                .map_err(|e| e.to_string())
+        });
+        match r {
+            Ok(found) => assert!(
+                !has_min || found,
+                "{name}: no Integer(i64::MIN) in the tree"
+            ),
+            Err(e) => panic!("{name}: {e}"),
+        }
+    }
+    for text in [format!("-{n}*{}", par(300)), format!("{n}*{}", par(300))] {
+        let short: String = text.chars().take(24).collect();
+        let r = parse_on(2 * MB, text);
+        assert!(r.is_err(), "{short}... + 300 parentheses: {r:?}");
+    }
+}
+
+/// S1 finish, fix-up round 1 (fin1 resources B2): HEAD's literal rational is an integer, `/` with
+/// no white space, and an integer (an optional `-`, digits, a value in i64, not 0). HEAD refused
+/// `2/x`, `1/(x+1)`, `1/sin(x)`, `2/ 3`, `2/3.5`, `2/--3`, `2/+3` and `x^2/x` at once (its literal
+/// rule failed, and so did the atom). The port reads them, and then read the deep part after
+/// them, so each row aborted the thread (2 MB debug: 300 parentheses, 300 calls or 1 601 carets;
+/// 8 MB release: 5 000 parentheses or 30 001 carets). Now each gives a `ParseError`, on a 2 MB
+/// thread in both profiles and on the 8 MB release thread.
+#[test]
+fn f1_literal_rationals_refused_by_head_are_refused_not_aborted() {
+    let par = |n: usize| format!("{}x{}", "(".repeat(n), ")".repeat(n));
+    let mut rows: Vec<(usize, String)> = vec![
+        (2 * MB, format!("2/x*{}", par(300))),
+        (2 * MB, format!("1/(x+1)*{}", par(300))),
+        (2 * MB, format!("2/ 3*{}", par(300))),
+        (2 * MB, format!("2/3.5*{}", par(300))),
+        (2 * MB, format!("2/--3*{}", par(300))),
+        (2 * MB, format!("2/+3*{}", par(300))),
+        (2 * MB, format!("x^2/x*{}", par(300))),
+        (2 * MB, format!("2 /3/x*{}", par(300))),
+        (2 * MB, format!("1/sin(x)*{}", nested("sin(", 300))),
+        (2 * MB, format!("2/x*{}", carets(1_601))),
+    ];
+    if !DEBUG {
+        rows.push((8 * MB, format!("2/x*{}", par(5_000))));
+        rows.push((8 * MB, format!("2/x*{}", carets(30_001))));
+    }
+    for (stack, text) in rows {
+        let short: String = text.chars().take(16).collect();
+        let r = parse_on(stack, text);
+        assert!(
+            r.is_err(),
+            "{short}... on a {} MB thread: {r:?}",
+            stack / MB
+        );
+    }
+}
+
+/// The control of `f1_literal_rationals_refused_by_head_are_refused_not_aborted`: texts that HEAD
+/// reads keep their reach. `2 / x` is a division (white space), `2/3^x` is HEAD's (2/3)^x,
+/// `2/3/x` is (2/3)/x, `2/-N` with N = 2^63 is HEAD's rational 2/i64::MIN, and `x^-N/3` is HEAD's
+/// x^(i64::MIN/3); each before 300 parentheses, on the REPL's 64 MiB thread.
+#[test]
+fn f1_literal_rationals_read_by_head_keep_their_reach() {
+    let par = format!("{}x{}", "(".repeat(300), ")".repeat(300));
+    for head in [
+        "2 / x",
+        "2/3^x",
+        "2/3/x",
+        "2/-9223372036854775808",
+        "x^-9223372036854775808/3",
+        "6/3/2/1",
+        "2/-3",
+    ] {
+        let r = parse_on(64 * MB, format!("{head}*{par}"));
+        assert!(r.is_ok(), "{head} * 300 parentheses: {r:?}");
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // B3: simplify (and Expr::limit, which simplifies) recurse at least as deep as HEAD's
 // ------------------------------------------------------------------------------------------------
 
@@ -344,6 +582,32 @@ fn b2_limit_with_error_of_a_long_sum() {
     assert!(secs < BAR_SECONDS, "{n} terms: {secs:.1} s");
 }
 
+/// The tree the parser built for `x^-x^-...^-x` with n carets: `x^(-(x^(-(...x^(-x)))))`, built
+/// from the inside (no recursion). S1 finish: the parser now refuses the text from 1 017 levels
+/// (`depth`, as HEAD refuses every such text), so the tests of `limit_with_error` on deep towers
+/// build the same tree directly.
+fn signed_tower(n: usize) -> Expr {
+    let mut e = Expr::Symbol(x());
+    for _ in 0..n {
+        e = Expr::Binary(
+            BinaryOp::Pow,
+            Arc::new(Expr::Symbol(x())),
+            Arc::new(Expr::Unary(UnaryOp::Neg, Arc::new(e))),
+        );
+    }
+    e
+}
+
+/// `limit_with_error` of `f` at `a`, order n, on a thread of `stack` bytes, timed.
+fn lwe_expr(f: Expr, a: &'static str, n: usize, stack: usize) -> (LimitResult, Option<i64>, f64) {
+    on_stack(stack, move || {
+        let t0 = Instant::now();
+        let (l, b) = lwe(&f, &x(), &parse(a), n);
+        let secs = t0.elapsed().as_secs_f64();
+        (l, b.as_ref().and_then(big_o_exponent), secs)
+    })
+}
+
 /// B2: `x^-x^-...^-x` (n levels) at 1, order 3. The value at 1 is 1 (every level is 1^(-1)). HEAD's
 /// parser rejects the input (a sign after `^`); the port's `limit_with_error` overflowed from
 /// 1 400 levels (4 201 bytes) on a 2 MB debug thread and from 13 000 levels (39 001 bytes) on an
@@ -351,20 +615,26 @@ fn b2_limit_with_error_of_a_long_sum() {
 /// order-5 expansion of the limit fits in `LIMIT_SERIES_WORK`, so `Finite(1)` with O(h^4) (the
 /// expansion reaches order 3); at 13 000 levels it does not (`BudgetExceeded` at 1e8 units,
 /// checked here through `series_expansion`), so `(Unknown, None)`, in a fraction of a second.
+/// S1 finish: the text of more than 1 016 levels is a `ParseError` now (`p6_*`), so the tower is
+/// built as the tree the parser made of it (`signed_tower`, checked against the parser at 500
+/// levels); the assertions are unchanged.
 #[test]
 fn b2_limit_with_error_of_a_signed_tower() {
+    let small = vec!["x"; 501].join("^-");
+    assert!(
+        on_stack(2 * MB, move || parse(&small) == signed_tower(500)),
+        "signed_tower(500) is the parser's tree"
+    );
     let cases: &[(usize, usize, bool)] = if DEBUG {
         &[(2 * MB, 1_400, true)]
     } else {
         &[(8 * MB, 3_000, true), (8 * MB, 13_000, false)]
     };
     for &(stack, n, finite) in cases {
-        let f = vec!["x"; n + 1].join("^-");
         if !finite {
-            let g = f.clone();
             let r = on_stack(stack, move || {
                 se(
-                    &parse(&g),
+                    &signed_tower(n),
                     &x(),
                     &ExpansionPoint::At(parse("1")),
                     5,
@@ -377,7 +647,7 @@ fn b2_limit_with_error_of_a_signed_tower() {
                 "{n} levels: {r:?}"
             );
         }
-        let (l, b, secs) = lwe_text(f, "1", 3, stack);
+        let (l, b, secs) = lwe_expr(signed_tower(n), "1", 3, stack);
         if finite {
             assert_eq!(
                 (&l, b),

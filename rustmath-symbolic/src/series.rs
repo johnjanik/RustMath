@@ -46,20 +46,56 @@
 //!   (`x*arctan(sqrt(-1)*x^0)` has the limit 0 at 0 under this convention).
 //! - A constant on a branch cut takes the principal value of the logarithmic formula
 //!   (arcsin z = -i log(i z + sqrt(1 - z^2)), arccos z = pi/2 - arcsin z, arctanh z =
-//!   (log(1 + z) - log(1 - z))/2, arccosh z = log(z + sqrt(z + 1) sqrt(z - 1)), principal log and
+//!   (log(1 + z) - log(1 - z))/2, arccosh z = log(z + sqrt(z + 1) sqrt(z - 1)), arctan z =
+//!   (i/2)(log(1 - i z) - log(1 + i z)), arcsinh z = log(z + sqrt(1 + z^2)), principal log and
 //!   square root), as gp's scalar functions do. The series of a power is `exp(alpha log b)` with the
 //!   principal log (gp takes the real root for a series power of a negative constant term; the two
 //!   differ there).
+//! - The variable is real (S1 request C-1): a series is the expansion in h = x - a (or 1/x at
+//!   infinity) for real h near 0, and a result is the function of a real variable on both sides of
+//!   the point. So a branch function (log, a non-integer power, arcsin, arccos, arctan,
+//!   arcsinh, arccosh, arctanh) whose argument has its constant term c0 on an open branch cut is
+//!   expanded only when the engine decides that the argument stays on the cut: that every other
+//!   coefficient is a real multiple of the cut's direction. The cuts on the real axis need real
+//!   coefficients: (-oo, 0) for log and the powers, (-oo, -1) and (1, oo) for arcsin, arccos and
+//!   arctanh, (-oo, -1) and (-1, 1) for arccosh. Those of arctan and arcsinh, (-I oo, -I) and
+//!   (I, I oo), need purely imaginary ones. The engine decides it from the structural classes of
+//!   the constants, node by node, which cover the coefficients beyond the precision too
+//!   (`log(-2 + sin(x))` at 0 stays on the cut), or from every coefficient of an exact argument.
+//!   A bounded check never decides it. When the argument leaves the cut for x != a, the expansion
+//!   through the principal value at c0 (gp's formal series) is the function on one side of the
+//!   point or on neither:
+//!   `log(-1 - I*x^2)` at 0 is off by 2 pi I on both sides, `log(-1 + I*x)` for x < 0. Such an
+//!   argument is `NotLaurent` ("the argument leaves a branch cut at the point"). This includes an
+//!   argument that leaves the cut to the side the principal value is continuous with, where the
+//!   series is right (`log(-1 + I*x^2)` at 0): a later rule may expand that case. A real constant
+//!   whose zero test is undecided (the imaginary part of a coefficient, the distance of c0 from an
+//!   end of the cut) is `UndecidedZero`; any other undecided case is `NotLaurent` saying that the
+//!   engine cannot decide (`Display` reads "no Laurent expansion found", which claims no
+//!   decided negative).
+//! - Free parameters are generic complex numbers (the design's convention, as for `1/(x + a - b)`,
+//!   valid for a != b), not real ones. A constant term that depends on a parameter is off the cut
+//!   for generic values when it is a nonconstant function of the parameters: a nonconstant
+//!   polynomial in them (`log(y + I*x)` at 0 holds for y off (-oo, 0]), or a Laurent polynomial
+//!   in one kernel of an analytic function of such a function (`log(sin(x))`, `sqrt(log(x))`,
+//!   `arctan(sin(x))` at a). Two such kernels (`sin(a)^2 + cos(a)^2 - 2` is -1) and abs, sign and
+//!   mod of a parameter are not accepted, and refuse. The set of values where the constant term
+//!   meets the cut has no interior, but it can hold every real value of a parameter:
+//!   `log(-y^2 + I*x)` at 0 returns the series through log(-y^2), which for a real y != 0 is the
+//!   function for x > 0 only. A coefficient that depends on a parameter is not decided real, so
+//!   `log(-1 + y*x)` at 0 refuses.
 //!
 //! The owner's two rules for the branch functions (decision of 2026-11-15): an argument whose
 //! series is an exact constant c is evaluated (f(c), no expansion and no integrand); a
-//! non-constant argument at a branch point is `NotLaurent`, never `DivisionByZero`.
+//! non-constant argument at a branch point is `NotLaurent`, never `DivisionByZero`. The branch-cut
+//! rule above is the second rule applied to the points of a cut.
 //! `DivisionByZero` means that the input divides by an exact zero (or applies a function at an
 //! exact pole of a constant, arctanh(1) or arctan(i)).
 
 use crate::expression::{BinaryOp, Expr, UnaryOp};
 use crate::series_const::{
-    balanced_arc, balanced_sum, bound_caps, tree_bound, SErr, TextBound, TextMemo, ZS,
+    balanced_arc, balanced_sum, bound_caps, tree_bound, ResultBound, SErr, TextBound, TextMemo,
+    ZS,
 };
 use crate::series_engine::{self, Point, Render, Ser, Session};
 use crate::symbol::Symbol;
@@ -82,6 +118,13 @@ pub enum SeriesError {
     /// non-constant argument at 1), an argument with a pole inside exp, sin, arctan, ...
     /// (exp(1/x) at 0), or abs/sign at a zero of odd order. The engine expands each subexpression
     /// on its own, so the function itself may still have one (sqrt(x)^2 and exp(log(x)) at 0).
+    /// S1 request C-1: also the argument of a branch function whose constant term lies on an open
+    /// cut and that leaves the cut, or that the engine cannot decide stays on it (the module
+    /// conventions). That is the rule of a real variable: the subexpression may still be analytic
+    /// there when the argument leaves the cut to the side its principal value is continuous with
+    /// (`log(-1 + I*x^2)` at 0). So `Display` says that no Laurent expansion was found, and the
+    /// message says which case it is: a decided one ("has no Laurent expansion there", "has a
+    /// branch point there"), an argument that leaves a cut, or a case the engine cannot decide.
     NotLaurent(String),
     /// gamma, factorial, zeta, a named function or mod applied to an expression in the variable,
     /// abs/sign of a series with non-rational coefficients, an exponent that overflows i64.
@@ -101,7 +144,16 @@ pub enum SeriesError {
     DivisionByZero(String),
     /// The point contains the variable, or infinity (oo) appears.
     InvalidPoint(String),
-    /// Bounded search: a denominator vanished to this working precision. It may be identically 0.
+    /// Bounded search: the engine could not decide a coefficient, an exponent or a branch-point
+    /// argument to this working precision P, and raising P (within its attempts and the budget)
+    /// did not help. An operand it needed was O(h^q) with no known term, or a part that had to
+    /// be decided was O(h^P): the leading coefficient of a denominator, or of the argument of
+    /// log, abs, sign or a power; the valuation of an argument of exp, sin, the atan family or
+    /// an integrand; the rest of an exponent with an integer constant term on a base of nonzero
+    /// valuation (`x^((1+x)/(1+x))` at 0); the distance of an inverse function's argument from a
+    /// branch point (`arcsin((1+x)/(1+x))` at 0). What it tested may be identically 0, so
+    /// nothing is decided (S1 finish, minor items of the reviews fin2, semantics m3: this text
+    /// and the message named a denominator only).
     PrecisionExhausted { precision: i64 },
     /// The work budget of the call was exceeded. `work` is the count of charged units when the call
     /// stopped. It can include an a-priori charge for a step that was refused before it ran, so it
@@ -145,14 +197,21 @@ pub enum StructureLimit {
     /// the result's tree (in the engine's units, about one word operation each), counted from the
     /// sizes of the literals it folds: a kernel's source or a hint holds the input's own literal
     /// arithmetic, which `simplify` folds left to right where the engine folded it in its own order.
-    /// S1 fix-up round 5 (review 5, B1): counted at every occurrence in the tree, so that it also
-    /// bounds `simplify` after a consumer that rebuilds the tree (`substitute`, `expand`)
+    /// S1 fix-up round 5 (review 5, B1): counted at every occurrence in the tree, the folds of a
+    /// copy of the tree without its sharing (as `substitute` makes it). It counts the result's
+    /// own folds only, not the nodes `expand` or `differentiate` add, nor the folds of a value
+    /// that `substitute` puts in (`series_const::MAX_RESULT_TEXT` has their measured cost)
     FoldWork,
     /// S1 fix-up round 5 (review 5, B2): the words of the literals that `simplify` may build at
     /// the distinct nodes of the result (`series_const::MAX_RESULT_MEMO_WORDS`, the payload of
     /// `simplify`'s memo), so that `simplify` after `differentiate`, which shares the result's
-    /// nodes between their clones, holds them all in its memo
+    /// nodes between their clones, holds them all in its memo and does not recompute them
     FoldPayload,
+    /// S1 finish, fix-up round 1 (fin1 resources B3): the work of re-parsing the result's printed
+    /// text beyond its characters (`series_const::MAX_RESULT_PARSE_WORK`): the decimal parse of
+    /// every integer literal and the gcd of every printed quotient of two integer literals, at
+    /// every occurrence (a long rational named by every term is re-parsed at every term)
+    ParseWork,
 }
 
 /// An estimate of the length of e's Display text, stopped once it passes `limit`: 0.302 bits + 2
@@ -196,7 +255,11 @@ fn display_estimate(e: &Expr, limit: u64) -> u64 {
 impl fmt::Display for SeriesError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SeriesError::NotLaurent(s) => write!(f, "no Laurent expansion at the point: {s}"),
+            // S1 C-1 minor items (semantics review m2, regressions review m3): "found", since the
+            // variant also holds the refusals of the cut rule, which decide no negative
+            SeriesError::NotLaurent(s) => {
+                write!(f, "no Laurent expansion found at the point: {s}")
+            }
             SeriesError::Unsupported(s) => write!(f, "not supported by the series engine: {s}"),
             SeriesError::UndecidedZero(c) => {
                 let est = display_estimate(c, 200);
@@ -214,7 +277,8 @@ impl fmt::Display for SeriesError {
             SeriesError::InvalidPoint(s) => write!(f, "invalid expansion point: {s}"),
             SeriesError::PrecisionExhausted { precision } => write!(
                 f,
-                "a denominator vanished to working precision {precision} (it may be identically 0)"
+                "a bounded search could not decide a coefficient, an exponent or a branch-point \
+                 argument to working precision {precision} (what it tested may be identically 0)"
             ),
             SeriesError::BudgetExceeded { work, budget } => {
                 write!(f, "work budget exceeded ({work} units charged, budget {budget})")
@@ -236,6 +300,10 @@ impl fmt::Display for SeriesError {
                     StructureLimit::FoldPayload => {
                         "words of literals built at the distinct nodes of the result by its \
                          simplification"
+                    }
+                    StructureLimit::ParseWork => {
+                        "units of work to re-parse the printed result (the decimal parse of its \
+                         integers and the gcd of its fractions, at every occurrence)"
                     }
                 };
                 write!(
@@ -289,6 +357,7 @@ fn structure_limit(what: &str) -> StructureLimit {
         "words of the literals that the simplification of the result builds at its distinct nodes" => {
             StructureLimit::FoldPayload
         }
+        "units of work to re-parse the result's text" => StructureLimit::ParseWork,
         _ => StructureLimit::Kernels,
     }
 }
@@ -602,9 +671,9 @@ fn public_expansion(
     };
     // S1 fix-up round 4 (review 4, B1): and the work of the folds of its `simplify`; round 5
     // (review 5, B1 and B2): that work per occurrence in the tree, and the literal words of its
-    // distinct nodes
-    let (text, total, payload, lit_text) = expansion_text(&e);
-    if let Some(err) = bound_caps(text, total, payload, lit_text) {
+    // distinct nodes; S1 finish fix-up round 1 (fin1 resources B3): and the work of re-parsing
+    // its text
+    if let Some(err) = bound_caps(&expansion_text(&e)) {
         return Err(Fail::Engine(err));
     }
     Ok(e)
@@ -619,8 +688,10 @@ fn public_expansion(
 /// Round 5 (review 5, B1, B2): the text, the fold work of the tree with every occurrence counted
 /// (`TextBound::total` of the root), the literal words of the distinct nodes (`TextMemo::payload`
 /// and the nodes `to_expr` builds above the coefficients), and the printing weight of the
-/// literals at every node and occurrence (`TextBound::lit_text` of the root).
-fn expansion_text(e: &SeriesExpansion) -> (u64, u64, u64, u64) {
+/// literals at every node and occurrence (`TextBound::lit_text` of the root). S1 finish, fix-up
+/// round 1 (fin1 resources B3): and the work of re-parsing the printed text (`TextBound::parse`
+/// of the root).
+fn expansion_text(e: &SeriesExpansion) -> ResultBound {
     let mut memo = TextMemo::default();
     let h = tree_bound(&e.h, &mut memo);
     let inf = matches!(e.point, ExpansionPoint::Infinity);
@@ -665,16 +736,18 @@ fn expansion_text(e: &SeriesExpansion) -> (u64, u64, u64, u64) {
         })
         .collect();
     // `balanced`'s `lit` is the literal words of the sum's own nodes
-    let (text, total, sum_lits, lit_text) = match TextBound::balanced(&terms, BinaryOp::Add) {
-        Some(b) => (b.text(), b.total(), b.lit(), b.lit_text()),
-        None => (0, 0, 0, 0),
+    let (text, total, sum_lits, lit_text, parse) = match TextBound::balanced(&terms, BinaryOp::Add)
+    {
+        Some(b) => (b.text(), b.total(), b.lit(), b.lit_text(), b.parse()),
+        None => (0, 0, 0, 0, 0),
     };
-    (
+    ResultBound {
         text,
         total,
-        memo.payload.saturating_add(lits).saturating_add(sum_lits),
+        payload: memo.payload.saturating_add(lits).saturating_add(sum_lits),
         lit_text,
-    )
+        parse,
+    }
 }
 
 fn order_to_i64(order: usize) -> Result<i64, SeriesError> {
@@ -722,7 +795,20 @@ impl Expr {
 
     /// `taylor` under a work budget (the REPL passes `TAYLOR_WORK`): every big-number operation,
     /// constant, term, kernel and buffer slot is charged before it is made, so the call stops with
-    /// `BudgetExceeded` before it uses more than about 3 bytes per unit.
+    /// `BudgetExceeded` before it uses more than about 3 bytes per unit. The structural caps bound
+    /// the printing, the dropping and the re-parsing of the result (its characters by
+    /// `series_const::MAX_RESULT_TEXT`, the parse of its numbers by
+    /// `series_const::MAX_RESULT_PARSE_WORK`; the parser takes no stack per level of the text,
+    /// S1 finish fix-up round 1). A printed result does not always re-parse: when its text holds
+    /// an integer above i64::MAX (1/21! and beyond), a rational with such a denominator or `^ -(`,
+    /// and then nests more than 128 levels of parentheses and calls (or 1 024 of `^`), the
+    /// parser's depth limit refuses it at once with a `ParseError` (`exp(x) + sin^150(1)/(1-x)` at
+    /// 0 from order 21; the conditions and the measured examples are in the doc of the parser's
+    /// `mod depth`). They do not bound a consumer
+    /// applied to it: `expand`, `differentiate` (and `simplify` after them), `substitute`, `==` and
+    /// `integrate` cost about the number of terms times their cost on the input's kernel source
+    /// (the measured numbers are in the doc of `series_const::MAX_RESULT_TEXT`; follow-up unit S2,
+    /// "DAG-aware consumers").
     pub fn taylor_with_budget(
         &self,
         var: &Symbol,
