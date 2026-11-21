@@ -650,8 +650,8 @@ pub fn format_row(row: &Row) -> String {
 /// The trusted hypothesis of the W columns (design C57 2.5): `Jac[2]` has an `F`-stable
 /// Lagrangian `W` on which `F` has characteristic polynomial `Q` or `Q^rev`.
 pub const H_W: &str = "W: Jac[2] has an F-stable Lagrangian subspace on which F has \
-characteristic polynomial Q or Q^rev (HJLPPZ Thm. 4.8 and Cor. 4.4; Gal = M23, branch data \
-(2A, 23A, 23B)); used by the W columns only";
+characteristic polynomial Q or Q^rev (the owner's paper, johnjanik/M23 paper/golay_m23.tex, \
+Thm. 4.1 and Cor. 4.3; Gal = M23, branch data (2A, 23A, 23B)); used by the W columns only";
 
 /// The genus input of every certificate.
 pub const H_GENUS: &str = "genus 4 (HJLPPZ Prop. 3.10)";

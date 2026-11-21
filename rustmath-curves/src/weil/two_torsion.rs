@@ -742,7 +742,7 @@ impl TwoTorsionAnalysis {
     /// (ascending bits, `w w^rev = P mod 2`), by Lemma F and the Littlewood-Richardson
     /// criterion (design C57 2.5), each with the candidates it is compatible with; types
     /// compatible with no candidate are left out. Rests on the hypothesis that such a `W`
-    /// exists (for the M23 curves: HJLPPZ Thm. 4.8, `Gal = M23`); the order on `Jac[2]` does not.
+    /// exists (M23 curves: the owner's paper, Thm. 4.1, Cor. 4.3); the order on `Jac[2]` does not.
     ///
     /// Errors: `NotAReciprocalHalf` if `w w^rev != P mod 2`; `TooLarge` if a multiplicity of
     /// `P mod 2` is above [`MAX_LR_SIZE`] (8; see there for the cost).

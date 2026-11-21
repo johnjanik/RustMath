@@ -44,3 +44,13 @@ six or more digits in the files of `m23isgalois` occurs in them (checked by a se
 The docs step of the same change also replaced the column "2-torsion order" of the tables of
 `../wpf/impl/WPF.md` Section 3 by the values after C-5, read from these JSON files (the note
 below its table description says so).
+
+A correction made after these records were written: the source of the hypothesis `H_W` is
+Theorem 4.1 and Corollary 4.3 of the owner's paper (`paper/golay_m23.tex` of `johnjanik/M23`;
+its Section 4.3 applies Theorem 4.1 to the covers over L). `design/C57.md` 2.5 cites it as
+"Theorem 4.8 and Corollary 4.4" of that paper, and the `H_W` text of the code first cited
+"HJLPPZ Thm. 4.8 and Cor. 4.4". Theorem 4.8 is the image of Galois on `W` for X, and
+Corollary 4.4 the lifting to `2^11 : M23`; the Lagrangian is the owner's result (the paper's
+introduction: in HJLPPZ the Golay structure enters only to certify the monodromy group). The code
+(`tests/common/m23.rs`, `H_W`), the doc of `lagrangian_types` and `../HANDOFF.md` now give the
+right source; the copies above are left as written.

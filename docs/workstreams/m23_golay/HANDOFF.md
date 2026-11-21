@@ -595,7 +595,9 @@ possible order `N_max`, with the same bound for the quadratic twist (`F^k + 1`,
 every `F_2[x]`-module type of `J[2]` allowed by all of them gives the same value. Every counted
 row is Decided (Lemma 9.1), so a decided order is Decided for the curve; the genus 4 is a trusted
 input, and the columns on `W` rest on the trusted hypothesis `H_W` (an `F`-stable Lagrangian
-with characteristic polynomial `Q` or `Q^rev`, HJLPPZ Theorem 4.8), written into every JSON row.
+with characteristic polynomial `Q` or `Q^rev`: Theorem 4.1 and Corollary 4.3 of the paper,
+which Section 4.3 there applies to the covers over L), written into the header and every counted
+JSON row.
 
 - X, Decided: 15 at 11, 31, 79, 97 (`P mod 2` squarefree, unchanged); 14 at 17, 73, 127, 12 at
   43, 103, 113 and 8 at 89 (`v2 #Jac(F_p) = 1`, the seven values of C-5); 10 at 59, 67, 71
